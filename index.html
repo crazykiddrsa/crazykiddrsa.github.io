@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SbheneCart</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;}
+body{background:#000;color:white;overflow-x:hidden;scroll-behavior:smooth;}
+header{background:#000;padding:15px 40px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #00ff88;}
+header h1{color:#00ff88;text-shadow:0 0 15px #00ff88;}
+.cart-container{position:relative;cursor:pointer;padding:8px;}
+.cart-count{position:absolute;top:-8px;right:-10px;background:#00ff88;color:black;font-size:12px;padding:2px 6px;border-radius:50%;font-weight:bold;transition:0.3s;transform-origin:center;}
+.cart-count.pop{animation:popCart 0.4s ease;}
+@keyframes popCart{
+  0%{transform:scale(1);}
+  50%{transform:scale(1.6);}
+  100%{transform:scale(1);}
+}
+.cart-panel{position:fixed;top:0;right:0;width:350px;height:100%;background:#111;border-left:2px solid #00ff88;z-index:20;display:flex;flex-direction:column;padding:20px;
+transform:translateX(100%) scale(0.95);opacity:0;transition:transform 1.2s cubic-bezier(0.68,-0.6,0.32,1.6),opacity 1s ease,box-shadow 0.8s ease;box-shadow:-10px 0 30px rgba(0,255,136,0);}
+.cart-panel.open{transform:translateX(0) scale(1);opacity:1;box-shadow:-10px 0 50px rgba(0,255,136,0.5);}
+.cart-panel h3{color:#00ff88;text-align:center;margin-bottom:15px;}
+.cart-item{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:14px;}
+.cart-item button{background:#00ff88;border:none;padding:3px 8px;margin:0 4px;cursor:pointer;}
+.cart-total{font-weight:bold;color:#00ff88;font-size:16px;text-align:center;margin-top:10px;}
+.btn{margin-top:10px;padding:12px 20px;border-radius:25px;border:none;background:#00ff88;color:black;font-weight:bold;cursor:pointer;transition:0.3s;}
+.btn:hover{background:white;}
+.section{display:none;padding:40px 20px;}
+.active{display:block;}
+.categories{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;overflow-y:auto;scroll-behavior:smooth;}
+.categories::-webkit-scrollbar{width:8px;}
+.categories::-webkit-scrollbar-thumb{background:#00ff88;border-radius:4px;}
+.categories::-webkit-scrollbar-track{background: rgba(255,255,255,0.05);}
+.card{background:#111;padding:15px;border-radius:10px;border:1px solid #00ff88;text-align:center;transition:0.3s;position:relative;}
+.card:hover{transform:translateY(-5px);box-shadow:0 0 25px #00ff88;}
+.card img{width:100%;height:180px;object-fit:cover;border-radius:10px;margin-bottom:10px;transition:0.3s;}
+.card img:hover{transform:scale(1.05);box-shadow:0 0 20px #00ff88;}
+.back-btn{margin-bottom:20px;}
+.flying-img{position:absolute;width:60px;height:60px;border-radius:50%;pointer-events:none;z-index:1000;transition:transform 1.5s cubic-bezier(0.68,-0.55,0.27,1.55),opacity 1.5s;}
+.checkout-form{display:none;margin-top:15px;}
+.checkout-form input{width:100%;padding:10px;margin-bottom:10px;border:none;border-radius:5px;}
+.card.new-item::after{
+  content:"NEW";
+  position:absolute;
+  top:10px;
+  right:10px;
+  background:#ff00ff;
+  color:black;
+  font-size:12px;
+  font-weight:bold;
+  padding:2px 6px;
+  border-radius:4px;
+  text-transform:uppercase;
+}
+@media(max-width:600px){.cart-panel{width:100%;}}
+</style>
+</head>
+<body>
+
+<header>
+<h1>SbheneCart</h1>
+<div class="cart-container" id="cart-icon">🛒 <span class="cart-count" id="cart-count">0</span></div>
+</header>
+
+<section id="home" class="section active">
+<h2 style="color:#00ff88;margin-bottom:20px;">Categories</h2>
+<div class="categories" id="categories-container"></div>
+</section>
+
+<section id="category-items" class="section">
+<button class="btn back-btn" onclick="showSection('home')">⬅ Back</button>
+<h2 style="color:#00ff88;margin-bottom:20px;" id="category-title"></h2>
+<div class="categories" id="items-container"></div>
+</section>
+
+<div class="cart-panel" id="cart-panel">
+<h3>Your Cart</h3>
+<div id="cart-items"></div>
+<p id="empty-msg" style="text-align:center;">Cart is empty</p>
+<div class="cart-total" id="cart-total">Total: R0</div>
+<button class="btn" onclick="showCheckout()">Checkout</button>
+
+<div class="checkout-form" id="checkout-form">
+<input type="text" id="name" placeholder="Full Name" required>
+<input type="email" id="email" placeholder="Email" required>
+<input type="text" id="phone" placeholder="Phone Number" required>
+<input type="text" id="address" placeholder="Delivery Address" required>
+<button class="btn" onclick="completeOrder()">Place Order</button>
+</div>
+</div>
+
+<script>
+// PRODUCT DATA
+const categoriesData={
+"Food":[
+{name:"Meatybones",image:"images/Meatybones.jpg",price:260,newItem:true},
+{name:"Braai Beef",image:"images/Braii_Beef.jpg",price:170},
+{name:"Burger Pats",image:"images/Burger_Pats.jpg",price:100},
+{name:"Boerewors",image:"images/wors.jpg",price:110},
+{name:"Chakalaka Frozen Wors",image:"images/Frozen_Wors.jpg",price:300,newItem:true},
+{name:"Combo + free extra cheese",image:"images/Combo.jpg",price:450,newItem:true},
+{name:"Russians",image:"images/Russians.jpg",price:250,newItem:true}
+],
+"Clothes":[
+{name:"Neon Hoodie",image:"images/hoodie.jpg",price:450},
+{name:"Street Cap",image:"images/cap.jpg",price:180}
+],
+"Products":[
+{name:"LED Lights",image:"images/led.jpg",price:220},
+{name:"Gaming Mouse",image:"images/mouse.jpg",price:350}
+]
+};
+
+// CART VARIABLES
+let cart = {};
+let flyLock = false;
+function saveCart(){ localStorage.setItem("cart",JSON.stringify(cart)); }
+
+// POPULATE CATEGORIES
+document.addEventListener("DOMContentLoaded", ()=>{
+  const categoriesContainer=document.getElementById('categories-container');
+  Object.keys(categoriesData).forEach(cat=>{
+    const div=document.createElement('div');
+    div.className='card';
+    div.innerHTML=`<h3>${cat}</h3><button class="btn" onclick="showCategoryItems('${cat}')">Shop ${cat}</button>`;
+    categoriesContainer.appendChild(div);
+  });
+});
+
+// SHOW CATEGORY ITEMS
+function showCategoryItems(category){
+  showSection('category-items');
+  document.getElementById('category-title').textContent=category;
+  const container=document.getElementById('items-container');
+  container.innerHTML='';
+  categoriesData[category].forEach(item=>{
+    const div=document.createElement('div');
+    div.className='card'+(item.newItem?' new-item':'');
+    div.innerHTML=`<img src="${item.image}"><h3>${item.name}</h3><p>R${item.price}</p><button class="btn" onclick="flyToCartSingle(this,'${item.name}',${item.price})">Add to Cart</button>`;
+    container.appendChild(div);
+  });
+}
+
+// SECTION TOGGLE
+function showSection(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// CART FUNCTIONS
+function addToCart(name,price){
+  if(cart[name]) cart[name].quantity++;
+  else cart[name]={price,quantity:1};
+  saveCart();
+  updateCartUI();
+  const countEl=document.getElementById("cart-count");
+  countEl.classList.remove("pop"); void countEl.offsetWidth; countEl.classList.add("pop");
+}
+
+function removeFromCart(name){
+  if(cart[name]){
+    cart[name].quantity--;
+    if(cart[name].quantity<=0) delete cart[name];
+    saveCart();
+    updateCartUI();
+  }
+}
+
+function updateCartUI(){
+  let total=0,count=0;
+  const cartItems=document.getElementById("cart-items");
+  cartItems.innerHTML="";
+  for(let item in cart){
+    count+=cart[item].quantity;
+    let itemTotal=cart[item].price*cart[item].quantity;
+    total+=itemTotal;
+    cartItems.innerHTML+=`<div class="cart-item">
+      <span>${item}</span>
+      <div>
+        <button onclick="removeFromCart('${item}')">-</button>
+        ${cart[item].quantity}
+        <button onclick="addToCart('${item}', ${cart[item].price})">+</button>
+      </div>
+      <span>R${itemTotal}</span>
+    </div>`;
+  }
+  document.getElementById("cart-count").textContent=count;
+  document.getElementById("cart-total").textContent="Total: R"+total;
+  document.getElementById("empty-msg").style.display=count===0?"block":"none";
+}
+updateCartUI();
+
+// CART PANEL TOGGLE
+document.getElementById("cart-icon").addEventListener("click",()=>{
+  document.getElementById("cart-panel").classList.toggle("open");
+});
+
+// FLY TO CART
+function flyToCartSingle(button,item,price){
+  if(flyLock) return; flyLock=true;
+  const img=button.parentElement.querySelector('img');
+  const fly=document.createElement('img');
+  fly.src=img.src;
+  fly.className='flying-img';
+  document.body.appendChild(fly);
+  const imgRect=img.getBoundingClientRect();
+  fly.style.top=imgRect.top+'px';
+  fly.style.left=imgRect.left+'px';
+  const cartRect=document.getElementById("cart-icon").getBoundingClientRect();
+  const duration=1200;
+  const start=performance.now();
+  const startX=imgRect.left, startY=imgRect.top;
+  const endX=cartRect.left, endY=cartRect.top;
+  const controlX=(startX+endX)/2, controlY=startY-150;
+  function animate(time){
+    let t=(time-start)/duration; if(t>1) t=1;
+    const x=(1-t)*(1-t)*startX+2*(1-t)*t*controlX+t*t*endX;
+    const y=(1-t)*(1-t)*startY+2*(1-t)*t*controlY+t*t*endY;
+    fly.style.transform=`translate(${x-startX}px,${y-startY}px) scale(${1-0.9*t})`;
+    fly.style.opacity=1-t;
+    if(t<1) requestAnimationFrame(animate);
+    else { addToCart(item,price); fly.remove(); flyLock=false; }
+  }
+  requestAnimationFrame(animate);
+}
+
+// CHECKOUT
+function showCheckout(){
+  if(Object.keys(cart).length===0){alert("Cart is empty!"); return;}
+  document.getElementById("checkout-form").style.display="block";
+}
+function completeOrder(){
+  const name=document.getElementById("name").value.trim();
+  const email=document.getElementById("email").value.trim();
+  const phone=document.getElementById("phone").value.trim();
+  const address=document.getElementById("address").value.trim();
+  if(!name||!email||!phone||!address){alert("Please fill all fields!"); return;}
+  alert(`Order placed successfully!\nName: ${name}\nEmail: ${email}\nPhone: ${phone}\nAddress: ${address}\nThank you for shopping with SbheneCart!`);
+  cart={}; saveCart(); updateCartUI();
+  document.getElementById("checkout-form").style.display="none";
+  document.getElementById("cart-panel").classList.remove("open");
+}
+</script>
+
+</body>
+</html>
