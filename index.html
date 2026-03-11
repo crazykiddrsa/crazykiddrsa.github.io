@@ -12,11 +12,7 @@ header h1{color:#00ff88;text-shadow:0 0 15px #00ff88;}
 .cart-container{position:relative;cursor:pointer;padding:8px;}
 .cart-count{position:absolute;top:-8px;right:-10px;background:#00ff88;color:black;font-size:12px;padding:2px 6px;border-radius:50%;font-weight:bold;transition:0.3s;transform-origin:center;}
 .cart-count.pop{animation:popCart 0.4s ease;}
-@keyframes popCart{
-  0%{transform:scale(1);}
-  50%{transform:scale(1.6);}
-  100%{transform:scale(1);}
-}
+@keyframes popCart{0%{transform:scale(1);}50%{transform:scale(1.6);}100%{transform:scale(1);}}
 .cart-panel{position:fixed;top:0;right:0;width:350px;height:100%;background:#111;border-left:2px solid #00ff88;z-index:20;display:flex;flex-direction:column;padding:20px;
 transform:translateX(100%) scale(0.95);opacity:0;transition:transform 1.2s cubic-bezier(0.68,-0.6,0.32,1.6),opacity 1s ease,box-shadow 0.8s ease;box-shadow:-10px 0 30px rgba(0,255,136,0);}
 .cart-panel.open{transform:translateX(0) scale(1);opacity:1;box-shadow:-10px 0 50px rgba(0,255,136,0.5);}
@@ -40,19 +36,7 @@ transform:translateX(100%) scale(0.95);opacity:0;transition:transform 1.2s cubic
 .flying-img{position:absolute;width:60px;height:60px;border-radius:50%;pointer-events:none;z-index:1000;transition:transform 1.5s cubic-bezier(0.68,-0.55,0.27,1.55),opacity 1.5s;}
 .checkout-form{display:none;margin-top:15px;}
 .checkout-form input{width:100%;padding:10px;margin-bottom:10px;border:none;border-radius:5px;}
-.card.new-item::after{
-  content:"NEW";
-  position:absolute;
-  top:10px;
-  right:10px;
-  background:#ff00ff;
-  color:black;
-  font-size:12px;
-  font-weight:bold;
-  padding:2px 6px;
-  border-radius:4px;
-  text-transform:uppercase;
-}
+.card.new-item::after{content:"NEW";position:absolute;top:10px;right:10px;background:#ff00ff;color:black;font-size:12px;font-weight:bold;padding:2px 6px;border-radius:4px;text-transform:uppercase;}
 @media(max-width:600px){.cart-panel{width:100%;}}
 </style>
 </head>
@@ -63,24 +47,40 @@ transform:translateX(100%) scale(0.95);opacity:0;transition:transform 1.2s cubic
 <div class="cart-container" id="cart-icon">🛒 <span class="cart-count" id="cart-count">0</span></div>
 </header>
 
+<!-- HOME -->
 <section id="home" class="section active">
 <h2 style="color:#00ff88;margin-bottom:20px;">Categories</h2>
 <div class="categories" id="categories-container"></div>
 </section>
 
+<!-- CATEGORY ITEMS -->
 <section id="category-items" class="section">
 <button class="btn back-btn" onclick="showSection('home')">⬅ Back</button>
 <h2 style="color:#00ff88;margin-bottom:20px;" id="category-title"></h2>
 <div class="categories" id="items-container"></div>
 </section>
 
+<!-- PILLS SHOP -->
+<section id="pills-shop" class="section">
+<button class="btn back-btn" onclick="showCategoryItems('Products')">⬅ Back</button>
+<h2 style="color:#00ff88;margin-bottom:20px;">Shop Pills</h2>
+<div class="categories" id="pills-container"></div>
+</section>
+
+<!-- PERFUME SHOP -->
+<section id="perfume-shop" class="section">
+<button class="btn back-btn" onclick="showCategoryItems('Products')">⬅ Back</button>
+<h2 style="color:#00ff88;margin-bottom:20px;">Shop Perfumes</h2>
+<div class="categories" id="perfume-container"></div>
+</section>
+
+<!-- CART PANEL -->
 <div class="cart-panel" id="cart-panel">
 <h3>Your Cart</h3>
 <div id="cart-items"></div>
 <p id="empty-msg" style="text-align:center;">Cart is empty</p>
 <div class="cart-total" id="cart-total">Total: R0</div>
 <button class="btn" onclick="showCheckout()">Checkout</button>
-
 <div class="checkout-form" id="checkout-form">
 <input type="text" id="name" placeholder="Full Name" required>
 <input type="email" id="email" placeholder="Email" required>
@@ -107,26 +107,80 @@ const categoriesData={
 {name:"Street Cap",image:"images/cap.jpg",price:180}
 ],
 "Products":[
-{name:"LED Lights",image:"images/led.jpg",price:220},
-{name:"Gaming Mouse",image:"images/mouse.jpg",price:350}
+{name:"Shop Pills",image:"images/pills.jpg",page:"pills"},
+{name:"Shop Perfumes",image:"images/perfume.jpg",page:"perfumes"}
 ]
 };
 
+// PILLS DATA
+const pillsProducts=[
+"DEPRESSION & STRESS COMBO",
+"DIABETES COMBO",
+"COLD AND FLU",
+"ASTHMA & TB COMBO",
+"SINUS COMBO",
+"SKIN AND ECZEMA COMBO",
+"SEXUAL ENHANCEMENT COMBO",
+"FERTILITY COMBO",
+"BLOOD PRESSURE COMBO",
+"HEART COMBO",
+"KIDNEY & BLADDER COMBO",
+"ARTHRITIS COMBO",
+"EYE COMBO",
+"ULCERS & PILES COMBO",
+"VEINS COMBO",
+"STROKE COMBO",
+"FIBROIDS AND GENERAL FEMALE HEALTH COMBO",
+"TOO MUCH ACID, GALL STONES COMBO"
+];
+
+// PERFUMES DATA
+const perfumesProducts=[
+{name:"Men's Fragrance",image:"images/perfume1.jpg",price:350},
+{name:"Women's Fragrance",image:"images/perfume2.jpg",price:370}
+];
+
 // CART VARIABLES
-let cart = {};
-let flyLock = false;
+let cart = JSON.parse(localStorage.getItem("cart"))||{};
+let flyLock=false;
 function saveCart(){ localStorage.setItem("cart",JSON.stringify(cart)); }
 
-// POPULATE CATEGORIES
+// INIT
 document.addEventListener("DOMContentLoaded", ()=>{
-  const categoriesContainer=document.getElementById('categories-container');
+  const container=document.getElementById('categories-container');
   Object.keys(categoriesData).forEach(cat=>{
     const div=document.createElement('div');
     div.className='card';
     div.innerHTML=`<h3>${cat}</h3><button class="btn" onclick="showCategoryItems('${cat}')">Shop ${cat}</button>`;
-    categoriesContainer.appendChild(div);
+    container.appendChild(div);
   });
+  generatePills();
+  generatePerfumes();
+  updateCartUI();
 });
+
+// GENERATE PILLS
+function generatePills(){
+  const container=document.getElementById("pills-container");
+  pillsProducts.forEach(name=>{
+    const fileName=name.replace(/ /g,"_").replace(/,/g,"").replace(/&/g,"_&_")+".png";
+    const div=document.createElement("div");
+    div.className="card";
+    div.innerHTML=`<img src="images/${fileName}"><h3>${name}</h3><p>R220</p><button class="btn" onclick="flyToCartSingle(this,'${name}',220)">Add to Cart</button>`;
+    container.appendChild(div);
+  });
+}
+
+// GENERATE PERFUMES
+function generatePerfumes(){
+  const container=document.getElementById("perfume-container");
+  perfumesProducts.forEach(item=>{
+    const div=document.createElement("div");
+    div.className="card";
+    div.innerHTML=`<img src="${item.image}"><h3>${item.name}</h3><p>R${item.price}</p><button class="btn" onclick="flyToCartSingle(this,'${item.name}',${item.price})">Add to Cart</button>`;
+    container.appendChild(div);
+  });
+}
 
 // SHOW CATEGORY ITEMS
 function showCategoryItems(category){
@@ -137,9 +191,18 @@ function showCategoryItems(category){
   categoriesData[category].forEach(item=>{
     const div=document.createElement('div');
     div.className='card'+(item.newItem?' new-item':'');
-    div.innerHTML=`<img src="${item.image}"><h3>${item.name}</h3><p>R${item.price}</p><button class="btn" onclick="flyToCartSingle(this,'${item.name}',${item.price})">Add to Cart</button>`;
+    if(item.page){
+      div.innerHTML=`<img src="${item.image}"><h3>${item.name}</h3><button class="btn" onclick="openSubPage('${item.page}')">Open Shop</button>`;
+    }else{
+      div.innerHTML=`<img src="${item.image}"><h3>${item.name}</h3><p>R${item.price}</p><button class="btn" onclick="flyToCartSingle(this,'${item.name}',${item.price})">Add to Cart</button>`;
+    }
     container.appendChild(div);
   });
+}
+
+function openSubPage(page){
+  if(page==="pills") showSection("pills-shop");
+  if(page==="perfumes") showSection("perfume-shop");
 }
 
 // SECTION TOGGLE
@@ -157,7 +220,6 @@ function addToCart(name,price){
   const countEl=document.getElementById("cart-count");
   countEl.classList.remove("pop"); void countEl.offsetWidth; countEl.classList.add("pop");
 }
-
 function removeFromCart(name){
   if(cart[name]){
     cart[name].quantity--;
@@ -166,7 +228,6 @@ function removeFromCart(name){
     updateCartUI();
   }
 }
-
 function updateCartUI(){
   let total=0,count=0;
   const cartItems=document.getElementById("cart-items");
@@ -175,28 +236,14 @@ function updateCartUI(){
     count+=cart[item].quantity;
     let itemTotal=cart[item].price*cart[item].quantity;
     total+=itemTotal;
-    cartItems.innerHTML+=`<div class="cart-item">
-      <span>${item}</span>
-      <div>
-        <button onclick="removeFromCart('${item}')">-</button>
-        ${cart[item].quantity}
-        <button onclick="addToCart('${item}', ${cart[item].price})">+</button>
-      </div>
-      <span>R${itemTotal}</span>
-    </div>`;
+    cartItems.innerHTML+=`<div class="cart-item"><span>${item}</span><div><button onclick="removeFromCart('${item}')">-</button>${cart[item].quantity}<button onclick="addToCart('${item}', ${cart[item].price})">+</button></div><span>R${itemTotal}</span></div>`;
   }
   document.getElementById("cart-count").textContent=count;
   document.getElementById("cart-total").textContent="Total: R"+total;
   document.getElementById("empty-msg").style.display=count===0?"block":"none";
 }
-updateCartUI();
 
-// CART PANEL TOGGLE
-document.getElementById("cart-icon").addEventListener("click",()=>{
-  document.getElementById("cart-panel").classList.toggle("open");
-});
-
-// FLY TO CART
+// FLY TO CART ANIMATION
 function flyToCartSingle(button,item,price){
   if(flyLock) return; flyLock=true;
   const img=button.parentElement.querySelector('img');
@@ -225,6 +272,11 @@ function flyToCartSingle(button,item,price){
   requestAnimationFrame(animate);
 }
 
+// CART PANEL TOGGLE
+document.getElementById("cart-icon").addEventListener("click",()=>{
+  document.getElementById("cart-panel").classList.toggle("open");
+});
+
 // CHECKOUT
 function showCheckout(){
   if(Object.keys(cart).length===0){alert("Cart is empty!"); return;}
@@ -242,6 +294,5 @@ function completeOrder(){
   document.getElementById("cart-panel").classList.remove("open");
 }
 </script>
-
 </body>
 </html>
