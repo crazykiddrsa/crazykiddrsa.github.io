@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>SbheneCart</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SbheneCart</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;}
 body{background:#000;color:white;overflow-x:hidden;scroll-behavior:smooth;}
@@ -13,6 +13,10 @@ header h1{color:#00ff88;text-shadow:0 0 15px #00ff88;}
 .cart-count{position:absolute;top:-8px;right:-10px;background:#00ff88;color:black;font-size:12px;padding:2px 6px;border-radius:50%;font-weight:bold;transition:0.3s;transform-origin:center;}
 .cart-count.pop{animation:popCart 0.4s ease;}
 @keyframes popCart{0%{transform:scale(1);}50%{transform:scale(1.6);}100%{transform:scale(1);}}
+.menu-btn{font-size:28px;cursor:pointer;margin-left:20px;}
+nav{position:absolute;top:60px;right:0;background:#111;width:200px;display:none;flex-direction:column;border-left:2px solid #00ff88;}
+nav a{padding:15px;color:#00ff88;text-decoration:none;border-bottom:1px solid #00ff88;cursor:pointer;}
+nav a:hover{background:#00ff88;color:black;}
 .cart-panel{position:fixed;top:0;right:0;width:350px;height:100%;background:#111;border-left:2px solid #00ff88;z-index:20;display:flex;flex-direction:column;padding:20px;
 transform:translateX(100%) scale(0.95);opacity:0;transition:transform 1.2s cubic-bezier(0.68,-0.6,0.32,1.6),opacity 1s ease,box-shadow 0.8s ease;box-shadow:-10px 0 30px rgba(0,255,136,0);}
 .cart-panel.open{transform:translateX(0) scale(1);opacity:1;box-shadow:-10px 0 50px rgba(0,255,136,0.5);}
@@ -44,7 +48,15 @@ transform:translateX(100%) scale(0.95);opacity:0;transition:transform 1.2s cubic
 
 <header>
 <h1>SbheneCart</h1>
-<div class="cart-container" id="cart-icon">🛒 <span class="cart-count" id="cart-count">0</span></div>
+<div>
+<button class="btn" onclick="window.location.href='admin.html'">Admin Login</button>
+<span class="menu-btn" onclick="toggleMenu()">☰</span>
+<nav id="menu">
+<a onclick="showSection('signup-login')">Login</a>
+<a onclick="showSection('track-order-section')">Track Orders</a>
+</nav>
+<span class="cart-container" id="cart-icon">🛒 <span class="cart-count" id="cart-count">0</span></span>
+</div>
 </header>
 
 <!-- HOME -->
@@ -74,6 +86,34 @@ transform:translateX(100%) scale(0.95);opacity:0;transition:transform 1.2s cubic
 <div class="categories" id="perfume-container"></div>
 </section>
 
+<!-- LOGIN & SIGNUP -->
+<section id="signup-login" class="section">
+<h2>Login / Signup</h2>
+<input id="login-username" placeholder="Username">
+<input id="login-password" type="password" placeholder="Password">
+<button class="btn" onclick="loginUser()">Login</button>
+<hr style="margin:20px 0;border-color:#00ff88;">
+<input id="signup-username" placeholder="Username">
+<input id="signup-email" type="email" placeholder="Email">
+<input id="signup-password" type="password" placeholder="Password">
+<button class="btn" onclick="startSignup()">Sign Up</button>
+<div id="otp-verification" style="display:none;margin-top:10px;">
+<p>Enter OTP sent to email:</p>
+<input id="otp-input" placeholder="Enter OTP">
+<button class="btn" onclick="verifyOTP()">Verify OTP</button>
+<p id="otp-message" style="color:#ff00ff;margin-top:5px;"></p>
+</div>
+<p id="user-message" style="color:#00ff88;margin-top:10px;"></p>
+</section>
+
+<!-- TRACK ORDER -->
+<section id="track-order-section" class="section">
+<h2>Track Order</h2>
+<input id="track-order" placeholder="Order ID">
+<button class="btn" onclick="trackOrder()">Track</button>
+<div id="track-result" style="margin-top:10px;color:#00ff88;"></div>
+</section>
+
 <!-- CART PANEL -->
 <div class="cart-panel" id="cart-panel">
 <h3>Your Cart</h3>
@@ -82,6 +122,7 @@ transform:translateX(100%) scale(0.95);opacity:0;transition:transform 1.2s cubic
 <div class="cart-total" id="cart-total">Total: R0</div>
 <button class="btn" onclick="showCheckout()">Checkout</button>
 <div class="checkout-form" id="checkout-form">
+<button class="btn back-btn" onclick="document.getElementById('checkout-form').style.display='none'">⬅ Back</button>
 <input type="text" id="name" placeholder="Full Name" required>
 <input type="email" id="email" placeholder="Email" required>
 <input type="text" id="phone" placeholder="Phone Number" required>
@@ -91,7 +132,7 @@ transform:translateX(100%) scale(0.95);opacity:0;transition:transform 1.2s cubic
 </div>
 
 <script>
-// PRODUCT DATA
+// ===== PRODUCT DATA =====
 const categoriesData={
 "Food":[
 {name:"Meatybones",image:"images/Meatybones.jpg",price:260,newItem:true},
@@ -112,7 +153,6 @@ const categoriesData={
 ]
 };
 
-// PILLS DATA
 const pillsProducts=[
 "DEPRESSION & STRESS COMBO",
 "DIABETES COMBO",
@@ -134,18 +174,21 @@ const pillsProducts=[
 "TOO MUCH ACID, GALL STONES COMBO"
 ];
 
-// PERFUMES DATA
 const perfumesProducts=[
 {name:"Men's Fragrance",image:"images/perfume1.jpg",price:350},
 {name:"Women's Fragrance",image:"images/perfume2.jpg",price:370}
 ];
 
-// CART VARIABLES
+// ===== CART & USERS =====
 let cart = JSON.parse(localStorage.getItem("cart"))||{};
+let users = JSON.parse(localStorage.getItem("users"))||{};
+let orders = JSON.parse(localStorage.getItem("orders"))||{};
+let pendingSignup = {};
 let flyLock=false;
+
 function saveCart(){ localStorage.setItem("cart",JSON.stringify(cart)); }
 
-// INIT
+// ===== INIT =====
 document.addEventListener("DOMContentLoaded", ()=>{
   const container=document.getElementById('categories-container');
   Object.keys(categoriesData).forEach(cat=>{
@@ -159,7 +202,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
   updateCartUI();
 });
 
-// GENERATE PILLS
+// ===== GENERATE PILLS =====
 function generatePills(){
   const container=document.getElementById("pills-container");
   pillsProducts.forEach(name=>{
@@ -171,7 +214,7 @@ function generatePills(){
   });
 }
 
-// GENERATE PERFUMES
+// ===== GENERATE PERFUMES =====
 function generatePerfumes(){
   const container=document.getElementById("perfume-container");
   perfumesProducts.forEach(item=>{
@@ -182,7 +225,7 @@ function generatePerfumes(){
   });
 }
 
-// SHOW CATEGORY ITEMS
+// ===== SHOW CATEGORY ITEMS =====
 function showCategoryItems(category){
   showSection('category-items');
   document.getElementById('category-title').textContent=category;
@@ -205,13 +248,13 @@ function openSubPage(page){
   if(page==="perfumes") showSection("perfume-shop");
 }
 
-// SECTION TOGGLE
+// ===== SECTION TOGGLE =====
 function showSection(id){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
 
-// CART FUNCTIONS
+// ===== CART FUNCTIONS =====
 function addToCart(name,price){
   if(cart[name]) cart[name].quantity++;
   else cart[name]={price,quantity:1};
@@ -220,6 +263,7 @@ function addToCart(name,price){
   const countEl=document.getElementById("cart-count");
   countEl.classList.remove("pop"); void countEl.offsetWidth; countEl.classList.add("pop");
 }
+
 function removeFromCart(name){
   if(cart[name]){
     cart[name].quantity--;
@@ -228,6 +272,7 @@ function removeFromCart(name){
     updateCartUI();
   }
 }
+
 function updateCartUI(){
   let total=0,count=0;
   const cartItems=document.getElementById("cart-items");
@@ -243,7 +288,7 @@ function updateCartUI(){
   document.getElementById("empty-msg").style.display=count===0?"block":"none";
 }
 
-// FLY TO CART ANIMATION
+// ===== FLY TO CART ANIMATION =====
 function flyToCartSingle(button,item,price){
   if(flyLock) return; flyLock=true;
   const img=button.parentElement.querySelector('img');
@@ -272,26 +317,135 @@ function flyToCartSingle(button,item,price){
   requestAnimationFrame(animate);
 }
 
-// CART PANEL TOGGLE
+// ===== CART PANEL TOGGLE =====
 document.getElementById("cart-icon").addEventListener("click",()=>{
   document.getElementById("cart-panel").classList.toggle("open");
 });
 
-// CHECKOUT
+// ===== SHOW CHECKOUT =====
 function showCheckout(){
-  if(Object.keys(cart).length===0){alert("Cart is empty!"); return;}
-  document.getElementById("checkout-form").style.display="block";
+  if(Object.keys(cart).length === 0){
+    alert("Cart is empty!");
+    return;
+  }
+  document.getElementById("checkout-form").style.display = "block";
 }
+
+// ===== COMPLETE ORDER =====
 function completeOrder(){
-  const name=document.getElementById("name").value.trim();
-  const email=document.getElementById("email").value.trim();
-  const phone=document.getElementById("phone").value.trim();
-  const address=document.getElementById("address").value.trim();
-  if(!name||!email||!phone||!address){alert("Please fill all fields!"); return;}
-  alert(`Order placed successfully!\nName: ${name}\nEmail: ${email}\nPhone: ${phone}\nAddress: ${address}\nThank you for shopping with SbheneCart!`);
-  cart={}; saveCart(); updateCartUI();
+  const name = document.getElementById("name").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const address = document.getElementById("address").value.trim();
+
+  if(!name || !email || !phone || !address){
+    alert("Please fill all fields!");
+    return;
+  }
+
+  if(Object.keys(cart).length === 0){
+    alert("Cart is empty!");
+    return;
+  }
+
+  // Generate unique order ID
+  const orderId = 'ORD-' + Date.now() + '-' + Math.floor(Math.random()*1000);
+
+  // Save order to localStorage
+  orders = JSON.parse(localStorage.getItem("orders")) || {}; // refresh in case new order added elsewhere
+  orders[orderId] = {
+    items: {...cart},
+    total: Object.values(cart).reduce((sum, i)=>sum + i.price*i.quantity, 0),
+    name, email, phone, address,
+    date: new Date().toLocaleString()
+  };
+  localStorage.setItem("orders", JSON.stringify(orders));
+
+  alert(`Order placed successfully!\nOrder ID: ${orderId}\nThank you for shopping with SbheneCart!`);
+
+  // Reset cart
+  cart = {};
+  saveCart();
+  updateCartUI();
+
+  // Hide checkout
   document.getElementById("checkout-form").style.display="none";
   document.getElementById("cart-panel").classList.remove("open");
+
+  // Optional: navigate back to home
+  showSection('home');
+}
+
+// ===== LOGIN / SIGNUP WITH OTP =====
+function startSignup(){
+  const username = document.getElementById("signup-username").value.trim();
+  const email = document.getElementById("signup-email").value.trim();
+  const password = document.getElementById("signup-password").value.trim();
+  if(!username || !email || !password){ alert("Fill all signup fields"); return; }
+  if(users[username]){ alert("Username already exists"); return; }
+
+  // Generate 6-digit OTP
+  const otp = Math.floor(100000 + Math.random()*900000);
+  pendingSignup = {username,email,password,otp};
+  document.getElementById("otp-verification").style.display="block";
+  document.getElementById("otp-message").textContent = `OTP sent to ${email} (Simulated: ${otp})`;
+}
+
+function verifyOTP(){
+  const entered = document.getElementById("otp-input").value.trim();
+  if(entered == pendingSignup.otp){
+    users[pendingSignup.username] = {
+      email: pendingSignup.email,
+      password: pendingSignup.password
+    };
+    localStorage.setItem("users", JSON.stringify(users));
+    document.getElementById("user-message").textContent = "Signup successful! You can now login.";
+    document.getElementById("otp-verification").style.display="none";
+    pendingSignup = {};
+  } else {
+    document.getElementById("otp-message").textContent = "Incorrect OTP, try again.";
+  }
+}
+
+function loginUser(){
+  const username = document.getElementById("login-username").value.trim();
+  const password = document.getElementById("login-password").value.trim();
+  if(users[username] && users[username].password === password){
+    document.getElementById("user-message").textContent = `Welcome back, ${username}!`;
+    showSection('home');
+  } else {
+    document.getElementById("user-message").textContent = "Invalid login credentials.";
+  }
+}
+
+// ===== TRACK ORDER =====
+function trackOrder(){
+  const id = document.getElementById("track-order").value.trim();
+  const result = document.getElementById("track-result");
+  orders = JSON.parse(localStorage.getItem("orders")) || {}; // refresh from storage
+  if(orders[id]){
+    const o = orders[id];
+    result.innerHTML = `
+      <p><b>Order ID:</b> ${id}</p>
+      <p><b>Name:</b> ${o.name}</p>
+      <p><b>Email:</b> ${o.email}</p>
+      <p><b>Phone:</b> ${o.phone}</p>
+      <p><b>Address:</b> ${o.address}</p>
+      <p><b>Total:</b> R${o.total}</p>
+      <p><b>Date:</b> ${o.date}</p>
+      <p><b>Items:</b></p>
+      <ul>${Object.keys(o.items).map(i=>`<li>${i} x ${o.items[i].quantity}</li>`).join('')}</ul>
+    `;
+  } else {
+    result.textContent = "Order ID not found.";
+  }
+}
+
+// ===== MENU TOGGLE =====
+function toggleMenu(){
+  const menu = document.getElementById("menu");
+  menu.style.display = (menu.style.display === "flex") ? "none" : "flex";
+  menu.style.flexDirection = "column";
 }
 </script>
 </body>
