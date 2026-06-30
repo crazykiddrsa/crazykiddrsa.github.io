@@ -1,234 +1,65 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7447247941010903"
-     crossorigin="anonymous"></script>
-
-<meta charset="UTF-8">
-<title>SbheneCart</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>SbheneCart Admin Dashboard</title>
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SbheneCart Admin Pro</title>
 <style>
-body { margin:0; font-family:'Segoe UI',sans-serif; background:#050505; color:#00ff88; }
-header { background:#000; padding:15px 20px; border-bottom:2px solid #00ff88; display:flex; justify-content:space-between; align-items:center; }
-header h1 { font-size:24px; }
-nav button { margin:0 5px; padding:10px 15px; border:none; border-radius:5px; cursor:pointer; background:#00ff88; color:black; font-weight:bold; transition:0.3s; }
-nav button:hover { background:#fff; color:#000; }
-.section { display:none; padding:20px; }
-.active { display:block; }
-.card { background:#111; border:1px solid #00ff88; padding:10px; border-radius:8px; margin:10px 0; word-wrap: break-word; }
-input { width:100%; padding:10px; margin:5px 0; border:none; border-radius:5px; }
-.btn { padding:10px 20px; border:none; border-radius:25px; background:#00ff88; color:black; cursor:pointer; margin-top:5px; transition:0.3s; }
-.btn:hover { background:white; }
-select { padding:5px; border-radius:5px; border:none; }
-</style>
-</head>
-<body>
-
-<header>
-<h1>SbheneCart Admin</h1>
-</header>
-
-<!-- LOGIN -->
-<section id="admin-login" class="section active">
-<h2>Admin Login</h2>
-<input id="admin-username" placeholder="Username" value="admin">
-<input id="admin-password" type="password" placeholder="Password" value="1234">
-<button class="btn" onclick="loginAdmin()">Login</button>
-<p id="admin-message"></p>
-</section>
-
-<!-- DASHBOARD -->
-<section id="admin-dashboard" class="section">
-<h2>Admin Dashboard</h2>
+body{margin:0;font-family:Arial;background:#111;color:#0f8}header{background:#000;padding:15px;border-bottom:2px solid #0f8}
+nav{display:flex;gap:8px;flex-wrap:wrap;padding:10px;background:#181818}nav button{padding:8px}
+.page{display:none;padding:20px}.active{display:block}.card{border:1px solid #0f8;padding:12px;margin:10px 0;background:#1a1a1a}
+input,select,textarea{width:100%;margin:5px 0;padding:8px}
+</style></head><body>
+<header><h2>SbheneCart Admin Pro</h2></header>
 <nav>
-<button onclick="showAdminSection('admin-orders')">Orders</button>
-<button onclick="showAdminSection('admin-users')">Users</button>
-<button onclick="showAdminSection('admin-categories')">Categories</button>
-<button onclick="showAdminSection('admin-change-pass')">Change Password</button>
-<button onclick="showAdminSection('login-report')">Login Logs</button>
-<button onclick="logoutAdmin()">Logout</button>
+<button onclick="show('dash')">Dashboard</button>
+<button onclick="show('products')">Products</button>
+<button onclick="show('categories')">Categories</button>
+<button onclick="show('orders')">Orders</button>
+<button onclick="show('users')">Users</button>
+<button onclick="show('coupons')">Coupons</button>
+<button onclick="show('reports')">Reports</button>
+<button onclick="show('settings')">Settings</button>
 </nav>
 
-<!-- ORDERS -->
-<div id="admin-orders" class="admin-section">
-<h3>Orders</h3>
-<div id="orders-list"></div>
-</div>
+<section id="dash" class="page active"><div class="card"><div id="stats"></div></div></section>
 
-<!-- USERS -->
-<div id="admin-users" class="admin-section" style="display:none;">
-<h3>Users</h3>
-<div id="users-list"></div>
-</div>
+<section id="products" class="page">
+<div class="card">
+<input id="pn" placeholder="Name"><input id="pp" type="number" placeholder="Price">
+<input id="pi" type="file" accept="image/*"><select id="pc"></select>
+<input id="ps" type="number" placeholder="Stock"><textarea id="pd" placeholder="Description"></textarea>
+<button onclick="saveProduct()">Save Product</button>
+</div><div id="plist"></div></section>
 
-<!-- CATEGORIES -->
-<div id="admin-categories" class="admin-section" style="display:none;">
-<h3>Categories</h3>
-<div class="categories" id="admin-categories-container"></div>
-</div>
+<section id="categories" class="page"><div class="card">
+<input id="newCat" placeholder="Category"><button onclick="addCat()">Add Category</button><div id="cats"></div></div></section>
 
-<!-- PASSWORD CHANGE -->
-<div id="admin-change-pass" class="admin-section" style="display:none;">
-<h3>Change Admin Password</h3>
-<input id="new-admin-pass" placeholder="New Password">
-<button class="btn" onclick="changeAdminPassword()">Change Password</button>
-</div>
-
-<!-- LOGIN/LOGOUT LOGS -->
-<div id="login-report" class="admin-section" style="display:none;">
-<h3>Login / Logout Logs</h3>
-<div id="log-report-list"></div>
-</div>
+<section id="orders" class="page"><div class="card"><div id="olist"></div></div></section>
+<section id="users" class="page"><div class="card"><div id="ulist"></div></div></section>
+<section id="coupons" class="page"><div class="card">Coupon manager placeholder (ready for expansion).</div></section>
+<section id="reports" class="page"><div class="card">Sales, inventory and revenue reports placeholder.</div></section>
+<section id="settings" class="page"><div class="card"><input id="pw" type="password" placeholder="New admin password"><button onclick="cpw()">Save Password</button></div></section>
 
 <script>
-// ========== SAFE PARSE ==========
-function safeParse(key){
-    try { return JSON.parse(localStorage.getItem(key)) || {}; }
-    catch(e){ console.error("Failed to parse", key, e); return {}; }
+let admin=JSON.parse(localStorage.admin||'{"username":"admin","password":"1234"}');
+let cats=JSON.parse(localStorage.categories||'["Food"]');
+let products=JSON.parse(localStorage.products||'[]');
+let edit=-1,imgData="";
+function show(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');refresh();}
+pi.onchange=()=>{let f=pi.files[0];if(!f)return;let r=new FileReader();r.onload=e=>imgData=e.target.result;r.readAsDataURL(f);}
+function addCat(){if(newCat.value&&!cats.includes(newCat.value)){cats.push(newCat.value);localStorage.categories=JSON.stringify(cats);newCat.value='';refresh();}}
+function saveProduct(){let done=()=>{let p={id:edit<0?Date.now():products[edit].id,name:pn.value,price:+pp.value,image:imgData||products[edit]?.image||"",category:pc.value,stock:+ps.value,description:pd.value};if(edit<0)products.push(p);else products[edit]=p;localStorage.products=JSON.stringify(products);edit=-1;imgData="";refresh();};
+done();}
+function editP(i){let p=products[i];edit=i;pn.value=p.name;pp.value=p.price;ps.value=p.stock;pd.value=p.description;pc.value=p.category;show('products');}
+function delP(i){products.splice(i,1);localStorage.products=JSON.stringify(products);refresh();}
+function cpw(){admin.password=pw.value;localStorage.admin=JSON.stringify(admin);alert('Password updated');}
+function status(id,v){let o=JSON.parse(localStorage.orders||'{}');o[id].status=v;localStorage.orders=JSON.stringify(o);}
+function refresh(){
+pc.innerHTML=cats.map(c=>`<option>${c}</option>`).join('');
+cats.innerHTML?0:0;
+document.getElementById('cats').innerHTML=cats.map((c,i)=>`<div>${c}</div>`).join('');
+plist.innerHTML=products.map((p,i)=>`<div class=card>${p.image?'<img src="'+p.image+'" width=70><br>':''}<b>${p.name}</b><br>R${p.price}<br>${p.category}<br><button onclick='editP(${i})'>Edit</button><button onclick='delP(${i})'>Delete</button></div>`).join('');
+let o=JSON.parse(localStorage.orders||'{}');
+olist.innerHTML=Object.entries(o).map(([id,x])=>`<div class=card>${id}<br><select onchange="status('${id}',this.value)"><option>Pending</option><option>Processing</option><option>Shipped</option><option>Delivered</option><option>Cancelled</option></select></div>`).join()||'No orders';
+let u=JSON.parse(localStorage.users||'{}');ulist.innerHTML=Object.keys(u).join('<br>')||'No users';
+stats.innerHTML=`Products: ${products.length}<br>Categories: ${cats.length}<br>Orders: ${Object.keys(o).length}<br>Users: ${Object.keys(u).length}`;
 }
-
-// ========== ADMIN DATA ==========
-let adminData = safeParse("admin");
-if(!adminData.username) adminData = {username:"admin", password:"1234"};
-localStorage.setItem("admin", JSON.stringify(adminData));
-
-let users = safeParse("users");
-let orders = safeParse("orders");
-let logs = safeParse("adminLogs");
-
-// ========== LOGIN ==========
-function loginAdmin(){
-    let u = document.getElementById("admin-username").value.trim();
-    let p = document.getElementById("admin-password").value.trim();
-    if(u===adminData.username && p===adminData.password){
-        showSection("admin-dashboard");
-        document.getElementById("admin-message").innerText = "Logged in as Admin";
-        logs.push({type:"login", time:new Date().toLocaleString()});
-        localStorage.setItem("adminLogs", JSON.stringify(logs));
-        loadAdminOrders();
-        loadAdminUsers();
-        loadAdminCategories();
-        loadAdminLogs();
-    } else { alert("Invalid admin credentials"); }
-}
-
-function logoutAdmin(){
-    showSection("admin-login");
-    logs.push({type:"logout", time:new Date().toLocaleString()});
-    localStorage.setItem("adminLogs", JSON.stringify(logs));
-}
-
-// ========== DASHBOARD NAV ==========
-function showAdminSection(id){
-    document.querySelectorAll(".admin-section").forEach(s=>s.style.display="none");
-    document.getElementById(id).style.display="block";
-}
-
-// ========== ORDERS ==========
-function loadAdminOrders(){
-    let ordersDiv = document.getElementById("orders-list");
-    ordersDiv.innerHTML = "";
-    let ordersData = safeParse("orders");
-    for(let oid in ordersData){
-        let o = ordersData[oid];
-        // Ensure status exists
-        if(!o.status) o.status = "Processing";
-        ordersDiv.innerHTML += `<div class="card">
-        <strong>Order ID:</strong> ${oid}<br>
-        <strong>User:</strong> ${o.name || "Unknown"}<br>
-        <strong>Status:</strong> 
-        <select onchange="updateOrderStatus('${oid}',this.value)">
-            <option ${o.status==='Processing'?'selected':''}>Processing</option>
-            <option ${o.status==='Shipped'?'selected':''}>Shipped</option>
-            <option ${o.status==='Delivered'?'selected':''}>Delivered</option>
-        </select><br>
-        <strong>Items:</strong> ${JSON.stringify(o.items)}
-        <br><strong>Total:</strong> R${o.total}
-        <br><strong>Date:</strong> ${o.date}
-        </div>`;
-    }
-}
-
-function updateOrderStatus(oid,status){
-    let ordersData = safeParse("orders");
-    if(ordersData[oid]){
-        ordersData[oid].status = status;
-        localStorage.setItem("orders", JSON.stringify(ordersData));
-        loadAdminOrders();
-    }
-}
-
-// ========== USERS ==========
-function loadAdminUsers(){
-    let usersDiv = document.getElementById("users-list");
-    usersDiv.innerHTML="";
-    let usersData = safeParse("users");
-    for(let u in usersData){
-        let user = usersData[u];
-        usersDiv.innerHTML += `<div class="card">
-        <strong>Username:</strong> ${u}<br>
-        <strong>Password:</strong> <input type="text" value="${user.password}" id="pass-${u}">
-        <button class="btn" onclick="changeUserPassword('${u}')">Change Password</button>
-        </div>`;
-    }
-}
-
-function changeUserPassword(username){
-    let newPass = document.getElementById("pass-"+username).value.trim();
-    if(newPass){
-        users = safeParse("users");
-        users[username].password = newPass;
-        localStorage.setItem("users", JSON.stringify(users));
-        alert("Password changed for "+username);
-        loadAdminUsers();
-    } else { alert("Enter new password"); }
-}
-
-// ========== CATEGORIES ==========
-const categoriesData = {
-    "Food":["Meatybones","Braai Beef","Burger Pats"],
-    "Clothes":["Neon Hoodie","Street Cap"],
-    "Products":["Shop Pills","Shop Perfumes"]
-};
-
-function loadAdminCategories(){
-    const container = document.getElementById("admin-categories-container");
-    container.innerHTML="";
-    Object.keys(categoriesData).forEach(cat=>{
-        const div = document.createElement("div");
-        div.className="card";
-        div.innerHTML=`<h4>${cat}</h4><p>${categoriesData[cat].join(", ")}</p>`;
-        container.appendChild(div);
-    });
-}
-
-// ========== ADMIN PASSWORD ==========
-function changeAdminPassword(){
-    let newP = document.getElementById("new-admin-pass").value.trim();
-    if(newP){
-        adminData.password = newP;
-        localStorage.setItem("admin", JSON.stringify(adminData));
-        alert("Admin password changed!");
-        document.getElementById("new-admin-pass").value="";
-    } else { alert("Enter new password"); }
-}
-
-// ========== LOGIN/LOGOUT LOGS ==========
-function loadAdminLogs(){
-    let logsDiv = document.getElementById("log-report-list");
-    logsDiv.innerHTML="";
-    logs.forEach(l=>{
-        logsDiv.innerHTML += `<div class="card">${l.type.toUpperCase()} at ${l.time}</div>`;
-    });
-}
-
-// ========== NAVIGATION HELP ==========
-function showSection(id){
-    document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
-    document.getElementById(id).classList.add("active");
-}
-</script>
-</body>
-</html>
+refresh();
+</script></body></html>
