@@ -98,7 +98,8 @@ const ulist = document.getElementById('ulist');
 const stats = document.getElementById('stats');
 
 // Local variables
-let admin = JSON.parse(localStorage.admin || '{"username":"admin","password":"1234"}');
+let admin = {"username":"admin","password":"1234"};
+
 let cats = JSON.parse(localStorage.categories || '["Food"]');
 let products = [];
 let orders = []; // Live orders synced from Firestore
