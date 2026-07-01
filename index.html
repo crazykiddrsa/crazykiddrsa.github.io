@@ -2,15 +2,244 @@
 <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SbheneCart</title>
 <style>
-body{font-family:Arial;background:#000;color:#0f8;margin:0}header{padding:15px;border-bottom:1px solid #0f8;display:flex;justify-content:space-between}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px;padding:20px}
-.card{background:#111;border:1px solid #0f8;padding:15px;border-radius:8px}
-button{background:#0f8;border:0;padding:8px 12px;cursor:pointer}
+body{font-family:Arial;background:#000;color:#0f8;margin:0;overflow-x:hidden;}
+header{padding:15px;border-bottom:1px solid #0f8;display:flex;justify-content:space-between;align-items:center;background:#000;position:sticky;top:0;z-index:100;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;padding:20px}
+.card{background:#111;border:1px solid #0f8;padding:15px;border-radius:8px;display:flex;flex-direction:column;justify-content:space-between;}
+.card img{width:100%;height:150px;object-fit:cover;border-radius:4px;margin-bottom:10px;}
+.card-details{flex-grow:1;margin-bottom:10px;}
+button{background:#0f8;color:#000;font-weight:bold;border:0;padding:8px 12px;cursor:pointer;border-radius:4px;transition:0.2s;}
+button:hover{background:#0a6;color:#fff;}
+#cart-btn{background:transparent;color:#0f8;border:1px solid #0f8;font-size:16px;display:flex;align-items:center;gap:8px;}
+#cart-count{background:#0f8;color:#000;border-radius:50%;padding:2px 8px;font-size:12px;font-weight:bold;}
+
+/* Fly to Cart Animation Particle */
+.flying-item {
+  position: fixed;
+  width: 20px;
+  height: 20px;
+  background: #0f8;
+  border-radius: 50%;
+  z-index: 9999;
+  transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  pointer-events: none;
+}
+
+/* Sidebar Cart Drawer */
+.sidebar{position:fixed;top:0;right:-350px;width:300px;height:100%;background:#111;border-left:2px solid #0f8;z-index:1000;padding:20px;transition:0.3s;box-shadow:-5px 0 15px rgba(0,255,136,0.1);color:#0f8;box-sizing:border-box;}
+.sidebar.open{right:0;}
+.cart-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #0f8;padding-bottom:10px;}
+#cart-items{max-height:60vh;overflow-y:auto;margin:15px 0;}
+.cart-item{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #222;padding:10px 0;}
+.qty-btn{padding:2px 6px;background:#222;color:#0f8;border:1px solid #0f8;font-size:12px;}
 </style></head><body>
-<header><h2>SbheneCart</h2><button onclick="location.href='admin.html'">Admin</button></header>
+
+<header>
+  <h2>SbheneCart</h2>
+  <div style="display:flex; gap:10px;">
+    <button id="cart-btn" onclick="toggleCart()">🛒 Cart <span id="cart-count">0</span></button>
+    <button onclick="location.href='admin.html'">Admin</button>
+  </div>
+</header>
+
 <div class="grid" id="products"></div>
-<script>
-const products=JSON.parse(localStorage.getItem('products')||'[]');
-const box=document.getElementById('products');
-box.innerHTML=products.length?products.map(p=>`<div class="card"><h3>${p.name}</h3><button>View</button></div>`).join(''):'<p style="padding:20px">No products yet.</p>';
+
+<!-- Slide-out Cart Sidebar -->
+<div id="cart-sidebar" class="sidebar">
+  <div class="cart-header">
+    <h3>Your Cart</h3>
+    <button onclick="toggleCart()" style="background:#222; color:#0f8; border:1px solid #0f8;">Close</button>
+  </div>
+  <div id="cart-items"></div>
+  <div style="margin-top:15px; font-weight:bold; display:flex; justify-content:space-between;">
+    <span>Total:</span>
+    <span id="cart-total">R0</span>
+  </div>
+  <button id="checkout-btn" onclick="checkout()" style="width:100%; margin-top:15px;">Place Order</button>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+import { getFirestore, collection, onSnapshot, addDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
+
+// Your verified Firebase Configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyC4BCz9GeNTgQYa8ydIJreTREVdPklganA",
+  authDomain: "sbhenecart.firebaseapp.com",
+  projectId: "sbhenecart",
+  storageBucket: "sbhenecart.firebasestorage.app",
+  messagingSenderId: "1074011270711",
+  appId: "1:1074011270711:web:86e00970ad3bb3aaedd9b2",
+  measurementId: "G-CVWM0DE46B"
+};
+
+// Initialize Firebase services
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const analytics = getAnalytics(app);
+const box = document.getElementById('products');
+
+let dbProducts = [];
+let cart = [];
+
+// Fetch products from Firestore in real-time
+onSnapshot(collection(db, "products"), (snapshot) => {
+  dbProducts = [];
+  snapshot.forEach(doc => {
+    dbProducts.push({ id: doc.id, ...doc.data() });
+  });
+  
+  box.innerHTML = dbProducts.length 
+    ? dbProducts.map(p => `
+        <div class="card" id="prod-${p.id}">
+          ${p.image ? `<img src="${p.image}">` : ''}
+          <div class="card-details">
+            <h3>${p.name}</h3>
+            <p>R${p.price}</p>
+            <small>${p.category} • Stock: ${p.stock}</small>
+          </div>
+          <button onclick="addToCart('${p.id}', this)">Add to Cart</button>
+        </div>
+      `).join('')
+    : '<p style="padding:20px">No products yet.</p>';
+});
+
+// Add to Cart Logic
+window.addToCart = (id, buttonEl) => {
+  const product = dbProducts.find(p => p.id === id);
+  if (!product) return;
+
+  flyToCartAnimation(buttonEl);
+
+  const cartItem = cart.find(item => item.id === id);
+  if (cartItem) {
+    cartItem.quantity++;
+  } else {
+    cart.push({ ...product, quantity: 1 });
+  }
+
+  // Google Analytics Event: Add to Cart
+  logEvent(analytics, 'add_to_cart', {
+    currency: 'ZAR',
+    value: product.price,
+    items: [{
+      item_id: product.id,
+      item_name: product.name,
+      price: product.price,
+      quantity: 1
+    }]
+  });
+
+  updateCartUI();
+};
+
+function flyToCartAnimation(buttonEl) {
+  const cartBtn = document.getElementById('cart-btn');
+  const btnRect = buttonEl.getBoundingClientRect();
+  const cartRect = cartBtn.getBoundingClientRect();
+
+  const flyer = document.createElement('div');
+  flyer.className = 'flying-item';
+  flyer.style.left = `${btnRect.left + btnRect.width / 2 - 10}px`;
+  flyer.style.top = `${btnRect.top + btnRect.height / 2 - 10}px`;
+  document.body.appendChild(flyer);
+
+  requestAnimationFrame(() => {
+    flyer.style.left = `${cartRect.left + cartRect.width / 2 - 10}px`;
+    flyer.style.top = `${cartRect.top + cartRect.height / 2 - 10}px`;
+    flyer.style.transform = 'scale(0.2)';
+    flyer.style.opacity = '0';
+  });
+
+  flyer.addEventListener('transitionend', () => {
+    flyer.remove();
+  });
+}
+
+window.toggleCart = () => {
+  document.getElementById('cart-sidebar').classList.toggle('open');
+};
+
+window.changeQty = (id, delta) => {
+  const cartItemIndex = cart.findIndex(item => item.id === id);
+  if (cartItemIndex === -1) return;
+
+  cart[cartItemIndex].quantity += delta;
+  if (cart[cartItemIndex].quantity <= 0) {
+    cart.splice(cartItemIndex, 1);
+  }
+  updateCartUI();
+};
+
+function updateCartUI() {
+  const cartItemsContainer = document.getElementById('cart-items');
+  const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  document.getElementById('cart-count').innerText = totalCount;
+  document.getElementById('cart-total').innerText = `R${totalPrice}`;
+
+  cartItemsContainer.innerHTML = cart.length
+    ? cart.map(item => `
+        <div class="cart-item">
+          <div>
+            <b>${item.name}</b><br>
+            <small>R${item.price} each</small>
+          </div>
+          <div style="display:flex; align-items:center; gap:5px;">
+            <button class="qty-btn" onclick="changeQty('${item.id}', -1)">-</button>
+            <span>${item.quantity}</span>
+            <button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button>
+          </div>
+        </div>
+      `).join('')
+    : '<p>Your cart is empty.</p>';
+}
+
+// Checkout integration with Cloud Firestore & Google Analytics
+window.checkout = async () => {
+  if (cart.length === 0) return alert('Your cart is empty');
+  
+  const checkoutBtn = document.getElementById('checkout-btn');
+  checkoutBtn.innerText = "Placing Order...";
+  checkoutBtn.disabled = true;
+
+  const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const order = {
+    status: 'Pending',
+    items: cart.map(item => ({ id: item.id, name: item.name, price: item.price, quantity: item.quantity })),
+    total: totalAmount,
+    timestamp: Date.now()
+  };
+  
+  try {
+    const docRef = await addDoc(collection(db, "orders"), order);
+    
+    // Google Analytics Event: Purchase
+    logEvent(analytics, 'purchase', {
+      transaction_id: docRef.id,
+      value: totalAmount,
+      currency: 'ZAR',
+      items: order.items.map(item => ({
+        item_id: item.id,
+        item_name: item.name,
+        price: item.price,
+        quantity: item.quantity
+      }))
+    });
+
+    alert('Order placed successfully! It has been sent directly to the Admin Dashboard.');
+    
+    cart = [];
+    updateCartUI();
+    window.toggleCart();
+  } catch (error) {
+    console.error("Error writing order to Firestore: ", error);
+    alert("Checkout failed. Please check your connection and try again.");
+  } finally {
+    checkoutBtn.innerText = "Place Order";
+    checkoutBtn.disabled = false;
+  }
+};
 </script></body></html>
