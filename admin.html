@@ -1,65 +1,313 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SbheneCart Admin Pro</title>
 <style>
 body{margin:0;font-family:Arial;background:#111;color:#0f8}header{background:#000;padding:15px;border-bottom:2px solid #0f8}
 nav{display:flex;gap:8px;flex-wrap:wrap;padding:10px;background:#181818}nav button{padding:8px}
 .page{display:none;padding:20px}.active{display:block}.card{border:1px solid #0f8;padding:12px;margin:10px 0;background:#1a1a1a}
-input,select,textarea{width:100%;margin:5px 0;padding:8px}
+input,select,textarea{width:100%;margin:5px 0;padding:8px;box-sizing:border-box;background:#222;color:#0f8;border:1px solid #0f8;}
+button{background:#0f8;color:#000;font-weight:bold;border:0;padding:8px 12px;cursor:pointer;border-radius:4px;transition:0.2s;}
+button:hover{background:#0a6;color:#fff;}
+button:disabled{background:#555;color:#888;cursor:not-allowed;}
 </style></head><body>
-<header><h2>SbheneCart Admin Pro</h2></header>
-<nav>
-<button onclick="show('dash')">Dashboard</button>
-<button onclick="show('products')">Products</button>
-<button onclick="show('categories')">Categories</button>
-<button onclick="show('orders')">Orders</button>
-<button onclick="show('users')">Users</button>
-<button onclick="show('coupons')">Coupons</button>
-<button onclick="show('reports')">Reports</button>
-<button onclick="show('settings')">Settings</button>
-</nav>
 
-<section id="dash" class="page active"><div class="card"><div id="stats"></div></div></section>
+<!-- Login Lock Screen -->
+<div id="login-screen" style="max-width: 400px; margin: 100px auto; padding: 25px; border: 1px solid #0f8; background: #000; border-radius: 8px; text-align: center;">
+  <h2 style="margin-top:0;">SbheneCart Gatekeeper</h2>
+  <p style="color:#888;">Enter your administrator password to unlock the console.</p>
+  <input id="login-pw" type="password" placeholder="Admin Password" style="margin-bottom:15px; text-align:center;">
+  <button id="login-btn" onclick="loginAdmin()" style="width:100%;">Unlock Console</button>
+</div>
 
-<section id="products" class="page">
-<div class="card">
-<input id="pn" placeholder="Name"><input id="pp" type="number" placeholder="Price">
-<input id="pi" type="file" accept="image/*"><select id="pc"></select>
-<input id="ps" type="number" placeholder="Stock"><textarea id="pd" placeholder="Description"></textarea>
-<button onclick="saveProduct()">Save Product</button>
-</div><div id="plist"></div></section>
+<!-- Main Admin Panel Wrapper (Hidden until authorized) -->
+<div id="admin-wrapper" style="display:none;">
+  <header style="display:flex; justify-content:space-between; align-items:center;">
+    <h2>SbheneCart Admin Pro</h2>
+    <button onclick="logoutAdmin()" style="background:#222; color:#0f8; border:1px solid #0f8;">Lock Panel</button>
+  </header>
+  
+  <nav>
+    <button onclick="show('dash')">Dashboard</button>
+    <button onclick="show('products')">Products</button>
+    <button onclick="show('categories')">Categories</button>
+    <button onclick="show('orders')">Orders</button>
+    <button onclick="show('users')">Users</button>
+    <button onclick="show('coupons')">Coupons</button>
+    <button onclick="show('reports')">Reports</button>
+    <button onclick="show('settings')">Settings</button>
+  </nav>
 
-<section id="categories" class="page"><div class="card">
-<input id="newCat" placeholder="Category"><button onclick="addCat()">Add Category</button><div id="cats"></div></div></section>
+  <section id="dash" class="page active"><div class="card"><div id="stats"></div></div></section>
 
-<section id="orders" class="page"><div class="card"><div id="olist"></div></div></section>
-<section id="users" class="page"><div class="card"><div id="ulist"></div></div></section>
-<section id="coupons" class="page"><div class="card">Coupon manager placeholder (ready for expansion).</div></section>
-<section id="reports" class="page"><div class="card">Sales, inventory and revenue reports placeholder.</div></section>
-<section id="settings" class="page"><div class="card"><input id="pw" type="password" placeholder="New admin password"><button onclick="cpw()">Save Password</button></div></section>
+  <section id="products" class="page">
+    <div class="card">
+      <input id="pn" placeholder="Name"><input id="pp" type="number" placeholder="Price">
+      <label style="display:block; margin: 10px 0 5px 0; font-size:12px;">Product Image:</label>
+      <input id="pi" type="file" accept="image/*">
+      <select id="pc"></select>
+      <input id="ps" type="number" placeholder="Stock"><textarea id="pd" placeholder="Description"></textarea>
+      <button id="save-prod-btn" onclick="saveProduct()">Save Product</button>
+    </div>
+    <div id="plist"></div>
+  </section>
 
-<script>
-let admin=JSON.parse(localStorage.admin||'{"username":"admin","password":"1234"}');
-let cats=JSON.parse(localStorage.categories||'["Food"]');
-let products=JSON.parse(localStorage.products||'[]');
-let edit=-1,imgData="";
-function show(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');refresh();}
-pi.onchange=()=>{let f=pi.files[0];if(!f)return;let r=new FileReader();r.onload=e=>imgData=e.target.result;r.readAsDataURL(f);}
-function addCat(){if(newCat.value&&!cats.includes(newCat.value)){cats.push(newCat.value);localStorage.categories=JSON.stringify(cats);newCat.value='';refresh();}}
-function saveProduct(){let done=()=>{let p={id:edit<0?Date.now():products[edit].id,name:pn.value,price:+pp.value,image:imgData||products[edit]?.image||"",category:pc.value,stock:+ps.value,description:pd.value};if(edit<0)products.push(p);else products[edit]=p;localStorage.products=JSON.stringify(products);edit=-1;imgData="";refresh();};
-done();}
-function editP(i){let p=products[i];edit=i;pn.value=p.name;pp.value=p.price;ps.value=p.stock;pd.value=p.description;pc.value=p.category;show('products');}
-function delP(i){products.splice(i,1);localStorage.products=JSON.stringify(products);refresh();}
-function cpw(){admin.password=pw.value;localStorage.admin=JSON.stringify(admin);alert('Password updated');}
-function status(id,v){let o=JSON.parse(localStorage.orders||'{}');o[id].status=v;localStorage.orders=JSON.stringify(o);}
-function refresh(){
-pc.innerHTML=cats.map(c=>`<option>${c}</option>`).join('');
-cats.innerHTML?0:0;
-document.getElementById('cats').innerHTML=cats.map((c,i)=>`<div>${c}</div>`).join('');
-plist.innerHTML=products.map((p,i)=>`<div class=card>${p.image?'<img src="'+p.image+'" width=70><br>':''}<b>${p.name}</b><br>R${p.price}<br>${p.category}<br><button onclick='editP(${i})'>Edit</button><button onclick='delP(${i})'>Delete</button></div>`).join('');
-let o=JSON.parse(localStorage.orders||'{}');
-olist.innerHTML=Object.entries(o).map(([id,x])=>`<div class=card>${id}<br><select onchange="status('${id}',this.value)"><option>Pending</option><option>Processing</option><option>Shipped</option><option>Delivered</option><option>Cancelled</option></select></div>`).join()||'No orders';
-let u=JSON.parse(localStorage.users||'{}');ulist.innerHTML=Object.keys(u).join('<br>')||'No users';
-stats.innerHTML=`Products: ${products.length}<br>Categories: ${cats.length}<br>Orders: ${Object.keys(o).length}<br>Users: ${Object.keys(u).length}`;
+  <section id="categories" class="page"><div class="card">
+    <input id="newCat" placeholder="Category"><button onclick="addCat()">Add Category</button><div id="cats"></div></div></section>
+
+  <section id="orders" class="page"><div class="card"><div id="olist"></div></div></section>
+  <section id="users" class="page"><div class="card"><div id="ulist"></div></div></section>
+  <section id="coupons" class="page"><div class="card">Coupon manager placeholder.</div></section>
+  <section id="reports" class="page"><div class="card">Sales, inventory and revenue reports placeholder.</div></section>
+  <section id="settings" class="page"><div class="card"><input id="pw" type="password" placeholder="New admin password"><button onclick="cpw()">Save Password</button></div></section>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot } 
+  from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } 
+  from "https://www.gstatic.com/firebasejs/12.15.0/firebase-storage.js";
+
+// Your verified Firebase Configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyC4BCz9GeNTgQYa8ydIJreTREVdPklganA",
+  authDomain: "sbhenecart.firebaseapp.com",
+  projectId: "sbhenecart",
+  storageBucket: "sbhenecart.firebasestorage.app",
+  messagingSenderId: "1074011270711",
+  appId: "1:1074011270711:web:86e00970ad3bb3aaedd9b2",
+  measurementId: "G-CVWM0DE46B"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+// DOM Elements
+const pn = document.getElementById('pn');
+const pp = document.getElementById('pp');
+const pi = document.getElementById('pi');
+const pc = document.getElementById('pc');
+const ps = document.getElementById('ps');
+const pd = document.getElementById('pd');
+const plist = document.getElementById('plist');
+const newCat = document.getElementById('newCat');
+const pw = document.getElementById('pw');
+const olist = document.getElementById('olist');
+const ulist = document.getElementById('ulist');
+const stats = document.getElementById('stats');
+
+// Local variables
+let admin = JSON.parse(localStorage.admin || '{"username":"admin","password":"1234"}');
+let cats = JSON.parse(localStorage.categories || '["Food"]');
+let products = [];
+let orders = []; // Live orders synced from Firestore
+let edit = -1;
+
+// Realtime sync with Firestore (Products catalog)
+onSnapshot(collection(db, "products"), (snapshot) => {
+  products = [];
+  snapshot.forEach(d => {
+    products.push({ id: d.id, ...d.data() });
+  });
+  if (sessionStorage.adminLoggedIn === "true") refresh();
+});
+
+// Realtime sync with Firestore (Incoming orders)
+onSnapshot(collection(db, "orders"), (snapshot) => {
+  orders = [];
+  snapshot.forEach(d => {
+    orders.push({ id: d.id, ...d.data() });
+  });
+  // Sort orders: newest first
+  orders.sort((a, b) => b.timestamp - a.timestamp);
+  if (sessionStorage.adminLoggedIn === "true") refresh();
+});
+
+// Authentication Handlers
+window.loginAdmin = () => {
+  const enteredPw = document.getElementById('login-pw').value;
+  if (enteredPw === admin.password) {
+    sessionStorage.adminLoggedIn = "true";
+    document.getElementById('login-pw').value = ""; // Clear input
+    checkAuth();
+  } else {
+    alert("Incorrect credentials!");
+  }
+};
+
+window.logoutAdmin = () => {
+  sessionStorage.removeItem("adminLoggedIn");
+  checkAuth();
+};
+
+function checkAuth() {
+  if (sessionStorage.adminLoggedIn === "true") {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-wrapper').style.display = 'block';
+    refresh();
+  } else {
+    document.getElementById('login-screen').style.display = 'block';
+    document.getElementById('admin-wrapper').style.display = 'none';
+  }
 }
-refresh();
+
+// Navigation
+window.show = (id) => {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  refresh();
+};
+
+// Category Operations
+window.addCat = () => {
+  if(newCat.value && !cats.includes(newCat.value)){
+    cats.push(newCat.value);
+    localStorage.categories = JSON.stringify(cats);
+    newCat.value = '';
+    refresh();
+  }
+};
+
+// Product Operations (With Cloud Storage integration)
+window.saveProduct = async () => {
+  const saveBtn = document.getElementById('save-prod-btn');
+  saveBtn.innerText = "Processing...";
+  saveBtn.disabled = true;
+
+  let file = pi.files[0];
+  let imageUrl = "";
+
+  if (file) {
+    try {
+      const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      imageUrl = await getDownloadURL(storageRef);
+    } catch (err) {
+      console.error("Storage upload failed", err);
+      alert("Error uploading image. Saving details without new image.");
+    }
+  }
+
+  let p = {
+    name: pn.value,
+    price: +pp.value,
+    category: pc.value,
+    stock: +ps.value,
+    description: pd.value
+  };
+
+  try {
+    if (edit === -1) {
+      p.image = imageUrl || "";
+      await addDoc(collection(db, "products"), p);
+    } else {
+      const existingProduct = products.find(x => x.id === edit);
+      p.image = imageUrl || existingProduct?.image || "";
+      await updateDoc(doc(db, "products", edit), p);
+    }
+
+    edit = -1;
+    pn.value = pp.value = ps.value = pd.value = '';
+    pi.value = ''; 
+    window.show('products');
+  } catch (err) {
+    console.error("Error saving product details to Firestore: ", err);
+    alert("Could not update product details. Check console for details.");
+  } finally {
+    saveBtn.innerText = "Save Product";
+    saveBtn.disabled = false;
+  }
+};
+
+window.editP = (id) => {
+  let p = products.find(x => x.id === id);
+  if(!p) return;
+  edit = id;
+  pn.value = p.name;
+  pp.value = p.price;
+  ps.value = p.stock;
+  pd.value = p.description;
+  pc.value = p.category;
+  window.show('products');
+};
+
+window.delP = async (id) => {
+  if(confirm("Are you sure you want to delete this product?")){
+    try {
+      await deleteDoc(doc(db, "products", id));
+    } catch (err) {
+      console.error("Error deleting product from Firestore: ", err);
+      alert("Delete operation failed.");
+    }
+  }
+};
+
+// Update Order Status directly inside Firestore
+window.updateOrderStatus = async (id, newStatus) => {
+  try {
+    await updateDoc(doc(db, "orders", id), { status: newStatus });
+  } catch (err) {
+    console.error("Error updating order status in Firestore: ", err);
+    alert("Could not update status. Please try again.");
+  }
+};
+
+// Update local admin credentials
+window.cpw = () => {
+  admin.password = pw.value;
+  localStorage.admin = JSON.stringify(admin);
+  pw.value = "";
+  alert('Admin password updated successfully');
+};
+
+// UI rendering function
+function refresh() {
+  pc.innerHTML = cats.map(c => `<option>${c}</option>`).join('');
+  document.getElementById('cats').innerHTML = cats.map(c => `<div>${c}</div>`).join('');
+  
+  plist.innerHTML = products.map((p) => `
+    <div class="card">
+      ${p.image ? `<img src="${p.image}" width="70" style="object-fit:cover; margin-bottom:5px;"><br>` : ''}
+      <b>${p.name}</b><br>
+      R${p.price}<br>
+      ${p.category}<br>
+      <button onclick="editP('${p.id}')">Edit</button>
+      <button onclick="delP('${p.id}')">Delete</button>
+    </div>
+  `).join('');
+  
+  // Render live orders directly from Firestore
+  olist.innerHTML = orders.map((o) => `
+    <div class="card">
+      <b>Order ID:</b> ${o.id}<br>
+      <b>Date:</b> ${new Date(o.timestamp).toLocaleString()}<br>
+      <b>Total:</b> R${o.total}<br>
+      <b>Items:</b><br>
+      ${o.items ? o.items.map(item => `• ${item.name} (x${item.quantity}) - R${item.price}`).join('<br>') : 'No items'}<br>
+      <div style="margin-top:10px;">
+        <label>Status:</label>
+        <select onchange="updateOrderStatus('${o.id}', this.value)" style="margin-top:5px; width:auto; display:inline-block;">
+          <option ${o.status === 'Pending' ? 'selected' : ''}>Pending</option>
+          <option ${o.status === 'Processing' ? 'selected' : ''}>Processing</option>
+          <option ${o.status === 'Shipped' ? 'selected' : ''}>Shipped</option>
+          <option ${o.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
+          <option ${o.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+        </select>
+      </div>
+    </div>
+  `).join('') || 'No orders found in Firestore';
+  
+  let u = JSON.parse(localStorage.users || '{}');
+  ulist.innerHTML = Object.keys(u).join('<br>') || 'No users';
+  
+  stats.innerHTML = `
+    Products: ${products.length}<br>
+    Categories: ${cats.length}<br>
+    Orders: ${orders.length}<br>
+    Users: ${Object.keys(u).length}
+  `;
+}
+
+checkAuth();
 </script></body></html>
