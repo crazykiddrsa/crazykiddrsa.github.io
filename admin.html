@@ -15,7 +15,9 @@ button:disabled{background:#555;color:#888;cursor:not-allowed;}
 <div id="login-screen" style="max-width: 400px; margin: 100px auto; padding: 25px; border: 1px solid #0f8; background: #000; border-radius: 8px; text-align: center;">
   <h2 style="margin-top:0;">SbheneCart Gatekeeper</h2>
   <p style="color:#888;">Enter your administrator password to unlock the console.</p>
-  <input id="login-pw" type="password" placeholder="Admin Password" style="margin-bottom:15px; text-align:center;">
+ <input id="login-email" type="email" placeholder="Admin Email" style="margin-bottom:10px;">
+
+<input id="login-pw" type="password" placeholder="Password" style="margin-bottom:15px;">
   <button id="login-btn" onclick="loginAdmin()" style="width:100%;">Unlock Console</button>
 </div>
 
@@ -58,15 +60,37 @@ button:disabled{background:#555;color:#888;cursor:not-allowed;}
   <section id="users" class="page"><div class="card"><div id="ulist"></div></div></section>
   <section id="coupons" class="page"><div class="card">Coupon manager placeholder.</div></section>
   <section id="reports" class="page"><div class="card">Sales, inventory and revenue reports placeholder.</div></section>
-  <section id="settings" class="page"><div class="card"><input id="pw" type="password" placeholder="New admin password"><button onclick="cpw()">Save Password</button></div></section>
+ 
+  <section id="settings" class="page">
+    <div class="card">
+        <h3>Administrator Settings</h3>
+        <p>Administrator accounts are managed through Firebase Authentication.</p>
+        <p>Create, remove or reset passwords in the Firebase Console.</p>
+    </div>
+</section>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot } 
-  from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } 
-  from "https://www.gstatic.com/firebasejs/12.15.0/firebase-storage.js";
+
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  orderBy
+} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 
 // Your verified Firebase Configuration
 const firebaseConfig = {
@@ -81,7 +105,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const storage = getStorage(app);
+const auth = getAuth(app);
 
 // DOM Elements
 const pn = document.getElementById('pn');
@@ -92,69 +116,91 @@ const ps = document.getElementById('ps');
 const pd = document.getElementById('pd');
 const plist = document.getElementById('plist');
 const newCat = document.getElementById('newCat');
-const pw = document.getElementById('pw');
 const olist = document.getElementById('olist');
 const ulist = document.getElementById('ulist');
 const stats = document.getElementById('stats');
 
-// Local variables
-let admin = localStorage.admin 
-  ? JSON.parse(localStorage.admin) 
-  : {"username":"admin","password":"1234"};
 
+let cats = [];
 
-let cats = JSON.parse(localStorage.categories || '["Food"]');
+onSnapshot(collection(db, "categories"), (snapshot) => {
+    cats = [];
+
+    snapshot.forEach(doc => {
+        cats.push({
+            id: doc.id,
+            ...doc.data()
+        });
+    });
+
+    cats.sort((a,b)=>a.name.localeCompare(b.name));
+
+    if(auth.currentUser) refresh();
+});
 let products = [];
 let orders = []; // Live orders synced from Firestore
 let edit = -1;
 
-// Realtime sync with Firestore (Products catalog)
+// Realtime Products
 onSnapshot(collection(db, "products"), (snapshot) => {
-  products = [];
-  snapshot.forEach(d => {
-    products.push({ id: d.id, ...d.data() });
-  });
-  if (sessionStorage.adminLoggedIn === "true") refresh();
+    products = [];
+
+    snapshot.forEach(d => {
+        products.push({
+            id: d.id,
+            ...d.data()
+        });
+    });
+
+    if (auth.currentUser) {
+        refresh();
+    }
 });
 
-// Realtime sync with Firestore (Incoming orders)
+// Realtime Orders
 onSnapshot(collection(db, "orders"), (snapshot) => {
-  orders = [];
-  snapshot.forEach(d => {
-    orders.push({ id: d.id, ...d.data() });
-  });
-  // Sort orders: newest first
-  orders.sort((a, b) => b.timestamp - a.timestamp);
-  if (sessionStorage.adminLoggedIn === "true") refresh();
+    orders = [];
+
+    snapshot.forEach(d => {
+        orders.push({
+            id: d.id,
+            ...d.data()
+        });
+    });
+
+    orders.sort((a, b) => {
+        const ta = a.timestamp?.toMillis?.() || 0;
+        const tb = b.timestamp?.toMillis?.() || 0;
+        return tb - ta;
+    });
+
+    if (auth.currentUser) {
+        refresh();
+    }
 });
+
+
 
 // Authentication Handlers
-window.loginAdmin = () => {
-  const enteredPw = document.getElementById('login-pw').value;
-  if (enteredPw === admin.password) {
-    sessionStorage.adminLoggedIn = "true";
-    document.getElementById('login-pw').value = ""; // Clear input
-    checkAuth();
-  } else {
-    alert("Incorrect credentials!");
-  }
+window.loginAdmin = async () => {
+    const email = document.getElementById("login-email").value.trim();
+    const password = document.getElementById("login-pw").value;
+
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+
+        document.getElementById("login-email").value = "";
+        document.getElementById("login-pw").value = "";
+
+    } catch (err) {
+        alert(err.message);
+    }
+};
+window.logoutAdmin = async () => {
+    await signOut(auth);
 };
 
-window.logoutAdmin = () => {
-  sessionStorage.removeItem("adminLoggedIn");
-  checkAuth();
-};
 
-function checkAuth() {
-  if (sessionStorage.adminLoggedIn === "true") {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('admin-wrapper').style.display = 'block';
-    refresh();
-  } else {
-    document.getElementById('login-screen').style.display = 'block';
-    document.getElementById('admin-wrapper').style.display = 'none';
-  }
-}
 
 // Navigation
 window.show = (id) => {
@@ -164,16 +210,32 @@ window.show = (id) => {
 };
 
 // Category Operations
-window.addCat = () => {
-  if(newCat.value && !cats.includes(newCat.value)){
-    cats.push(newCat.value);
-    localStorage.categories = JSON.stringify(cats);
-    newCat.value = '';
-    refresh();
-  }
+window.addCat = async () => {
+
+    const name = newCat.value.trim();
+
+    if (!name) return;
+
+    if (cats.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+        alert("Category already exists.");
+        return;
+    }
+
+    await addDoc(collection(db, "categories"), {
+        name
+    });
+
+    newCat.value = "";
+};
+// Product Operations (With Cloud Storage integration)
+window.deleteCategory = async (id) => {
+
+    if(!confirm("Delete this category?")) return;
+
+    await deleteDoc(doc(db,"categories",id));
+
 };
 
-// Product Operations (With Cloud Storage integration)
 window.saveProduct = async () => {
   const saveBtn = document.getElementById('save-prod-btn');
   saveBtn.innerText = "Processing...";
@@ -182,16 +244,37 @@ window.saveProduct = async () => {
   let file = pi.files[0];
   let imageUrl = "";
 
-  if (file) {
-    try {
-      const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      imageUrl = await getDownloadURL(storageRef);
-    } catch (err) {
-      console.error("Storage upload failed", err);
-      alert("Error uploading image. Saving details without new image.");
+ if (file) {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "SbheneCart");
+
+    const response = await fetch(
+      "https://api.cloudinary.com/v1_1/qocn8gjn/image/upload",
+      {
+        method: "POST",
+        body: formData
+      }
+    );
+
+    const data = await response.json();
+
+    console.log("Cloudinary response:", data);
+
+    if (!response.ok || !data.secure_url) {
+      alert(data.error?.message || "Cloudinary upload failed.");
+      return;
     }
+
+    imageUrl = data.secure_url;
+
+  } catch (err) {
+    console.error(err);
+    alert("Cloudinary upload error.");
+    return;
   }
+}
 
   let p = {
     name: pn.value,
@@ -257,19 +340,27 @@ window.updateOrderStatus = async (id, newStatus) => {
   }
 };
 
-// Update local admin credentials
-window.cpw = () => {
-  admin.password = pw.value;
-  localStorage.admin = JSON.stringify(admin);
-  pw.value = "";
-  alert('Admin password updated successfully');
-};
+
 
 // UI rendering function
 function refresh() {
-  pc.innerHTML = cats.map(c => `<option>${c}</option>`).join('');
-  document.getElementById('cats').innerHTML = cats.map(c => `<div>${c}</div>`).join('');
-  
+  pc.innerHTML = cats.map(c => `
+<option value="${c.name}">
+${c.name}
+</option>
+`).join('');
+  document.getElementById("cats").innerHTML =
+cats.map(c => `
+<div class="card">
+    <b>${c.name}</b><br><br>
+
+    <button onclick="deleteCategory('${c.id}')">
+        Delete
+    </button>
+</div>
+`).join("");
+
+
   plist.innerHTML = products.map((p) => `
     <div class="card">
       ${p.image ? `<img src="${p.image}" width="70" style="object-fit:cover; margin-bottom:5px;"><br>` : ''}
@@ -282,36 +373,83 @@ function refresh() {
   `).join('');
   
   // Render live orders directly from Firestore
-  olist.innerHTML = orders.map((o) => `
-    <div class="card">
-      <b>Order ID:</b> ${o.id}<br>
-      <b>Date:</b> ${new Date(o.timestamp).toLocaleString()}<br>
-      <b>Total:</b> R${o.total}<br>
-      <b>Items:</b><br>
-      ${o.items ? o.items.map(item => `• ${item.name} (x${item.quantity}) - R${item.price}`).join('<br>') : 'No items'}<br>
-      <div style="margin-top:10px;">
-        <label>Status:</label>
-        <select onchange="updateOrderStatus('${o.id}', this.value)" style="margin-top:5px; width:auto; display:inline-block;">
-          <option ${o.status === 'Pending' ? 'selected' : ''}>Pending</option>
-          <option ${o.status === 'Processing' ? 'selected' : ''}>Processing</option>
-          <option ${o.status === 'Shipped' ? 'selected' : ''}>Shipped</option>
-          <option ${o.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
-          <option ${o.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
-        </select>
-      </div>
-    </div>
-  `).join('') || 'No orders found in Firestore';
-  
-  let u = JSON.parse(localStorage.users || '{}');
-  ulist.innerHTML = Object.keys(u).join('<br>') || 'No users';
-  
-  stats.innerHTML = `
-    Products: ${products.length}<br>
-    Categories: ${cats.length}<br>
-    Orders: ${orders.length}<br>
-    Users: ${Object.keys(u).length}
-  `;
+  olist.innerHTML = orders.map(o => {
+
+    let orderDate = "Unknown";
+
+if (o.timestamp?.toDate) {
+    orderDate = o.timestamp.toDate().toLocaleString();
+} else if (typeof o.timestamp === "number") {
+    orderDate = new Date(o.timestamp).toLocaleString();
 }
 
-checkAuth();
+    return `
+    <div class="card">
+
+        <b>Order ID:</b> ${o.id}<br>
+        <b>Date:</b> ${orderDate}<br>
+
+        <b>Customer:</b> ${o.customer?.name || "Unknown"}<br>
+        <b>Phone:</b> ${o.customer?.phone || "-"}<br>
+        <b>Address:</b> ${o.customer?.address || "-"}<br>
+
+        <b>Total:</b> R${o.total}<br>
+
+        <b>Items:</b><br>
+
+        ${
+            o.items
+                ? o.items.map(item =>
+                    `• ${item.name} (x${item.quantity}) - R${item.price}`
+                  ).join("<br>")
+                : "No items"
+        }
+
+        <br><br>
+
+        <label>Status</label>
+
+        <select onchange="updateOrderStatus('${o.id}',this.value)">
+            <option ${o.status=="Pending"?"selected":""}>Pending</option>
+            <option ${o.status=="Processing"?"selected":""}>Processing</option>
+            <option ${o.status=="Shipped"?"selected":""}>Shipped</option>
+            <option ${o.status=="Delivered"?"selected":""}>Delivered</option>
+            <option ${o.status=="Cancelled"?"selected":""}>Cancelled</option>
+        </select>
+
+    </div>
+    `;
+
+}).join("");
+const u = JSON.parse(localStorage.users || "{}");
+
+const revenue = orders.reduce(
+    (sum, o) => sum + (Number(o.total) || 0),
+    0
+);
+
+const pending = orders.filter(o => o.status === "Pending").length;
+
+stats.innerHTML = `
+<h2>Dashboard</h2>
+
+Products: ${products.length}<br>
+Categories: ${cats.length}<br>
+Orders: ${orders.length}<br>
+Users: ${Object.keys(u).length}<br>
+Revenue: R${revenue}<br>
+Pending Orders: ${pending}
+`;
+}
+
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        document.getElementById("login-screen").style.display = "none";
+        document.getElementById("admin-wrapper").style.display = "block";
+        refresh();
+    } else {
+        document.getElementById("login-screen").style.display = "block";
+        document.getElementById("admin-wrapper").style.display = "none";
+    }
+});
 </script></body></html>
