@@ -60,7 +60,15 @@ button:hover{background:#0a6;color:#fff;}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-import { getFirestore, collection, onSnapshot, addDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+import {
+  getFirestore,
+  collection,
+  onSnapshot,
+  addDoc,
+  doc,
+  updateDoc
+} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+
 import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
 
 // Your verified Firebase Configuration
@@ -81,7 +89,7 @@ const analytics = getAnalytics(app);
 const box = document.getElementById('products');
 
 let dbProducts = [];
-let cart = [];
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
 // Fetch products from Firestore in real-time
 onSnapshot(collection(db, "products"), (snapshot) => {
@@ -195,27 +203,57 @@ function updateCartUI() {
         </div>
       `).join('')
     : '<p>Your cart is empty.</p>';
+    localStorage.setItem("cart", JSON.stringify(cart));
 }
 
 // Checkout integration with Cloud Firestore & Google Analytics
 window.checkout = async () => {
   if (cart.length === 0) return alert('Your cart is empty');
-  
+  const customerName = prompt("Customer Name");
+if (!customerName) return;
+
+const customerPhone = prompt("Phone Number");
+if (!customerPhone) return;
+
+const customerAddress = prompt("Delivery Address");
+if (!customerAddress) return;
   const checkoutBtn = document.getElementById('checkout-btn');
   checkoutBtn.innerText = "Placing Order...";
   checkoutBtn.disabled = true;
 
-  const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const order = {
-    status: 'Pending',
-    items: cart.map(item => ({ id: item.id, name: item.name, price: item.price, quantity: item.quantity })),
-    total: totalAmount,
-    timestamp: Date.now()
-  };
+  const totalAmount = cart.reduce(
+  (sum, item) => sum + (item.price * item.quantity),
+  0
+);
+
+const order = {
+  customer: {
+    name: customerName,
+    phone: customerPhone,
+    address: customerAddress
+  },
+  status: "Pending",
+  items: cart.map(item => ({
+    id: item.id,
+    name: item.name,
+    price: item.price,
+    quantity: item.quantity
+  })),
+  total: totalAmount,
+  timestamp: Date.now()
+};
   
   try {
     const docRef = await addDoc(collection(db, "orders"), order);
-    
+    for (const item of cart) {
+  const product = dbProducts.find(p => p.id === item.id);
+
+  if (product) {
+    await updateDoc(doc(db, "products", item.id), {
+      stock: product.stock - item.quantity
+    });
+  }
+}
     // Google Analytics Event: Purchase
     logEvent(analytics, 'purchase', {
       transaction_id: docRef.id,
@@ -232,8 +270,10 @@ window.checkout = async () => {
     alert('Order placed successfully! It has been sent directly to the Admin Dashboard.');
     
     cart = [];
-    updateCartUI();
-    window.toggleCart();
+updateCartUI();
+localStorage.removeItem("cart");
+window.toggleCart();
+   
   } catch (error) {
     console.error("Error writing order to Firestore: ", error);
     alert("Checkout failed. Please check your connection and try again.");
@@ -242,4 +282,5 @@ window.checkout = async () => {
     checkoutBtn.disabled = false;
   }
 };
+updateCartUI();
 </script></body></html>
