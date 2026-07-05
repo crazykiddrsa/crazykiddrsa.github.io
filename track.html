@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SbheneCart - Track Order</title>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7447247941010903" crossorigin="anonymous"></script>
+<style>
+body{font-family:Arial;background:#000;color:#0f8;margin:0}
+header{padding:15px;border-bottom:1px solid #0f8;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.container{max-width:700px;margin:auto;padding:20px}
+input,button{width:100%;padding:12px;margin:8px 0;box-sizing:border-box}
+input{background:#111;color:#0f8;border:1px solid #0f8}
+button{background:#0f8;color:#000;border:0;font-weight:bold}
+.card{border:1px solid #0f8;background:#111;padding:15px;margin-top:15px}
+.status{font-size:20px;font-weight:bold}
+</style>
+</head>
+<body>
+<header><h2>SbheneCart - Track Order</h2><button onclick="location.href='index.html'">Home</button></header>
+<div class="container">
+<input id="orderId" placeholder="Enter Order ID">
+<button onclick="trackOrder()">Track Order</button>
+
+<div class="card">
+    <!-- SbheneCart -->
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7447247941010903"
+         data-ad-slot="1454624417"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+
+    <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+</div>
+
+<div id="result" class="card" style="display:none">
+<h3>Status: <span id="status" class="status"></span></h3>
+<p><b>Name:</b> <span id="name"></span></p>
+<p><b>Phone:</b> <span id="phone"></span></p>
+<p><b>Address:</b> <span id="address"></span></p>
+<div id="items"></div>
+<h3>Total: R<span id="total"></span></h3>
+</div>
+</div>
+
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+import {getFirestore,doc,onSnapshot} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyC4BCz9GeNTgQYa8ydIJreTREVdPklganA",
+authDomain:"sbhenecart.firebaseapp.com",
+projectId:"sbhenecart",
+storageBucket:"sbhenecart.firebasestorage.app",
+messagingSenderId:"1074011270711",
+appId:"1:1074011270711:web:86e00970ad3bb3aaedd9b2"
+};
+
+const db=getFirestore(initializeApp(firebaseConfig));
+const saved=localStorage.getItem("trackOrderId");
+if(saved){document.getElementById("orderId").value=saved;trackOrder();}
+
+window.trackOrder=function(){
+ const id=document.getElementById("orderId").value.trim();
+ if(!id)return alert("Enter an Order ID");
+ localStorage.setItem("trackOrderId",id);
+ onSnapshot(doc(db,"orders",id),snap=>{
+   if(!snap.exists()){alert("Order not found");return;}
+   const o=snap.data();
+   document.getElementById("result").style.display = "block";
+document.getElementById("status").textContent = o.status || "Pending";
+document.getElementById("name").textContent = o.customer?.name || "";
+document.getElementById("phone").textContent = o.customer?.phone || "";
+document.getElementById("address").textContent = o.customer?.address || "";
+document.getElementById("total").textContent = o.total || 0;
+
+document.getElementById("items").innerHTML =
+    "<h3>Items</h3>" +
+    (o.items || []).map(i =>
+        `<p>${i.quantity} × ${i.name} - R${i.price}</p>`
+    ).join("");
+    });
+}
+</script>
+</body>
+</html>
