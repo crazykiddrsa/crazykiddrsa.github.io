@@ -7,7 +7,29 @@
 <style>
   
 body{font-family:Arial;background:#000;color:#0f8;margin:0;overflow-x:hidden;}
-header{padding:15px;border-bottom:1px solid #0f8;display:flex;justify-content:space-between;align-items:center;background:#000;position:sticky;top:0;z-index:100;}
+header{
+  padding:15px;
+  border-bottom:1px solid #0f8;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:10px;
+  background:#000;
+  position:sticky;
+  top:0;
+  z-index:100;
+}
+
+header h2{
+  margin:0;
+}
+
+header div{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;padding:20px}
 .card{background:#111;border:1px solid #0f8;padding:15px;border-radius:8px;display:flex;flex-direction:column;justify-content:space-between;}
 .card img{width:100%;height:150px;object-fit:cover;border-radius:4px;margin-bottom:10px;}
@@ -37,29 +59,33 @@ button:hover{background:#0a6;color:#fff;}
 .cart-item{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #222;padding:10px 0;}
 .qty-btn{padding:2px 6px;background:#222;color:#0f8;border:1px solid #0f8;font-size:12px;}
 </style></head><body>
-
-<header>
     
+  <header>
   <h2>SbheneCart</h2>
-<div style="display:flex; gap:10px;">
-  <button id="cart-btn" onclick="toggleCart()">
-    🛒 Cart <span id="cart-count">0</span>
-  </button>
 
-  <button onclick="location.href='track.html'">
-    📦 Track Order
-  </button>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <button id="cart-btn" onclick="toggleCart()">
+      🛒 Cart <span id="cart-count">0</span>
+    </button>
 
-  <button onclick="location.href='admin.html'">
-    Admin
-  </button>
-</div>
-<input
+    <button onclick="location.href='track.html'">
+      📦 Track Order
+    </button>
+
+    <button onclick="location.href='admin.html'">
+      Admin
+    </button>
+  </div>
+</header>
+
+<div style="padding:15px;">
+  <input
     id="search"
     type="text"
     placeholder="🔍 Search products..."
     oninput="renderProducts()"
-    style="width:100%;padding:10px;margin-bottom:15px;">
+    style="width:100%;padding:10px;border:1px solid #0f8;background:#111;color:#0f8;box-sizing:border-box;">
+</div>
     
 <div class="grid" id="products"></div>
 
