@@ -7,7 +7,7 @@
 
 <style>
 body{margin:0;font-family:Arial;background:#111;color:#0f8}header{background:#000;padding:15px;border-bottom:2px solid #0f8}
-nav{display:flex;gap:8px;flex-wrap:wrap;padding:10px;background:#181818}nav button{padding:8px}
+nav{display:flex;gap:8px;flex-wrap:wrap;padding:10px;background:#181818}nav button{padding:8px; display:flex; align-items:center; gap:5px;}
 .page{display:none;padding:20px}.active{display:block}.card{border:1px solid #0f8;padding:12px;margin:10px 0;background:#1a1a1a}
 input,select,textarea{width:100%;margin:5px 0;padding:8px;box-sizing:border-box;background:#222;color:#0f8;border:1px solid #0f8;}
 button{background:#0f8;color:#000;font-weight:bold;border:0;padding:8px 12px;cursor:pointer;border-radius:4px;transition:0.2s;}
@@ -22,6 +22,23 @@ button:disabled{background:#555;color:#888;cursor:not-allowed;}
   border-radius: 8px;
   margin-bottom: 20px;
   background: #000;
+}
+
+/* Pulsing Badge CSS Animation */
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 17, 68, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(255, 17, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 17, 68, 0);
+  }
+}
+.pulsing-badge {
+  display: inline-block;
+  animation: pulse-glow 1.8s infinite;
 }
 </style></head><body>
 
@@ -47,7 +64,10 @@ button:disabled{background:#555;color:#888;cursor:not-allowed;}
     <button onclick="show('categories')">Categories</button>
     <button onclick="show('subcategories')">Subcategories</button>
     <button onclick="show('subsubcategories')">Sub-subcategories</button>
-    <button onclick="show('orders')">Orders & Map</button>
+    <button onclick="show('orders')">
+      Orders & Map 
+      <span id="orders-badge" class="pulsing-badge" style="background:#ff1744; color:#fff; border-radius:50%; padding:2px 6px; font-size:11px; font-weight:bold; display:none;">0</span>
+    </button>
     <button onclick="show('users')">Users</button>
     <button onclick="show('coupons')">Coupons</button>
     <button onclick="show('reports')">Reports</button>
@@ -105,7 +125,14 @@ button:disabled{background:#555;color:#888;cursor:not-allowed;}
       <!-- Dynamic Google Map Render Area -->
       <div id="admin-map"></div>
       
-      <h3>Fulfillment Queue</h3>
+      <!-- Toggleable Order Tabs -->
+      <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
+        <button id="tab-active-btn" onclick="toggleOrderTab('active')" style="background:#0f8; color:#000;">Active Queue</button>
+        <button id="tab-history-btn" onclick="toggleOrderTab('history')" style="background:#222; color:#0f8; border:1px solid #0f8;">Completed & Cancelled</button>
+        <button id="tab-archived-btn" onclick="toggleOrderTab('archived')" style="background:#222; color:#0f8; border:1px solid #0f8;">Archived Transactions</button>
+      </div>
+
+      <h3 id="current-tab-title">Active Queue</h3>
       <div id="olist"></div>
     </div>
   </section>
@@ -122,6 +149,9 @@ button:disabled{background:#555;color:#888;cursor:not-allowed;}
     </div>
   </section>
 </div>
+
+<!-- Bottom-Right Glowing Toast Notification Component -->
+<div id="toast-notif" style="position:fixed; bottom:20px; right:20px; background:#0f8; color:#000; padding:15px 25px; border-radius:4px; font-weight:bold; box-shadow:0 4px 15px rgba(0,255,136,0.3); display:none; z-index:10000; transition: opacity 0.3s ease; opacity:0;"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
@@ -154,6 +184,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+
+// Request Native Push Notification Access
+if (typeof Notification !== "undefined" && Notification.permission !== "granted") {
+  Notification.requestPermission();
+}
 
 // DOM Elements
 const pn = document.getElementById('pn');
@@ -212,6 +247,12 @@ let products = [];
 let orders = [];
 let edit = -1;
 
+// Navigation State Setup
+let currentOrderTab = 'active'; // 'active', 'history', or 'archived'
+
+// Track unique order ids to trigger alerts only on new items
+let knownOrderIds = new Set();
+
 // Maps Instance Globals
 let adminMap;
 let mapMarkers = [];
@@ -241,10 +282,87 @@ onSnapshot(collection(db, "products"), (snapshot) => {
     if (auth.currentUser) refresh();
 });
 
-// Real-time Orders Sync & Map Trigger
+// Glowing System Toast Popups
+window.showToast = (message, duration = 3000) => {
+    const toast = document.getElementById("toast-notif");
+    toast.innerText = message;
+    toast.style.display = "block";
+    
+    // Tiny delay so CSS transitions can register
+    setTimeout(() => {
+        toast.style.opacity = "1";
+    }, 50);
+
+    setTimeout(() => {
+        toast.style.opacity = "0";
+        setTimeout(() => {
+            toast.style.display = "none";
+        }, 300);
+    }, duration);
+};
+
+// Synthesized Beep/Chime notification via Web Audio API (completely no-cost!)
+function playOrderChime() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Note 1: Bass foundation
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'triangle';
+        osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+        gain1.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        osc1.start();
+        osc1.stop(audioCtx.currentTime + 0.35);
+        
+        // Note 2: Harmonious chime offset
+        setTimeout(() => {
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.type = 'triangle';
+            osc2.frequency.setValueAtTime(783.99, audioCtx.currentTime); // G5
+            gain2.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.45);
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            osc2.start();
+            osc2.stop(audioCtx.currentTime + 0.45);
+        }, 110);
+    } catch (e) {
+        console.warn("Audio chime block bypass activated: ", e);
+    }
+}
+
+// Real-time Orders Sync, Notification, Badge, & Map Trigger
 onSnapshot(collection(db, "orders"), (snapshot) => {
     orders = [];
-    snapshot.forEach(d => { orders.push({ id: d.id, ...d.data() }); });
+    let isInitialLoad = (knownOrderIds.size === 0);
+    let triggerAlert = false;
+
+    snapshot.forEach(d => {
+        const orderData = { id: d.id, ...d.data() };
+        orders.push(orderData);
+
+        // Notify if a brand new Pending order enters the collection
+        if (!knownOrderIds.has(d.id)) {
+            knownOrderIds.add(d.id);
+            if (!isInitialLoad && orderData.status === "Pending") {
+                triggerAlert = true;
+                if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+                    new Notification("🛒 New SbheneCart Order!", {
+                        body: `${orderData.customer?.name || "Customer"} placed an order of R${orderData.total}`,
+                        tag: d.id
+                    });
+                }
+            }
+        }
+    });
+
+    if (triggerAlert) { playOrderChime(); }
+
     orders.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
     if (auth.currentUser) {
         refresh();
@@ -260,14 +378,18 @@ window.loginAdmin = async () => {
         await signInWithEmailAndPassword(auth, email, password);
         document.getElementById("login-email").value = "";
         document.getElementById("login-pw").value = "";
+        showToast("🔑 Access Granted. Welcome back!");
     } catch (err) {
         alert(err.message);
     }
 };
 
-window.logoutAdmin = async () => { await signOut(auth); };
+window.logoutAdmin = async () => { 
+    await signOut(auth); 
+    showToast("🔒 Panel Locked.");
+};
 
-// Navigation
+// Navigation Control
 window.show = (id) => {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -381,16 +503,17 @@ window.addCat = async () => {
     const name = newCat.value.trim();
     if (!name) return;
     if (cats.some(c => c.name.toLowerCase() === name.toLowerCase())) {
-        alert("Category already exists.");
+        showToast("⚠️ Category already exists.");
         return;
     }
     await addDoc(collection(db, "categories"), { name });
     newCat.value = "";
+    showToast("📁 Category added successfully!");
 };
 
 window.addSubCat = async () => {
     if(parentCat.value=="" || newSubCat.value.trim()==""){
-        alert("Choose a category and enter a subcategory.");
+        showToast("⚠️ Select a category and enter a name.");
         return;
     }
     await addDoc(collection(db,"subcategories"),{
@@ -398,11 +521,12 @@ window.addSubCat = async () => {
         name: newSubCat.value.trim()
     });
     newSubCat.value="";
+    showToast("📂 Subcategory added successfully!");
 };
 
 window.addSubSubCat = async () => {
     if (parentCategorySS.value == "" || parentSubcategorySS.value == "" || newSubSubCat.value.trim() == "") {
-        alert("Choose category, subcategory and enter a sub-subcategory.");
+        showToast("⚠️ Complete all sub-subcategory selection fields.");
         return;
     }
     await addDoc(collection(db, "subsubcategories"), {
@@ -411,21 +535,25 @@ window.addSubSubCat = async () => {
         name: newSubSubCat.value.trim()
     });
     newSubSubCat.value = "";
+    showToast("🏷️ Sub-subcategory added successfully!");
 };
 
 window.deleteCategory = async (id) => {
     if(!confirm("Delete this category?")) return;
     await deleteDoc(doc(db,"categories",id));
+    showToast("🗑️ Category deleted.");
 };
 
 window.deleteSubCategory = async (id) => {
     if(!confirm("Delete this subcategory?")) return;
     await deleteDoc(doc(db,"subcategories",id));
+    showToast("🗑️ Subcategory deleted.");
 };
 
 window.deleteSubSubCategory = async (id) => {
     if(!confirm("Delete this sub-subcategory?")) return;
     await deleteDoc(doc(db,"subsubcategories",id));
+    showToast("🗑️ Sub-subcategory deleted.");
 };
 
 // Save Product Logic
@@ -435,7 +563,7 @@ window.saveProduct = async () => {
   saveBtn.disabled = true;
 
   if (!pn.value.trim() || !pp.value || !pc.value || !ps.value) {
-      alert("Please complete all required fields.");
+      showToast("⚠️ Please complete all required fields.");
       saveBtn.innerText = "Save Product";
       saveBtn.disabled = false;
       return;
@@ -454,7 +582,7 @@ window.saveProduct = async () => {
     });
     const data = await response.json();
     if (!response.ok || !data.secure_url) {
-        alert(data.error?.message || "Cloudinary upload failed.");
+        showToast("⚠️ Cloudinary upload failed.");
         saveBtn.innerText = "Save Product";
         saveBtn.disabled = false;
         return;
@@ -477,11 +605,13 @@ window.saveProduct = async () => {
       p.images = imageUrls;
       p.image = imageUrls[0] || "";
       await addDoc(collection(db, "products"), p);
+      showToast("📦 Product created successfully!");
     } else {
       const existingProduct = products.find(x => x.id === edit);
       p.images = imageUrls.length ? imageUrls : (existingProduct.images || []);
       p.image = p.images[0] || existingProduct.image || "";
       await updateDoc(doc(db, "products", edit), p);
+      showToast("📝 Product updated successfully!");
     }
 
     edit = -1;
@@ -492,7 +622,7 @@ window.saveProduct = async () => {
     window.show('products');
   } catch (err) {
     console.error("Error saving product details to Firestore: ", err);
-    alert("Could not update product. Check console details.");
+    showToast("⚠️ Could not update product.");
   } finally {
     saveBtn.innerText = "Save Product";
     saveBtn.disabled = false;
@@ -519,9 +649,10 @@ window.delP = async (id) => {
   if(confirm("Are you sure you want to delete this product?")){
     try {
       await deleteDoc(doc(db, "products", id));
+      showToast("🗑️ Product deleted.");
     } catch (err) {
       console.error("Error deleting product: ", err);
-      alert("Delete operation failed.");
+      showToast("⚠️ Delete operation failed.");
     }
   }
 };
@@ -530,10 +661,71 @@ window.delP = async (id) => {
 window.updateOrderStatus = async (id, newStatus) => {
   try {
     await updateDoc(doc(db, "orders", id), { status: newStatus });
+    showToast(`🔄 Status updated to '${newStatus}'`);
   } catch (err) {
     console.error("Error updating order status: ", err);
-    alert("Could not update status.");
+    showToast("⚠️ Could not update status.");
   }
+};
+
+// Toggle Order Tab Selection & Active Styles
+window.toggleOrderTab = (tab) => {
+    currentOrderTab = tab;
+    const activeBtn = document.getElementById("tab-active-btn");
+    const historyBtn = document.getElementById("tab-history-btn");
+    const archivedBtn = document.getElementById("tab-archived-btn");
+    const titleText = document.getElementById("current-tab-title");
+
+    // Reset styles on all tab controls
+    activeBtn.style.background = "#222"; activeBtn.style.color = "#0f8";
+    historyBtn.style.background = "#222"; historyBtn.style.color = "#0f8";
+    archivedBtn.style.background = "#222"; archivedBtn.style.color = "#0f8";
+
+    if (tab === "active") {
+        activeBtn.style.background = "#0f8"; activeBtn.style.color = "#000";
+        titleText.innerText = "Active Queue";
+    } else if (tab === "history") {
+        historyBtn.style.background = "#0f8"; historyBtn.style.color = "#000";
+        titleText.innerText = "Completed & Cancelled Orders";
+    } else {
+        archivedBtn.style.background = "#0f8"; archivedBtn.style.color = "#000";
+        titleText.innerText = "Archived Transactions Directory";
+    }
+    refresh();
+};
+
+// soft-archive completed/cancelled orders
+window.archiveOrder = async (id) => {
+    try {
+        await updateDoc(doc(db, "orders", id), { archived: true });
+        showToast("📦 Order moved to Archives successfully!");
+    } catch (err) {
+        console.error("Error archiving order: ", err);
+        showToast("⚠️ Archive failed.");
+    }
+};
+
+// Restore soft-archived orders back to queue lifecycle
+window.unarchiveOrder = async (id) => {
+    try {
+        await updateDoc(doc(db, "orders", id), { archived: false });
+        showToast("📂 Transaction restored back to Active Queue!");
+    } catch (err) {
+        console.error("Error unarchiving order: ", err);
+        showToast("⚠️ Restore failed.");
+    }
+};
+
+// Hard Delete Order Entry completely
+window.deleteOrder = async (id) => {
+    if (!confirm("Are you sure you want to permanently delete this order? This will wipe the transaction from all records and dashboards.")) return;
+    try {
+        await deleteDoc(doc(db, "orders", id));
+        showToast("🗑️ Transaction record permanently deleted.");
+    } catch (err) {
+        console.error("Error deleting order document: ", err);
+        showToast("⚠️ Operation failed.");
+    }
 };
 
 // UI rendering function
@@ -575,10 +767,47 @@ function refresh() {
     </div>
   `).join('');
   
-  // Render live orders list
-  olist.innerHTML = orders.map(o => {
+  // Real-time Pending Order Badging Update
+  const pendingOrdersCount = orders.filter(o => o.status === "Pending").length;
+  const badgeElement = document.getElementById("orders-badge");
+  if (badgeElement) {
+      if (pendingOrdersCount > 0) {
+          badgeElement.innerText = pendingOrdersCount;
+          badgeElement.style.display = "inline-block";
+      } else {
+          badgeElement.style.display = "none";
+      }
+  }
+
+  // Filter Orders based on active status queue selection mapping
+  const activeStatuses = ["Pending", "Processing", "Shipped"];
+  const historyStatuses = ["Delivered", "Cancelled"];
+
+  const filteredOrders = orders.filter(o => {
+      const currentStatus = o.status || "Pending";
+      if (currentOrderTab === 'archived') {
+          return o.archived === true;
+      } else {
+          // Normal active/history tabs exclude archived items entirely
+          if (o.archived === true) return false;
+          return currentOrderTab === 'active'
+              ? activeStatuses.includes(currentStatus)
+              : historyStatuses.includes(currentStatus);
+      }
+  });
+
+  // Render live orders list with dynamic layout button controls
+  olist.innerHTML = filteredOrders.map(o => {
     let orderDate = "Unknown";
     if (o.timestamp) { orderDate = new Date(o.timestamp).toLocaleString(); }
+
+    // Dynamic contextual order tracking button selection
+    let actionBtn = "";
+    if (currentOrderTab === 'history') {
+        actionBtn = `<button onclick="archiveOrder('${o.id}')" style="background:#0f8; color:#000; display:block; width:100%; margin-top:10px; border-radius:4px; font-weight:bold;">📦 Archive Transaction</button>`;
+    } else if (currentOrderTab === 'archived') {
+        actionBtn = `<button onclick="unarchiveOrder('${o.id}')" style="background:#29b6f6; color:#000; display:block; width:100%; margin-top:10px; border-radius:4px; font-weight:bold;">📂 Unarchive Transaction</button>`;
+    }
 
     return `
       <div class="card">
@@ -599,6 +828,8 @@ function refresh() {
               <option ${o.status=="Delivered"?"selected":""}>Delivered</option>
               <option ${o.status=="Cancelled"?"selected":""}>Cancelled</option>
           </select>
+          ${actionBtn}
+          <button onclick="deleteOrder('${o.id}')" style="background:#ff1744; color:#fff; display:block; width:100%; margin-top:15px; border-radius:4px; font-weight:bold;">🗑️ Delete Record</button>
       </div>
     `;
   }).join("");
