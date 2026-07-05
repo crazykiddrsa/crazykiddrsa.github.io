@@ -1,126 +1,489 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SbheneCart Admin Pro</title>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SbheneCart</title>
+  
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7447247941010903"
+     crossorigin="anonymous"></script>
 
-<!-- Google Maps JavaScript API with callback -->
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCBR2xh-Ks61EEMq7cjKDTVhmuAKGlQcAQ&libraries=places&callback=initAdminMap" async defer></script>
+<!-- Google Maps JavaScript API with matching callback 'initGoogleMaps' -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCBR2xh-Ks61EEMq7cjKDTVhmuAKGlQcAQ&libraries=places&callback=initGoogleMaps" async defer></script>
 
 <style>
-body{margin:0;font-family:Arial;background:#111;color:#0f8}header{background:#000;padding:15px;border-bottom:2px solid #0f8}
-nav{display:flex;gap:8px;flex-wrap:wrap;padding:10px;background:#181818}nav button{padding:8px}
-.page{display:none;padding:20px}.active{display:block}.card{border:1px solid #0f8;padding:12px;margin:10px 0;background:#1a1a1a}
-input,select,textarea{width:100%;margin:5px 0;padding:8px;box-sizing:border-box;background:#222;color:#0f8;border:1px solid #0f8;}
-button{background:#0f8;color:#000;font-weight:bold;border:0;padding:8px 12px;cursor:pointer;border-radius:4px;transition:0.2s;}
-button:hover{background:#0a6;color:#fff;}
-button:disabled{background:#555;color:#888;cursor:not-allowed;}
-
-/* Live Order Map Frame */
-#admin-map {
-  width: 100%;
-  height: 350px;
-  border: 1px solid #0f8;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  background: #000;
+/* Universal Box-Sizing Reset prevents layout overflow/pinching on small screens */
+* {
+  box-sizing: border-box;
 }
-</style></head><body>
 
-<!-- Login Lock Screen -->
-<div id="login-screen" style="max-width: 400px; margin: 100px auto; padding: 25px; border: 1px solid #0f8; background: #000; border-radius: 8px; text-align: center;">
-  <h2 style="margin-top:0;">SbheneCart Gatekeeper</h2>
-  <p style="color:#888;">Enter your administrator password to unlock the console.</p>
-  <input id="login-email" type="email" placeholder="Admin Email" style="margin-bottom:10px;">
-  <input id="login-pw" type="password" placeholder="Password" style="margin-bottom:15px;">
-  <button id="login-btn" onclick="loginAdmin()" style="width:100%;">Unlock Console</button>
+body { font-family: Arial, sans-serif; background: #000; color: #0f8; margin: 0; overflow-x: hidden; }
+header {
+  padding: 15px;
+  border-bottom: 1px solid #0f8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: #000;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+header h2 { margin: 0; }
+header div { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* Filter Section */
+.filter-container {
+  padding: 15px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+select, input[type="text"], input[type="tel"], textarea {
+  width: 100%;
+  padding: 12px; /* Marginally larger padding for easy tap target on mobile */
+  border: 1px solid #0f8;
+  background: #111;
+  color: #0f8;
+  box-sizing: border-box;
+  border-radius: 4px;
+  font-size: 16px; /* Prevents iOS auto-zoom on input focus */
+}
+
+/* Category Shortcuts - BIGGER & VERTICAL STACK */
+.category-section-title {
+  padding: 20px 15px 5px 15px;
+  margin: 0;
+  font-size: 22px;
+  font-weight: bold;
+  border-bottom: 1px solid #222;
+}
+.category-shortcuts {
+  display: flex;
+  flex-direction: column; /* Vertical Stack */
+  gap: 12px;
+  padding: 15px;
+  box-sizing: border-box;
+}
+.cat-shortcut-btn {
+  background: #111;
+  color: #0f8;
+  border: 1px solid #0f8;
+  padding: 18px 24px; /* Bigger Padding */
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 18px; /* Bigger Font Size */
+  cursor: pointer;
+  transition: 0.2s;
+  display: flex; /* Flex alignment for emoji and text */
+  align-items: center;
+  gap: 15px;
+  width: 100%; /* Spans full width */
+  box-sizing: border-box;
+}
+.cat-shortcut-btn:hover, .cat-shortcut-btn.active {
+  background: #0f8;
+  color: #000;
+}
+
+/* Product Grid (Large cards on Desktop, 1 large readable column on mobile) */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 15px;
+}
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: 1fr; /* Full-width single column: absolutely no pinching needed */
+    gap: 15px;
+    padding: 10px;
+  }
+}
+
+/* Card Styling */
+.card {
+  background: #111;
+  border: 1px solid #0f8;
+  padding: 15px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.2s;
+}
+.card:hover { transform: translateY(-2px); }
+
+/* Auto-sliding Product Image Gallery - SIGNIFICANTLY LARGER */
+.slider-wrapper {
+  position: relative;
+  width: 100%;
+  height: 260px; /* Big, professional-sized pictures */
+  border-radius: 6px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  background: #050505;
+  border: 1px solid #222;
+}
+@media (max-width: 600px) {
+  .slider-wrapper { 
+    height: 240px; /* Giant vertical footprint on mobile */
+  }
+}
+.slider-content {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+}
+.slider-content::-webkit-scrollbar { display: none; }
+.slider-content { -ms-overflow-style: none; scrollbar-width: none; }
+
+.slide-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Fills the massive image wrapper beautifully without letterbox bars */
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  cursor: zoom-in; /* Cursor queue indicating image can be opened in lightbox */
+}
+.slider-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0,0,0,0.6);
+  color: #0f8;
+  border: 1px solid #0f8;
+  border-radius: 50%;
+  width: 32px; /* Marginally bigger arrow button for easy tapping */
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  z-index: 5;
+  user-select: none;
+}
+.slider-arrow.prev { left: 8px; }
+.slider-arrow.next { right: 8px; }
+
+.card-details { flex-grow: 1; margin-bottom: 10px; }
+.card-details h3 { margin: 8px 0; font-size: 18px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+.card-details p { margin: 5px 0; font-weight: bold; color: #fff; font-size: 16px; }
+.card-details small { font-size: 12px; color: #888; display: block; margin-top: 4px; }
+
+/* Buttons & State Styles */
+button {
+  background: #0f8;
+  color: #000;
+  font-weight: bold;
+  border: 0;
+  padding: 12px 16px; /* Enhanced tap height */
+  cursor: pointer;
+  border-radius: 4px;
+  transition: 0.2s;
+  font-size: 15px;
+}
+button:hover { background: #0a6; color: #fff; }
+button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1px solid #555; }
+#cart-btn { background: transparent; color: #0f8; border: 1px solid #0f8; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+#cart-count { background: #0f8; color: #000; border-radius: 50%; padding: 2px 8px; font-size: 12px; font-weight: bold; }
+
+/* Sidebar Drawer */
+.sidebar {
+  position: fixed;
+  top: 0;
+  right: -350px;
+  width: 320px;
+  height: 100%;
+  background: #111;
+  border-left: 2px solid #0f8;
+  z-index: 1000;
+  padding: 20px;
+  transition: 0.3s;
+  box-shadow: -5px 0 15px rgba(0,255,136,0.1);
+  color: #0f8;
+  box-sizing: border-box;
+}
+@media (max-width: 360px) {
+  .sidebar { width: 100%; right: -100%; } /* Stretches edge-to-edge on very small screens */
+}
+.sidebar.open { right: 0; }
+.cart-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #0f8; padding-bottom: 10px; }
+#cart-items { max-height: 55vh; overflow-y: auto; margin: 15px 0; }
+.cart-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding: 12px 0; }
+.qty-btn { padding: 4px 10px; background: #222; color: #0f8; border: 1px solid #0f8; font-size: 14px; }
+
+/* Modal Styling */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.85);
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  overflow-y: auto;
+}
+.modal-content {
+  background: #111;
+  border: 2px solid #0f8;
+  padding: 25px;
+  width: 95%;
+  max-width: 480px;
+  border-radius: 10px;
+  color: #0f8;
+  box-sizing: border-box;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.close-modal-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 24px;
+  cursor: pointer;
+  color: #0f8;
+}
+
+/* Image Zoom Lightbox Modal */
+.lightbox-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.95);
+  justify-content: center;
+  align-items: center;
+  z-index: 3000; /* Stacks on top of checkout and details modals */
+}
+.lightbox-content {
+  max-width: 95%;
+  max-height: 85%;
+  object-fit: contain;
+  border: 1px solid #0f8;
+  border-radius: 6px;
+  box-shadow: 0 0 20px rgba(0,255,136,0.3);
+}
+.close-lightbox {
+  position: absolute;
+  top: 20px;
+  right: 25px;
+  font-size: 35px;
+  color: #0f8;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Pay breakdown display */
+.payment-breakdown {
+  background: #000;
+  border: 1px solid #333;
+  padding: 10px;
+  border-radius: 4px;
+  margin: 15px 0;
+  font-size: 14px;
+}
+.breakdown-row { display: flex; justify-content: space-between; margin: 4px 0; }
+.eft-details {
+  border: 1px dashed #0f8;
+  background: #0a0a0a;
+  padding: 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  margin: 10px 0;
+}
+
+/* Map Div */
+#checkout-map {
+  width: 100%;
+  height: 200px;
+  margin-top: 10px;
+  border-radius: 4px;
+  border: 1px solid #0f8;
+  display: none;
+}
+
+/* Fly to Cart Animation Particle */
+.flying-item {
+  position: fixed;
+  width: 20px;
+  height: 20px;
+  background: #0f8;
+  border-radius: 50%;
+  z-index: 9999;
+  transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  pointer-events: none;
+}
+</style>
+</head>
+<body>
+    
+<header>
+  <h2>SbheneCart</h2>
+  <div>
+    <button id="cart-btn" onclick="toggleCart()">
+      🛒 Cart <span id="cart-count">0</span>
+    </button>
+    <button onclick="location.href='track.html'">📦 Track Order</button>
+    <button onclick="location.href='admin.html'">Admin</button>
+  </div>
+</header>
+
+<!-- Search and Dynamic Filters -->
+<div class="filter-container">
+  <input id="search" type="text" placeholder="🔍 Search products..." oninput="renderProducts()">
+  <select id="cat-filter" onchange="onCategoryFilterChange()">
+    <option value="">All Categories</option>
+  </select>
+  <select id="subcat-filter" onchange="onSubcategoryFilterChange()">
+    <option value="">All Subcategories</option>
+  </select>
+  <select id="subsubcat-filter" onchange="renderProducts()">
+    <option value="">All Sub-subcategories</option>
+  </select>
 </div>
 
-<!-- Main Admin Panel Wrapper -->
-<div id="admin-wrapper" style="display:none;">
-  <header style="display:flex; justify-content:space-between; align-items:center;">
-    <h2>SbheneCart Admin Pro</h2>
-    <button onclick="logoutAdmin()" style="background:#222; color:#0f8; border:1px solid #0f8;">Lock Panel</button>
-  </header>
-  
-  <nav>
-    <button onclick="show('dash')">Dashboard</button>
-    <button onclick="show('products')">Products</button>
-    <button onclick="show('categories')">Categories</button>
-    <button onclick="show('subcategories')">Subcategories</button>
-    <button onclick="show('subsubcategories')">Sub-subcategories</button>
-    <button onclick="show('orders')">Orders & Map</button>
-    <button onclick="show('users')">Users</button>
-    <button onclick="show('coupons')">Coupons</button>
-    <button onclick="show('reports')">Reports</button>
-    <button onclick="show('settings')">Settings</button>
-  </nav>
+<!-- Category Shortcuts Section (VERTICAL & BIGGER) -->
+<h3 class="category-section-title">🛒 Browse Categories</h3>
+<div id="category-shortcuts" class="category-shortcuts">
+  <!-- Dynamic vertical shortcuts with static emoji mapping populate here -->
+</div>
+    
+<div class="grid" id="products"></div>
 
-  <section id="dash" class="page active"><div class="card"><div id="stats"></div></div></section>
+<!-- Slide-out Cart Sidebar -->
+<div id="cart-sidebar" class="sidebar">
+  <div class="cart-header">
+    <h3>Your Cart</h3>
+    <button onclick="toggleCart()" style="background:#222; color:#0f8; border:1px solid #0f8;">Close</button>
+  </div>
+  <div id="cart-items"></div>
+  <div style="margin-top:15px; font-weight:bold; display:flex; justify-content:space-between;">
+    <span>Subtotal:</span>
+    <span id="cart-total">R0</span>
+  </div>
+  <button id="checkout-trigger" onclick="openCheckoutModal()" style="width:100%; margin-top:15px;">Place Order</button>
+</div>
 
-  <section id="products" class="page">
-    <div class="card">
-      <input id="pn" placeholder="Name"><input id="pp" type="number" placeholder="Price">
-      <label style="display:block; margin: 10px 0 5px 0; font-size:12px;">Product Images:</label>
-      <input id="pi" type="file" accept="image/*" multiple>
-      <select id="pc"></select>
-      <select id="psc"><option value="">Select Subcategory</option></select>
-      <select id="pssc"><option value="">Select Sub-subcategory</option></select>
-      <input id="ps" type="number" placeholder="Stock"><textarea id="pd" placeholder="Description"></textarea>
-      <button id="save-prod-btn" onclick="saveProduct()">Save Product</button>
-    </div>
-    <div id="plist"></div>
-  </section>
+<!-- Product Details Modal -->
+<div id="details-modal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal-btn" onclick="closeDetailsModal()">&times;</span>
+    <div id="modal-details-content"></div>
+  </div>
+</div>
 
-  <section id="categories" class="page">
-    <div class="card">
-      <input id="newCat" placeholder="Category">
-      <button onclick="addCat()">Add Category</button>
-      <div id="cats"></div>
-    </div>
-  </section>
+<!-- Lightbox Modal for Zooming Images -->
+<div id="lightbox-modal" class="lightbox-modal" onclick="closeLightbox()">
+  <span class="close-lightbox" onclick="closeLightbox()">&times;</span>
+  <img id="lightbox-img" class="lightbox-content" src="">
+</div>
 
-  <section id="subcategories" class="page">
-    <div class="card">
-      <h3>Subcategories</h3>
-      <select id="parentCat"></select>
-      <input id="newSubCat" placeholder="Subcategory">
-      <button onclick="addSubCat()">Add Subcategory</button>
-      <div id="subcats"></div>
-    </div>
-  </section>
-
-  <section id="subsubcategories" class="page">
-    <div class="card">
-      <h3>Sub-subcategories</h3>
-      <select id="parentCategorySS"></select>
-      <select id="parentSubcategorySS"><option value="">Select Subcategory</option></select>
-      <input id="newSubSubCat" placeholder="Sub-subcategory">
-      <button onclick="addSubSubCat()">Add Sub-subcategory</button>
-      <div id="subsubcats"></div>
-    </div>
-  </section>
-
-  <section id="orders" class="page">
-    <div class="card">
-      <h3>Live Order Fulfillment Map</h3>
-      <!-- Dynamic Google Map Render Area -->
-      <div id="admin-map"></div>
+<!-- Checkout Modal with Google Maps Map & Address Autocomplete -->
+<div id="checkout-modal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal-btn" onclick="closeCheckoutModal()">&times;</span>
+    <h2>Complete Your Order</h2>
+    <form id="checkout-form" onsubmit="processCheckout(event)">
       
-      <h3>Fulfillment Queue</h3>
-      <div id="olist"></div>
-    </div>
-  </section>
+      <label style="display:block; margin: 10px 0 5px;">Customer Name *</label>
+      <input type="text" id="cust-name" required placeholder="John Doe">
+      
+      <!-- Optimized Phone input with dedicated number dialing keyboard context -->
+      <label style="display:block; margin: 10px 0 5px;">Phone Number *</label>
+      <input type="tel" id="cust-phone" inputmode="tel" autocomplete="tel" required placeholder="082 123 4567">
+      
+      <!-- Google Autocomplete Address Field -->
+      <label style="display:block; margin: 10px 0 5px;">Delivery Address (Search with Google) *</label>
+      <input type="text" id="cust-address" required placeholder="Start typing your delivery address...">
+      
+      <!-- Map display nested inside form -->
+      <div id="checkout-map"></div>
+      
+      <!-- Delivery Location Selector -->
+      <label style="display:block; margin: 10px 0 5px; margin-top: 15px;">Delivery Location / Region *</label>
+      <select id="cust-location" onchange="calculateDeliveryFee()" required>
+        <option value="" disabled selected>Select Your Location</option>
+        <option value="Local Pickup" data-fee="0">Local Pickup (R0)</option>
+        <option value="Durban Metro" data-fee="45">Durban Metro (R45)</option>
+        <option value="Gauteng (JHB/PTA)" data-fee="85">Gauteng (JHB/PTA) (R85)</option>
+        <option value="Western Cape (CT)" data-fee="95">Western Cape (CT) (R95)</option>
+        <option value="Eastern Cape" data-fee="90">Eastern Cape (R90)</option>
+        <option value="Free State" data-fee="85">Free State (R85)</option>
+        <option value="KZN Outlying" data-fee="70">KZN Outlying (R70)</option>
+        <option value="Other Regional SA" data-fee="110">Other Regional SA (R110)</option>
+      </select>
+      
+      <!-- Payment Method Selector -->
+      <label style="display:block; margin: 10px 0 5px;">Payment Method *</label>
+      <select id="payment-method" onchange="handlePaymentMethodChange()" required>
+        <option value="" disabled selected>Select Payment Method</option>
+        <option value="Cash on Delivery">Cash on Delivery (COD)</option>
+        <option value="EFT Bank Transfer">EFT Bank Transfer (Manual)</option>
+        <option value="Online Card / Instant EFT">Online Card / Instant EFT (Secure Checkout)</option>
+      </select>
 
-  <section id="users" class="page"><div class="card"><div id="ulist"></div></div></section>
-  <section id="coupons" class="page"><div class="card">Coupon manager placeholder.</div></section>
-  <section id="reports" class="page"><div class="card">Sales, inventory and revenue reports placeholder.</div></section>
- 
-  <section id="settings" class="page">
-    <div class="card">
-        <h3>Administrator Settings</h3>
-        <p>Administrator accounts are managed through Firebase Authentication.</p>
-        <p>Create, remove or reset passwords in the Firebase Console.</p>
-    </div>
-  </section>
+      <!-- EFT Instruction Block -->
+      <div id="eft-instructions" class="eft-details" style="display:none;">
+        <strong>SbheneCart Bank Account Details:</strong><br>
+        Bank: FNB / First National Bank<br>
+        Account Number: 62900112233<br>
+        Branch Code: 250655<br>
+        Reference: Use your Order ID<br>
+        <small style="color:#aaa;">* Please email your proof of payment to payments@sbhenecart.com</small>
+      </div>
+
+      <!-- Online Card Block info -->
+      <div id="online-instructions" class="eft-details" style="display:none; border-color:#0f8;">
+        💳 Securely process your Visa/Mastercard card payment or make an instant EFT. Powered by our payment integration.
+      </div>
+
+      <!-- Price breakdown summary -->
+      <div class="payment-breakdown">
+        <div class="breakdown-row">
+          <span>Items Subtotal:</span>
+          <span id="breakdown-subtotal">R0</span>
+        </div>
+        <div class="breakdown-row">
+          <span>Delivery Fee:</span>
+          <span id="breakdown-delivery">R0</span>
+        </div>
+        <hr style="border-color:#222;">
+        <div class="breakdown-row" style="font-weight:bold; font-size:16px;">
+          <span>Grand Total:</span>
+          <span id="breakdown-total">R0</span>
+        </div>
+      </div>
+      
+      <button type="submit" id="checkout-btn" style="width:100%; margin-top:10px;">Confirm and Place Order</button>
+    </form>
+  </div>
+</div>
+
+<!-- Order Success Popup -->
+<div id="order-popup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.85); justify-content:center; align-items:center; z-index:9999;">
+  <div style="background:#111; border:2px solid #0f8; padding:25px; width:90%; max-width:380px; text-align:center; border-radius:10px; color:#0f8;">
+    <h2>✅ Order Successful</h2>
+    <p>Your Order ID</p>
+    <div id="popup-order-id" style="background:#000; padding:12px; border:1px solid #0f8; font-size:18px; word-break:break-all; margin-bottom:20px;"></div>
+    <button onclick="copyOrderId()" style="width:100%; margin-bottom:10px;">📋 Copy Order ID</button>
+    <button onclick="trackOrderPopup()" style="width:100%; margin-bottom:10px;">📦 Track Order</button>
+    <button onclick="closeOrderPopup()" style="width:100%;">Done</button>
+  </div>
 </div>
 
 <script type="module">
@@ -128,18 +491,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/fireba
 import {
   getFirestore,
   collection,
-  addDoc,
-  updateDoc,
-  deleteDoc,
+  onSnapshot,
   doc,
-  onSnapshot
+  runTransaction
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC4BCz9GeNTgQYa8ydIJreTREVdPklganA",
@@ -153,482 +509,623 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app);
+const analytics = getAnalytics(app);
+const box = document.getElementById('products');
 
-// DOM Elements
-const pn = document.getElementById('pn');
-const pp = document.getElementById('pp');
-const pi = document.getElementById('pi');
-const pc = document.getElementById('pc');
-const psc = document.getElementById('psc');
-const pssc = document.getElementById("pssc");
-const parentCat = document.getElementById('parentCat');
-const newSubCat = document.getElementById('newSubCat');
-const ps = document.getElementById('ps');
-const pd = document.getElementById('pd');
-const plist = document.getElementById('plist');
-const newCat = document.getElementById('newCat');
-const olist = document.getElementById('olist');
-const ulist = document.getElementById('ulist');
-const stats = document.getElementById('stats');
-const parentCategorySS = document.getElementById("parentCategorySS");
-const parentSubcategorySS = document.getElementById("parentSubcategorySS");
-const newSubSubCat = document.getElementById("newSubSubCat");
+let dbProducts = [];
+let dbCategories = [];
+let dbSubcategories = [];
+let dbSubsubcategories = [];
+let cart = [];
+let deliveryFee = 0;
 
-parentCategorySS.onchange = updateSSSubcategories;
-pc.onchange = updateSubcategories;
-
-function updateSubcategories() {
-    psc.innerHTML =
-        '<option value="">Select Subcategory</option>' +
-        subcats
-            .filter(s => s.category === pc.value)
-            .map(s => `<option value="${s.name}">${s.name}</option>`)
-            .join('');
-}
-function updateSSSubcategories() {
-    parentSubcategorySS.innerHTML =
-        '<option value="">Select Subcategory</option>' +
-        subcats
-            .filter(s => s.category === parentCategorySS.value)
-            .map(s => `<option value="${s.name}">${s.name}</option>`)
-            .join('');
-}
-function updateProductSubSubcategories() {
-    pssc.innerHTML =
-        '<option value="">Select Sub-subcategory</option>' +
-        subsubcats
-            .filter(s => s.subcategory === psc.value)
-            .map(s => `<option value="${s.name}">${s.name}</option>`)
-            .join('');
-}
-
-psc.onchange = updateProductSubSubcategories;
-
-let cats = [];
-let subcats = [];
-let subsubcats = [];
-let products = [];
-let orders = [];
-let edit = -1;
-
-// Maps Instance Globals
-let adminMap;
-let mapMarkers = [];
-
-onSnapshot(collection(db, "categories"), (snapshot) => {
-    cats = [];
-    snapshot.forEach(doc => { cats.push({ id: doc.id, ...doc.data() }); });
-    cats.sort((a,b)=>a.name.localeCompare(b.name));
-    if(auth.currentUser) refresh();
-});
-
-onSnapshot(collection(db, "subcategories"), (snapshot) => {
-    subcats = [];
-    snapshot.forEach(doc => { subcats.push({ id: doc.id, ...doc.data() }); });
-    if(auth.currentUser) refresh();
-});
-
-onSnapshot(collection(db, "subsubcategories"), (snapshot) => {
-    subsubcats = [];
-    snapshot.forEach(doc => { subsubcats.push({ id: doc.id, ...doc.data() }); });
-    if(auth.currentUser) refresh();
-});
-
-onSnapshot(collection(db, "products"), (snapshot) => {
-    products = [];
-    snapshot.forEach(d => { products.push({ id: d.id, ...d.data() }); });
-    if (auth.currentUser) refresh();
-});
-
-// Real-time Orders Sync & Map Trigger
-onSnapshot(collection(db, "orders"), (snapshot) => {
-    orders = [];
-    snapshot.forEach(d => { orders.push({ id: d.id, ...d.data() }); });
-    orders.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-    if (auth.currentUser) {
-        refresh();
-        updateAdminMapPins();
-    }
-});
-
-// Authentication Handlers
-window.loginAdmin = async () => {
-    const email = document.getElementById("login-email").value.trim();
-    const password = document.getElementById("login-pw").value;
-    try {
-        await signInWithEmailAndPassword(auth, email, password);
-        document.getElementById("login-email").value = "";
-        document.getElementById("login-pw").value = "";
-    } catch (err) {
-        alert(err.message);
-    }
+// Dynamic category list emoji mapper
+const emojiMap = {
+  "Electronics": "📱",
+  "Fashion": "👕",
+  "Food": "🍔",
+  "Beauty": "💄",
+  "Home": "🏠",
+  "Automotive": "🚗",
+  "Pets": "🐶",
+  "Sports": "⚽",
+  "Books": "📚"
 };
 
-window.logoutAdmin = async () => { await signOut(auth); };
+// Google Maps global state variables
+let mapInstance;
+let mapMarker;
+let selectedCoordinates = null;
 
-// Navigation
-window.show = (id) => {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  refresh();
+// Initialize LocalStorage Cart
+try {
+  cart = JSON.parse(localStorage.getItem("cart"));
+  if (!Array.isArray(cart)) cart = [];
+} catch (e) {
+  cart = [];
+}
+localStorage.setItem("cart", JSON.stringify(cart));
+
+// Real-time Firestore Listeners
+onSnapshot(collection(db, "categories"), (snap) => {
+  dbCategories = [];
+  snap.forEach(d => dbCategories.push({ id: d.id, ...d.data() }));
+  populateCategoryFilters();
+  renderCategoryShortcuts();
+});
+
+onSnapshot(collection(db, "subcategories"), (snap) => {
+  dbSubcategories = [];
+  snap.forEach(d => dbSubcategories.push({ id: d.id, ...d.data() }));
+  onCategoryFilterChange();
+});
+
+onSnapshot(collection(db, "subsubcategories"), (snap) => {
+  dbSubsubcategories = [];
+  snap.forEach(d => dbSubsubcategories.push({ id: d.id, ...d.data() }));
+  onSubcategoryFilterChange();
+});
+
+onSnapshot(collection(db, "products"), (snap) => {
+  dbProducts = [];
+  snap.forEach(d => dbProducts.push({ id: d.id, ...d.data() }));
+  renderProducts();
+  updateCartUI(); 
+});
+
+// Category Shortcuts UI populator (Vertical & Larger Structure)
+function renderCategoryShortcuts() {
+  const shortcutContainer = document.getElementById('category-shortcuts');
+  const catFilter = document.getElementById('cat-filter');
+  const activeCat = catFilter.value;
+
+  const defaultBtn = `
+    <button class="cat-shortcut-btn ${!activeCat ? 'active' : ''}" onclick="filterCategory('')">
+      📦 All Products
+    </button>
+  `;
+
+  const dynamicBtns = dbCategories.map(c => {
+    const emoji = emojiMap[c.name] || "🏷️";
+    const isActive = activeCat === c.name ? "active" : "";
+    return `
+      <button class="cat-shortcut-btn ${isActive}" onclick="filterCategory('${c.name}')">
+        <span>${emoji}</span> <span>${c.name}</span>
+      </button>
+    `;
+  }).join('');
+
+  shortcutContainer.innerHTML = defaultBtn + dynamicBtns;
+}
+
+// Setup Cascading Filters
+function populateCategoryFilters() {
+  const catFilter = document.getElementById('cat-filter');
+  const savedVal = catFilter.value;
+  catFilter.innerHTML = '<option value="">All Categories</option>' + 
+    dbCategories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+  catFilter.value = savedVal;
+}
+
+window.filterCategory = (category) => {
+  document.getElementById("cat-filter").value = category;
+  onCategoryFilterChange();
+  renderCategoryShortcuts();
+};
+
+window.onCategoryFilterChange = () => {
+  const catVal = document.getElementById('cat-filter').value;
+  const subcatFilter = document.getElementById('subcat-filter');
   
-  // Re-trigger visual resizing for Google Map if changing viewports to Orders Tab
-  if (id === 'orders' && adminMap) {
-    google.maps.event.trigger(adminMap, "resize");
-    updateAdminMapPins();
-  }
+  const filteredSub = dbSubcategories.filter(s => !catVal || s.category === catVal);
+  subcatFilter.innerHTML = '<option value="">All Subcategories</option>' + 
+    filteredSub.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+  
+  onSubcategoryFilterChange();
+  renderCategoryShortcuts();
 };
 
-// Admin Map Initialization
-window.initAdminMap = () => {
-  const mapDiv = document.getElementById('admin-map');
-  if (!mapDiv) return;
+window.onSubcategoryFilterChange = () => {
+  const subcatVal = document.getElementById('subcat-filter').value;
+  const subsubcatFilter = document.getElementById('subsubcat-filter');
+  
+  const filteredSubSub = dbSubsubcategories.filter(s => !subcatVal || s.subcategory === subcatVal);
+  subsubcatFilter.innerHTML = '<option value="">All Sub-subcategories</option>' + 
+    filteredSubSub.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+  
+  renderProducts();
+};
 
-  const darkMapStyle = [
-    { elementType: "geometry", stylers: [{ color: "#212121" }] },
-    { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-    { elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
-    { elementType: "labels.text.stroke", stylers: [{ color: "#212121" }] },
-    { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#757575" }] },
-    { featureType: "water", elementType: "geometry", stylers: [{ color: "#000000" }] }
-  ];
+// Render Product Grid
+window.renderProducts = () => {
+  const search = document.getElementById("search").value.toLowerCase();
+  const catVal = document.getElementById("cat-filter").value;
+  const subcatVal = document.getElementById("subcat-filter").value;
+  const subsubcatVal = document.getElementById("subsubcat-filter").value;
 
-  adminMap = new google.maps.Map(mapDiv, {
-    center: { lat: -29.8587, lng: 31.0218 }, // Default centering (South Africa)
-    zoom: 8,
-    styles: darkMapStyle,
-    zoomControl: true,
-    streetViewControl: false,
-    mapTypeControl: false
+  const filtered = dbProducts.filter(p => {
+    const matchesSearch = (p.name || "").toLowerCase().includes(search) || (p.description || "").toLowerCase().includes(search);
+    const matchesCat = !catVal || p.category === catVal;
+    const matchesSub = !subcatVal || p.subcategory === subcatVal;
+    const matchesSubSub = !subsubcatVal || p.subsubcategory === subsubcatVal;
+    return matchesSearch && matchesCat && matchesSub && matchesSubSub;
   });
 
-  updateAdminMapPins();
+  box.innerHTML = filtered.length
+    ? filtered.map(p => {
+        const images = p.images && p.images.length ? p.images : (p.image ? [p.image] : []);
+        const isOutOfStock = p.stock <= 0;
+        
+        return `
+          <div class="card" onclick="openDetailsModal('${p.id}')">
+            <div class="slider-wrapper" id="slider-${p.id}" onclick="event.stopPropagation()">
+              ${images.length > 1 ? `<button class="slider-arrow prev" onclick="moveSlider('${p.id}', -1)">&#10094;</button>` : ''}
+              <div class="slider-content">
+                ${images.map(img => `<img src="${img}" class="slide-img" onclick="openLightbox('${img}')">`).join('')}
+              </div>
+              ${images.length > 1 ? `<button class="slider-arrow next" onclick="moveSlider('${p.id}', 1)">&#10095;</button>` : ''}
+            </div>
+            <div class="card-details">
+              <h3>${p.name}</h3>
+              <p>R${p.price}</p>
+              <small>${p.category}${p.subcategory ? " • " + p.subcategory : ""}${p.subsubcategory ? " • " + p.subsubcategory : ""} • Stock: ${p.stock}</small>
+            </div>
+            <button ${isOutOfStock ? 'disabled' : ''} onclick="event.stopPropagation(); addToCart('${p.id}', this)">
+              ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+            </button>
+          </div>
+        `;
+      }).join("")
+    : "<p style='padding:20px'>No products found.</p>";
 };
 
-// Plot live order coordinates pins in real-time
-function updateAdminMapPins() {
-  if (!adminMap || !orders.length) return;
-
-  // Clear previous markers
-  mapMarkers.forEach(m => m.setMap(null));
-  mapMarkers = [];
-
-  const bounds = new google.maps.LatLngBounds();
-  let hasValidCoordinates = false;
-
-  orders.forEach(o => {
-    if (o.customer?.coordinates && o.customer.coordinates.lat && o.customer.coordinates.lng) {
-      const latLng = {
-        lat: Number(o.customer.coordinates.lat),
-        lng: Number(o.customer.coordinates.lng)
-      };
-
-      // Set Pin color configurations relative to order status
-      let pinColor = "#00e676"; // Pending = Neon Green
-      if (o.status === "Processing") pinColor = "#ffd600"; // Processing = Yellow
-      if (o.status === "Shipped") pinColor = "#29b6f6"; // Shipped = Blue
-      if (o.status === "Delivered") pinColor = "#388e3c"; // Delivered = Forest Green
-      if (o.status === "Cancelled") pinColor = "#ff1744"; // Cancelled = Red
-
-      const marker = new google.maps.Marker({
-        position: latLng,
-        map: adminMap,
-        title: `Order #${o.id} - ${o.customer.name}`,
-        icon: {
-          path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-          fillColor: pinColor,
-          fillOpacity: 1,
-          strokeColor: "#000",
-          strokeWeight: 1.5,
-          scale: 6
-        }
-      });
-
-      // Information click window
-      const infoWindow = new google.maps.InfoWindow({
-        content: `
-          <div style="color:#000; font-family:Arial; padding:5px; font-size:12px;">
-            <strong>Order ID: ${o.id.substring(0, 8)}...</strong><br>
-            Customer: ${o.customer.name}<br>
-            Address: ${o.customer.address}<br>
-            Phone: ${o.customer.phone}<br>
-            Payment: ${o.payment?.method || "N/A"}<br>
-            Status: <strong>${o.status}</strong><br>
-            Total: <strong>R${o.total}</strong>
-          </div>
-        `
-      });
-
-      marker.addListener('click', () => {
-        infoWindow.open(adminMap, marker);
-      });
-
-      mapMarkers.push(marker);
-      bounds.extend(latLng);
-      hasValidCoordinates = true;
+// Auto-sliding Logic
+setInterval(() => {
+  document.querySelectorAll('.slider-content').forEach(slider => {
+    if (slider.matches(':hover')) return;
+    const slideWidth = slider.clientWidth;
+    if (slideWidth === 0) return;
+    if (slider.scrollLeft + slideWidth >= slider.scrollWidth - 10) {
+      slider.scrollTo({ left: 0, behavior: 'smooth' });
+    } else {
+      slider.scrollBy({ left: slideWidth, behavior: 'smooth' });
     }
   });
+}, 4000);
 
-  // Fit boundaries automatically to envelop all plotted order coordinates
-  if (hasValidCoordinates) {
-    adminMap.fitBounds(bounds);
+window.moveSlider = (id, direction) => {
+  const slider = document.querySelector(`#slider-${id} .slider-content`);
+  if (!slider) return;
+  const slideWidth = slider.clientWidth;
+  slider.scrollBy({ left: direction * slideWidth, behavior: 'smooth' });
+};
+
+// Add to Cart Logic
+window.addToCart = (id, buttonEl) => {
+  const product = dbProducts.find(p => p.id === id);
+  if (!product || product.stock <= 0) return;
+
+  const cartItem = cart.find(item => item.id === id);
+  const currentQty = cartItem ? cartItem.quantity : 0;
+
+  if (currentQty + 1 > product.stock) {
+    alert(`Cannot add more. Only ${product.stock} items left in stock.`);
+    return;
   }
+
+  if (buttonEl) flyToCartAnimation(buttonEl);
+
+  if (cartItem) {
+    cartItem.quantity++;
+  } else {
+    cart.push({ ...product, quantity: 1 });
+  }
+
+  logEvent(analytics, 'add_to_cart', {
+    currency: 'ZAR',
+    value: product.price,
+    items: [{ item_id: product.id, item_name: product.name, price: product.price, quantity: 1 }]
+  });
+
+  updateCartUI();
+};
+
+window.changeQty = (id, delta) => {
+  const cartItemIndex = cart.findIndex(item => item.id === id);
+  if (cartItemIndex === -1) return;
+
+  const product = dbProducts.find(p => p.id === id);
+  const targetQty = cart[cartItemIndex].quantity + delta;
+
+  if (delta > 0 && product && targetQty > product.stock) {
+    alert(`Cannot exceed available stock (${product.stock} left).`);
+    return;
+  }
+
+  if (targetQty <= 0) {
+    cart.splice(cartItemIndex, 1);
+  } else {
+    cart[cartItemIndex].quantity = targetQty;
+  }
+  updateCartUI();
+};
+
+function updateCartUI() {
+  const cartItemsContainer = document.getElementById('cart-items');
+  
+  cart = cart.map(item => {
+    const fresh = dbProducts.find(p => p.id === item.id);
+    if (!fresh) return null;
+    if (item.quantity > fresh.stock) {
+      item.quantity = fresh.stock;
+    }
+    return item.quantity > 0 ? { ...item, ...fresh } : null;
+  }).filter(Boolean);
+
+  const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  document.getElementById('cart-count').innerText = totalCount;
+  document.getElementById('cart-total').innerText = `R${totalPrice}`;
+
+  cartItemsContainer.innerHTML = cart.length
+    ? cart.map(item => `
+        <div class="cart-item">
+          <div>
+            <b>${item.name}</b><br>
+            <small>R${item.price} each (Stock: ${item.stock})</small>
+          </div>
+          <div style="display:flex; align-items:center; gap:5px;">
+            <button class="qty-btn" onclick="changeQty('${item.id}', -1)">-</button>
+            <span>${item.quantity}</span>
+            <button class="qty-btn" onclick="changeQty('${item.id}', 1)" ${item.quantity >= item.stock ? 'disabled' : ''}>+</button>
+          </div>
+        </div>
+      `).join('')
+    : '<p>Your cart is empty.</p>';
+    
+  localStorage.setItem("cart", JSON.stringify(cart));
 }
 
-// Category Operations
-window.addCat = async () => {
-    const name = newCat.value.trim();
-    if (!name) return;
-    if (cats.some(c => c.name.toLowerCase() === name.toLowerCase())) {
-        alert("Category already exists.");
-        return;
-    }
-    await addDoc(collection(db, "categories"), { name });
-    newCat.value = "";
+// Sidebar Drawer Control
+window.toggleCart = () => {
+  document.getElementById('cart-sidebar').classList.toggle('open');
 };
 
-window.addSubCat = async () => {
-    if(parentCat.value=="" || newSubCat.value.trim()==""){
-        alert("Choose a category and enter a subcategory.");
-        return;
-    }
-    await addDoc(collection(db,"subcategories"),{
-        category: parentCat.value,
-        name: newSubCat.value.trim()
-    });
-    newSubCat.value="";
+// Details Modal Core
+window.openDetailsModal = (id) => {
+  const p = dbProducts.find(x => x.id === id);
+  if (!p) return;
+  const images = p.images && p.images.length ? p.images : (p.image ? [p.image] : []);
+  const isOutOfStock = p.stock <= 0;
+
+  document.getElementById('modal-details-content').innerHTML = `
+    <div class="slider-wrapper" id="modal-slider-${p.id}" style="height: 280px;">
+      ${images.length > 1 ? `<button class="slider-arrow prev" onclick="moveSlider('modal-slider-${p.id}', -1)">&#10094;</button>` : ''}
+      <div class="slider-content">
+        ${images.map(img => `<img src="${img}" class="slide-img" onclick="openLightbox('${img}')">`).join('')}
+      </div>
+      ${images.length > 1 ? `<button class="slider-arrow next" onclick="moveSlider('modal-slider-${p.id}', 1)">&#10095;</button>` : ''}
+    </div>
+    <h2>${p.name}</h2>
+    <h3 style="color:#fff;">R${p.price}</h3>
+    <p style="color:#888; font-size:12px;">Category: ${p.category} ${p.subcategory ? ' • ' + p.subcategory : ''} ${p.subsubcategory ? ' • ' + p.subsubcategory : ''}</p>
+    <p style="margin: 15px 0; line-height:1.4;">${p.description || "No description provided."}</p>
+    <p><b>Stock Available:</b> ${p.stock}</p>
+    <button ${isOutOfStock ? 'disabled' : ''} onclick="addToCart('${p.id}', null); closeDetailsModal();" style="width:100%; margin-top:10px;">
+      ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+    </button>
+  `;
+  document.getElementById('details-modal').style.display = "flex";
 };
 
-window.addSubSubCat = async () => {
-    if (parentCategorySS.value == "" || parentSubcategorySS.value == "" || newSubSubCat.value.trim() == "") {
-        alert("Choose category, subcategory and enter a sub-subcategory.");
-        return;
-    }
-    await addDoc(collection(db, "subsubcategories"), {
-        category: parentCategorySS.value,
-        subcategory: parentSubcategorySS.value,
-        name: newSubSubCat.value.trim()
-    });
-    newSubSubCat.value = "";
+window.closeDetailsModal = () => {
+  document.getElementById('details-modal').style.display = "none";
 };
 
-window.deleteCategory = async (id) => {
-    if(!confirm("Delete this category?")) return;
-    await deleteDoc(doc(db,"categories",id));
+// Lightbox Window Zoom Core
+window.openLightbox = (imgSrc) => {
+  const lightbox = document.getElementById('lightbox-modal');
+  const lightboxImg = document.getElementById('lightbox-img');
+  lightboxImg.src = imgSrc;
+  lightbox.style.display = 'flex';
 };
 
-window.deleteSubCategory = async (id) => {
-    if(!confirm("Delete this subcategory?")) return;
-    await deleteDoc(doc(db,"subcategories",id));
+window.closeLightbox = () => {
+  document.getElementById('lightbox-modal').style.display = 'none';
 };
 
-window.deleteSubSubCategory = async (id) => {
-    if(!confirm("Delete this sub-subcategory?")) return;
-    await deleteDoc(doc(db,"subsubcategories",id));
-};
+// Google Maps Initialization & Autocomplete Setup
+window.initGoogleMaps = () => {
+  const addressInput = document.getElementById('cust-address');
+  if (!addressInput) return;
 
-// Save Product Logic
-window.saveProduct = async () => {
-  const saveBtn = document.getElementById('save-prod-btn');
-  saveBtn.innerText = "Processing...";
-  saveBtn.disabled = true;
+  const autocomplete = new google.maps.places.Autocomplete(addressInput, {
+    types: ['address'],
+    componentRestrictions: { country: 'za' }
+  });
 
-  if (!pn.value.trim() || !pp.value || !pc.value || !ps.value) {
-      alert("Please complete all required fields.");
-      saveBtn.innerText = "Save Product";
-      saveBtn.disabled = false;
+  autocomplete.addListener('place_changed', () => {
+    const place = autocomplete.getPlace();
+    if (!place.geometry || !place.geometry.location) {
+      alert("No geometry details available for the selected address.");
       return;
-  }
-
-  const files = [...pi.files];
-  let imageUrls = [];
-
-  for (const file of files) {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", "SbheneCart");
-    const response = await fetch("https://api.cloudinary.com/v1_1/qocn8gjn/image/upload", {
-        method: "POST",
-        body: formData
-    });
-    const data = await response.json();
-    if (!response.ok || !data.secure_url) {
-        alert(data.error?.message || "Cloudinary upload failed.");
-        saveBtn.innerText = "Save Product";
-        saveBtn.disabled = false;
-        return;
     }
-    imageUrls.push(data.secure_url);
-  }
 
-  let p = {
-    name: pn.value,
-    price: +pp.value,
-    category: pc.value,
-    subcategory: psc.value,
-    subsubcategory: pssc.value,
-    stock: +ps.value,
-    description: pd.value
+    selectedCoordinates = {
+      lat: place.geometry.location.lat(),
+      lng: place.geometry.location.lng()
+    };
+
+    const mapDiv = document.getElementById('checkout-map');
+    mapDiv.style.display = 'block';
+
+    const darkMapStyle = [
+      { elementType: "geometry", stylers: [{ color: "#212121" }] },
+      { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+      { elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
+      { elementType: "labels.text.stroke", stylers: [{ color: "#212121" }] },
+      { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#757575" }] },
+      { featureType: "water", elementType: "geometry", stylers: [{ color: "#000000" }] }
+    ];
+
+    if (!mapInstance) {
+      mapInstance = new google.maps.Map(mapDiv, {
+        center: selectedCoordinates,
+        zoom: 15,
+        styles: darkMapStyle,
+        disableDefaultUI: true,
+        zoomControl: true
+      });
+
+      mapMarker = new google.maps.Marker({
+        position: selectedCoordinates,
+        map: mapInstance,
+        draggable: true,
+        animation: google.maps.Animation.DROP
+      });
+
+      mapMarker.addListener('dragend', () => {
+        const newPos = mapMarker.getPosition();
+        selectedCoordinates = { lat: newPos.lat(), lng: newPos.lng() };
+      });
+    } else {
+      mapInstance.setCenter(selectedCoordinates);
+      mapMarker.setPosition(selectedCoordinates);
+    }
+  });
+};
+
+// Open Checkout and calculate totals
+window.openCheckoutModal = () => {
+  if (cart.length === 0) return alert('Your cart is empty');
+  toggleCart();
+  
+  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  document.getElementById('breakdown-subtotal').innerText = `R${subtotal}`;
+  
+  document.getElementById('cust-location').selectedIndex = 0;
+  document.getElementById('payment-method').selectedIndex = 0;
+  document.getElementById('eft-instructions').style.display = "none";
+  document.getElementById('online-instructions').style.display = "none";
+  document.getElementById('checkout-map').style.display = "none";
+  document.getElementById('cust-address').value = "";
+  
+  selectedCoordinates = null;
+  deliveryFee = 0;
+  document.getElementById('breakdown-delivery').innerText = `R0`;
+  document.getElementById('breakdown-total').innerText = `R${subtotal}`;
+  
+  document.getElementById('checkout-modal').style.display = "flex";
+};
+
+window.closeCheckoutModal = () => {
+  document.getElementById('checkout-modal').style.display = "none";
+};
+
+// Calculate location fee
+window.calculateDeliveryFee = () => {
+  const locationSelect = document.getElementById('cust-location');
+  const selectedOption = locationSelect.options[locationSelect.selectedIndex];
+  deliveryFee = Number(selectedOption.getAttribute('data-fee')) || 0;
+  
+  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const total = subtotal + deliveryFee;
+  
+  document.getElementById('breakdown-delivery').innerText = `R${deliveryFee}`;
+  document.getElementById('breakdown-total').innerText = `R${total}`;
+};
+
+// Toggle display of payment instructions
+window.handlePaymentMethodChange = () => {
+  const method = document.getElementById('payment-method').value;
+  const eftBlock = document.getElementById('eft-instructions');
+  const onlineBlock = document.getElementById('online-instructions');
+  
+  if (method === "EFT Bank Transfer") {
+    eftBlock.style.display = "block";
+    onlineBlock.style.display = "none";
+  } else if (method === "Online Card / Instant EFT") {
+    eftBlock.style.display = "none";
+    onlineBlock.style.display = "block";
+  } else {
+    eftBlock.style.display = "none";
+    onlineBlock.style.display = "none";
+  }
+};
+
+// Checkout integrated via atomic Firestore Transactions to prevent race conditions
+window.processCheckout = async (e) => {
+  e.preventDefault();
+  
+  const name = document.getElementById("cust-name").value.trim();
+  const phone = document.getElementById("cust-phone").value.trim();
+  const address = document.getElementById("cust-address").value.trim();
+  const location = document.getElementById("cust-location").value;
+  const paymentMethod = document.getElementById("payment-method").value;
+  
+  const checkoutBtn = document.getElementById('checkout-btn');
+  checkoutBtn.innerText = "Placing Order...";
+  checkoutBtn.disabled = true;
+
+  const subtotalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const finalTotal = subtotalAmount + deliveryFee;
+
+  // Set up Order payload details
+  const order = {
+    customer: { 
+      name, 
+      phone, 
+      address,
+      coordinates: selectedCoordinates
+    },
+    delivery: {
+      location: location,
+      fee: deliveryFee
+    },
+    payment: {
+      method: paymentMethod,
+      status: paymentMethod === "Online Card / Instant EFT" ? "Pending Online Payment" : "Pending Verification"
+    },
+    status: "Pending",
+    items: cart.map(item => ({ id: item.id, name: item.name, price: item.price, quantity: item.quantity })),
+    subtotal: subtotalAmount,
+    total: finalTotal,
+    timestamp: Date.now()
   };
 
+  let assignedOrderId = "";
+
   try {
-    if (edit === -1) {
-      p.images = imageUrls;
-      p.image = imageUrls[0] || "";
-      await addDoc(collection(db, "products"), p);
+    // Run the entire order placement and stock decrement within an atomic transaction
+    await runTransaction(db, async (transaction) => {
+      const updates = [];
+
+      // Step A: Read and verify stock for all cart items first
+      for (const item of cart) {
+        const productRef = doc(db, "products", item.id);
+        const productDoc = await transaction.get(productRef);
+
+        if (!productDoc.exists()) {
+          throw new Error(`Product "${item.name}" no longer exists in the store.`);
+        }
+
+        const dbStock = productDoc.data().stock;
+        if (dbStock < item.quantity) {
+          throw new Error(`Inadequate stock! "${item.name}" only has ${dbStock} items left.`);
+        }
+
+        updates.push({ ref: productRef, newStock: dbStock - item.quantity });
+      }
+
+      // Step B: Atomically write updated stock tallies
+      updates.forEach(up => {
+        transaction.update(up.ref, { stock: up.newStock });
+      });
+
+      // Step C: Atomically generate order reference, inject key ID, and write order payload
+      const orderRef = doc(collection(db, "orders"));
+      assignedOrderId = orderRef.id;
+      order.orderId = orderRef.id;
+
+      transaction.set(orderRef, order);
+    });
+
+    logEvent(analytics, 'purchase', {
+      transaction_id: assignedOrderId,
+      value: finalTotal,
+      currency: 'ZAR',
+      items: order.items.map(item => ({ item_id: item.id, item_name: item.name, price: item.price, quantity: item.quantity }))
+    });
+
+    closeCheckoutModal();
+
+    // Trigger Payment Gateway Simulation
+    if (paymentMethod === "Online Card / Instant EFT") {
+      alert("Opening Secure Payment Window...\n(Simulating Paystack sandbox gate)");
+      setTimeout(async () => {
+        const payConfirm = confirm(`Simulated Merchant Response:\nDo you want to authorize this transaction of R${finalTotal}?`);
+        if (payConfirm) {
+          await updateDoc(doc(db, "orders", assignedOrderId), {
+            "payment.status": "Paid",
+            "payment.reference": "PAY-" + Math.random().toString(36).substr(2, 9).toUpperCase()
+          });
+          alert("Payment verified successfully!");
+        } else {
+          alert("Payment cancelled or failed. Order placed as 'Unpaid'. Please settle payment manually.");
+        }
+        showSuccessArea(assignedOrderId);
+      }, 800);
     } else {
-      const existingProduct = products.find(x => x.id === edit);
-      p.images = imageUrls.length ? imageUrls : (existingProduct.images || []);
-      p.image = p.images[0] || existingProduct.image || "";
-      await updateDoc(doc(db, "products", edit), p);
+      showSuccessArea(assignedOrderId);
     }
 
-    edit = -1;
-    pn.value = ""; pp.value = ""; ps.value = ""; pd.value = ""; pi.value = "";
-    pc.selectedIndex = 0;
-    psc.innerHTML = '<option value="">Select Subcategory</option>';
-    pssc.innerHTML = '<option value="">Select Sub-subcategory</option>';
-    window.show('products');
-  } catch (err) {
-    console.error("Error saving product details to Firestore: ", err);
-    alert("Could not update product. Check console details.");
+    // Reset Form & Clear Cart
+    document.getElementById("checkout-form").reset();
+    cart = [];
+    updateCartUI();
+    localStorage.removeItem("cart");
+
+  } catch (error) {
+    console.error("Order Transaction Failed: ", error);
+    alert(error.message || "An error occurred while finalizing checkout. Please try again.");
+    updateCartUI();
   } finally {
-    saveBtn.innerText = "Save Product";
-    saveBtn.disabled = false;
+    checkoutBtn.innerText = "Confirm and Place Order";
+    checkoutBtn.disabled = false;
   }
 };
 
-window.editP = (id) => {
-  let p = products.find(x => x.id === id);
-  if(!p) return;
-  edit = id;
-  pn.value = p.name;
-  pp.value = p.price;
-  ps.value = p.stock;
-  pd.value = p.description;
-  pc.value = p.category;
-  updateSubcategories();
-  psc.value = p.subcategory || "";
-  updateProductSubSubcategories();
-  pssc.value = p.subsubcategory || "";
-  window.show("products");
-};
-
-window.delP = async (id) => {
-  if(confirm("Are you sure you want to delete this product?")){
-    try {
-      await deleteDoc(doc(db, "products", id));
-    } catch (err) {
-      console.error("Error deleting product: ", err);
-      alert("Delete operation failed.");
-    }
-  }
-};
-
-// Update Order status directly inside Firestore
-window.updateOrderStatus = async (id, newStatus) => {
-  try {
-    await updateDoc(doc(db, "orders", id), { status: newStatus });
-  } catch (err) {
-    console.error("Error updating order status: ", err);
-    alert("Could not update status.");
-  }
-};
-
-// UI rendering function
-function refresh() {
-  pc.innerHTML = cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-  parentCat.innerHTML = cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-  parentCategorySS.innerHTML = cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-
-  updateSSSubcategories();
-  updateSubcategories();
-
-  document.getElementById("cats").innerHTML = cats.map(c => `
-    <div class="card">
-        <b>${c.name}</b><br><br>
-        <button onclick="deleteCategory('${c.id}')">Delete</button>
-    </div>
-  `).join("");
-
-  document.getElementById("subcats").innerHTML = subcats.map(s => `
-    <div class="card">
-        <b>${s.category}</b><br>${s.name}<br><br>
-        <button onclick="deleteSubCategory('${s.id}')">Delete</button>
-    </div>
-  `).join("");
-
-  document.getElementById("subsubcats").innerHTML = subsubcats.map(s => `
-    <div class="card">
-        <b>${s.category}</b><br>${s.subcategory}<br>${s.name}<br><br>
-        <button onclick="deleteSubSubCategory('${s.id}')">Delete</button>
-    </div>
-  `).join("");
-
-  plist.innerHTML = products.map((p) => `
-    <div class="card">
-      ${p.image ? `<img src="${p.image}" style="width:80px; height:80px; object-fit:cover; border-radius:8px; margin-bottom:5px;">` : ""}
-      <b>${p.name}</b><br>R${p.price}<br>${p.category}<br>
-      <button onclick="editP('${p.id}')">Edit</button>
-      <button onclick="delP('${p.id}')">Delete</button>
-    </div>
-  `).join('');
-  
-  // Render live orders list
-  olist.innerHTML = orders.map(o => {
-    let orderDate = "Unknown";
-    if (o.timestamp) { orderDate = new Date(o.timestamp).toLocaleString(); }
-
-    return `
-      <div class="card">
-          <b>Order ID:</b> ${o.id}<br>
-          <b>Date:</b> ${orderDate}<br>
-          <b>Customer:</b> ${o.customer?.name || "Unknown"}<br>
-          <b>Phone:</b> ${o.customer?.phone || "-"}<br>
-          <b>Address:</b> ${o.customer?.address || "-"}<br>
-          <b>Payment:</b> ${o.payment?.method || "N/A"} (${o.payment?.status || "Pending"})<br>
-          <b>Total:</b> R${o.total} (Inc. R${o.delivery?.fee || 0} delivery)<br>
-          <b>Items:</b><br>
-          ${o.items ? o.items.map(item => `• ${item.name} (x${item.quantity}) - R${item.price}`).join("<br>") : "No items"}<br><br>
-          <label>Status</label>
-          <select onchange="updateOrderStatus('${o.id}',this.value)">
-              <option ${o.status=="Pending"?"selected":""}>Pending</option>
-              <option ${o.status=="Processing"?"selected":""}>Processing</option>
-              <option ${o.status=="Shipped"?"selected":""}>Shipped</option>
-              <option ${o.status=="Delivered"?"selected":""}>Delivered</option>
-              <option ${o.status=="Cancelled"?"selected":""}>Cancelled</option>
-          </select>
-      </div>
-    `;
-  }).join("");
-
-  const u = JSON.parse(localStorage.users || "{}");
-  const revenue = orders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
-  const pending = orders.filter(o => o.status === "Pending").length;
-
-  stats.innerHTML = `
-    <h2>Dashboard</h2>
-    Products: ${products.length}<br>
-    Categories: ${cats.length}<br>
-    Orders: ${orders.length}<br>
-    Users: ${Object.keys(u).length}<br>
-    Revenue: R${revenue}<br>
-    Pending Orders: ${pending}
-  `;
+function showSuccessArea(orderId) {
+  document.getElementById("popup-order-id").innerText = orderId;
+  document.getElementById("order-popup").style.display = "flex";
 }
 
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        document.getElementById("login-screen").style.display = "none";
-        document.getElementById("admin-wrapper").style.display = "block";
-        refresh();
-        if (typeof google === 'object' && typeof google.maps === 'object') {
-          initAdminMap();
-        }
-    } else {
-        document.getElementById("login-screen").style.display = "block";
-        document.getElementById("admin-wrapper").style.display = "none";
-    }
-});
-</script></body></html>
+// Fly Animation Particle
+function flyToCartAnimation(buttonEl) {
+  const cartBtn = document.getElementById('cart-btn');
+  const btnRect = buttonEl.getBoundingClientRect();
+  const cartRect = cartBtn.getBoundingClientRect();
+
+  const flyer = document.createElement('div');
+  flyer.className = 'flying-item';
+  flyer.style.left = `${btnRect.left + btnRect.width / 2 - 10}px`;
+  flyer.style.top = `${btnRect.top + btnRect.height / 2 - 10}px`;
+  document.body.appendChild(flyer);
+
+  requestAnimationFrame(() => {
+    flyer.style.left = `${cartRect.left + cartRect.width / 2 - 10}px`;
+    flyer.style.top = `${cartRect.top + cartRect.height / 2 - 10}px`;
+    flyer.style.transform = 'scale(0.2)';
+    flyer.style.opacity = '0';
+  });
+
+  flyer.addEventListener('transitionend', () => flyer.remove());
+}
+
+// Post-checkout Popup Utilities
+window.copyOrderId = async () => {
+  const id = document.getElementById("popup-order-id").innerText;
+  try {
+    await navigator.clipboard.writeText(id);
+    alert("Order ID copied!");
+  } catch {
+    prompt("Copy this Order ID:", id);
+  }
+};
+
+window.closeOrderPopup = () => {
+  document.getElementById("order-popup").style.display = "none";
+};
+
+window.trackOrderPopup = () => {
+  const id = document.getElementById("popup-order-id").innerText;
+  localStorage.setItem("trackOrderId", id);
+  window.location.href = "track.html";
+};
+
+// Initial Render on startup
+updateCartUI();
+</script>
+</body>
+</html>
