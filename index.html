@@ -7,6 +7,11 @@
   
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7447247941010903"
      crossorigin="anonymous"></script>
+
+<!-- Google Maps JavaScript API with callback -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCBR2xh-Ks61EEMq7cjKDTVhmuAKGlQcAQ&libraries=places&callback=initAdminMap" async defer></script>
+
+
 <style>
 body { font-family: Arial, sans-serif; background: #000; color: #0f8; margin: 0; overflow-x: hidden; }
 header {
@@ -32,7 +37,7 @@ header div { display: flex; gap: 10px; flex-wrap: wrap; }
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 10px;
 }
-select, input[type="text"] {
+select, input[type="text"], input[type="tel"], textarea {
   width: 100%;
   padding: 10px;
   border: 1px solid #0f8;
@@ -76,14 +81,14 @@ select, input[type="text"] {
 .slider-wrapper {
   position: relative;
   width: 100%;
-  height: 140px; /* Reduced picture size for cleaner display */
+  height: 140px;
   border-radius: 4px;
   margin-bottom: 10px;
   overflow: hidden;
   background: #050505;
 }
 @media (max-width: 600px) {
-  .slider-wrapper { height: 110px; } /* Even smaller on mobile */
+  .slider-wrapper { height: 110px; }
 }
 .slider-content {
   display: flex;
@@ -191,6 +196,8 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
   color: #0f8;
   box-sizing: border-box;
   position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 .close-modal-btn {
   position: absolute;
@@ -200,13 +207,34 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
   cursor: pointer;
   color: #0f8;
 }
-.modal-gallery {
+
+/* Pay breakdown display */
+.payment-breakdown {
+  background: #000;
+  border: 1px solid #333;
+  padding: 10px;
+  border-radius: 4px;
+  margin: 15px 0;
+  font-size: 14px;
+}
+.breakdown-row { display: flex; justify-content: space-between; margin: 4px 0; }
+.eft-details {
+  border: 1px dashed #0f8;
+  background: #0a0a0a;
+  padding: 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  margin: 10px 0;
+}
+
+/* Map Div */
+#checkout-map {
   width: 100%;
   height: 200px;
-  background: #000;
-  border: 1px solid #0f8;
-  margin-bottom: 15px;
+  margin-top: 10px;
   border-radius: 4px;
+  border: 1px solid #0f8;
+  display: none;
 }
 
 /* Fly to Cart Animation Particle */
@@ -259,7 +287,7 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
   </div>
   <div id="cart-items"></div>
   <div style="margin-top:15px; font-weight:bold; display:flex; justify-content:space-between;">
-    <span>Total:</span>
+    <span>Subtotal:</span>
     <span id="cart-total">R0</span>
   </div>
   <button id="checkout-trigger" onclick="openCheckoutModal()" style="width:100%; margin-top:15px;">Place Order</button>
@@ -273,22 +301,82 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
   </div>
 </div>
 
-<!-- Modern Checkout Modal -->
+<!-- Modern Checkout Modal with Google Maps Map & Address Autocomplete -->
 <div id="checkout-modal" class="modal">
   <div class="modal-content">
     <span class="close-modal-btn" onclick="closeCheckoutModal()">&times;</span>
     <h2>Complete Your Order</h2>
     <form id="checkout-form" onsubmit="processCheckout(event)">
+      
       <label style="display:block; margin: 10px 0 5px;">Customer Name *</label>
       <input type="text" id="cust-name" required placeholder="John Doe">
       
       <label style="display:block; margin: 10px 0 5px;">Phone Number *</label>
       <input type="tel" id="cust-phone" required placeholder="082 123 4567">
       
-      <label style="display:block; margin: 10px 0 5px;">Delivery Address *</label>
-      <input type="text" id="cust-address" required placeholder="123 Street Name, Suburb, City">
+      <!-- Google Autocomplete Address Field -->
+      <label style="display:block; margin: 10px 0 5px;">Delivery Address (Search with Google) *</label>
+      <input type="text" id="cust-address" required placeholder="Start typing your delivery address...">
       
-      <button type="submit" id="checkout-btn" style="width:100%; margin-top:20px;">Confirm and Place Order</button>
+      <!-- Map display nested inside form -->
+      <div id="checkout-map"></div>
+      
+      <!-- Delivery Location Selector -->
+      <label style="display:block; margin: 10px 0 5px; margin-top: 15px;">Delivery Location / Region *</label>
+      <select id="cust-location" onchange="calculateDeliveryFee()" required>
+        <option value="" disabled selected>Select Your Location</option>
+        <option value="Local Pickup" data-fee="0">Local Pickup (R0)</option>
+        <option value="Durban Metro" data-fee="45">Durban Metro (R45)</option>
+        <option value="Gauteng (JHB/PTA)" data-fee="85">Gauteng (JHB/PTA) (R85)</option>
+        <option value="Western Cape (CT)" data-fee="95">Western Cape (CT) (R95)</option>
+        <option value="Eastern Cape" data-fee="90">Eastern Cape (R90)</option>
+        <option value="Free State" data-fee="85">Free State (R85)</option>
+        <option value="KZN Outlying" data-fee="70">KZN Outlying (R70)</option>
+        <option value="Other Regional SA" data-fee="110">Other Regional SA (R110)</option>
+      </select>
+      
+      <!-- Payment Method Selector -->
+      <label style="display:block; margin: 10px 0 5px;">Payment Method *</label>
+      <select id="payment-method" onchange="handlePaymentMethodChange()" required>
+        <option value="" disabled selected>Select Payment Method</option>
+        <option value="Cash on Delivery">Cash on Delivery (COD)</option>
+        <option value="EFT Bank Transfer">EFT Bank Transfer (Manual)</option>
+        <option value="Online Card / Instant EFT">Online Card / Instant EFT (Secure Checkout)</option>
+      </select>
+
+      <!-- EFT Instruction Block -->
+      <div id="eft-instructions" class="eft-details" style="display:none;">
+        <strong>SbheneCart Bank Account Details:</strong><br>
+        Bank: FNB / First National Bank<br>
+        Account Number: 62900112233<br>
+        Branch Code: 250655<br>
+        Reference: Use your Order ID<br>
+        <small style="color:#aaa;">* Please email your proof of payment to payments@sbhenecart.com</small>
+      </div>
+
+      <!-- Online Card Block info -->
+      <div id="online-instructions" class="eft-details" style="display:none; border-color:#0f8;">
+        💳 Securely process your Visa/Mastercard card payment or make an instant EFT. Powered by our payment integration.
+      </div>
+
+      <!-- Price breakdown summary -->
+      <div class="payment-breakdown">
+        <div class="breakdown-row">
+          <span>Items Subtotal:</span>
+          <span id="breakdown-subtotal">R0</span>
+        </div>
+        <div class="breakdown-row">
+          <span>Delivery Fee:</span>
+          <span id="breakdown-delivery">R0</span>
+        </div>
+        <hr style="border-color:#222;">
+        <div class="breakdown-row" style="font-weight:bold; font-size:16px;">
+          <span>Grand Total:</span>
+          <span id="breakdown-total">R0</span>
+        </div>
+      </div>
+      
+      <button type="submit" id="checkout-btn" style="width:100%; margin-top:10px;">Confirm and Place Order</button>
     </form>
   </div>
 </div>
@@ -337,6 +425,12 @@ let dbCategories = [];
 let dbSubcategories = [];
 let dbSubsubcategories = [];
 let cart = [];
+let deliveryFee = 0;
+
+// Google Maps global state variables
+let mapInstance;
+let mapMarker;
+let selectedCoordinates = null;
 
 // Initialize LocalStorage Cart
 try {
@@ -468,7 +562,7 @@ window.moveSlider = (id, direction) => {
   slider.scrollBy({ left: direction * slideWidth, behavior: 'smooth' });
 };
 
-// Add to Cart Logic with Stock Protections
+// Add to Cart Logic
 window.addToCart = (id, buttonEl) => {
   const product = dbProducts.find(p => p.id === id);
   if (!product || product.stock <= 0) return;
@@ -521,12 +615,11 @@ window.changeQty = (id, delta) => {
 function updateCartUI() {
   const cartItemsContainer = document.getElementById('cart-items');
   
-  // Real-time synchronization of items in cart to match up-to-date stocks
   cart = cart.map(item => {
     const fresh = dbProducts.find(p => p.id === item.id);
-    if (!fresh) return null; // Product removed from store
+    if (!fresh) return null;
     if (item.quantity > fresh.stock) {
-      item.quantity = fresh.stock; // Bound down to remaining inventory
+      item.quantity = fresh.stock;
     }
     return item.quantity > 0 ? { ...item, ...fresh } : null;
   }).filter(Boolean);
@@ -592,10 +685,94 @@ window.closeDetailsModal = () => {
   document.getElementById('details-modal').style.display = "none";
 };
 
-// Checkout Modals Setup
+// Google Maps Initialization & Autocomplete Setup
+window.initGoogleMaps = () => {
+  const addressInput = document.getElementById('cust-address');
+  if (!addressInput) return;
+
+  // Bind Autocomplete to the address input element, restrict searches to South Africa
+  const autocomplete = new google.maps.places.Autocomplete(addressInput, {
+    types: ['address'],
+    componentRestrictions: { country: 'za' }
+  });
+
+  // Autocomplete change event listener
+  autocomplete.addListener('place_changed', () => {
+    const place = autocomplete.getPlace();
+    if (!place.geometry || !place.geometry.location) {
+      alert("No geometry details available for the selected address.");
+      return;
+    }
+
+    selectedCoordinates = {
+      lat: place.geometry.location.lat(),
+      lng: place.geometry.location.lng()
+    };
+
+    // Render / Update visual Google Map element inside checkout
+    const mapDiv = document.getElementById('checkout-map');
+    mapDiv.style.display = 'block';
+
+    // Dark-themed style configurations for the Map
+    const darkMapStyle = [
+      { elementType: "geometry", stylers: [{ color: "#212121" }] },
+      { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+      { elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
+      { elementType: "labels.text.stroke", stylers: [{ color: "#212121" }] },
+      { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#757575" }] },
+      { featureType: "water", elementType: "geometry", stylers: [{ color: "#000000" }] }
+    ];
+
+    if (!mapInstance) {
+      mapInstance = new google.maps.Map(mapDiv, {
+        center: selectedCoordinates,
+        zoom: 15,
+        styles: darkMapStyle,
+        disableDefaultUI: true,
+        zoomControl: true
+      });
+
+      mapMarker = new google.maps.Marker({
+        position: selectedCoordinates,
+        map: mapInstance,
+        draggable: true,
+        animation: google.maps.Animation.DROP
+      });
+
+      // Update position on pin drag
+      mapMarker.addListener('dragend', () => {
+        const newPos = mapMarker.getPosition();
+        selectedCoordinates = { lat: newPos.lat(), lng: newPos.lng() };
+      });
+    } else {
+      mapInstance.setCenter(selectedCoordinates);
+      mapMarker.setPosition(selectedCoordinates);
+    }
+  });
+};
+
+// Open Checkout and calculate totals
 window.openCheckoutModal = () => {
   if (cart.length === 0) return alert('Your cart is empty');
   toggleCart();
+  
+  // Calculate Initial Prices
+  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  document.getElementById('breakdown-subtotal').innerText = `R${subtotal}`;
+  
+  // Reset fields
+  document.getElementById('cust-location').selectedIndex = 0;
+  document.getElementById('payment-method').selectedIndex = 0;
+  document.getElementById('eft-instructions').style.display = "none";
+  document.getElementById('online-instructions').style.display = "none";
+  document.getElementById('checkout-map').style.display = "none";
+  document.getElementById('cust-address').value = "";
+  
+  selectedCoordinates = null;
+  deliveryFee = 0;
+  document.getElementById('breakdown-delivery').innerText = `R0`;
+  document.getElementById('breakdown-total').innerText = `R${subtotal}`;
+  
   document.getElementById('checkout-modal').style.display = "flex";
 };
 
@@ -603,13 +780,46 @@ window.closeCheckoutModal = () => {
   document.getElementById('checkout-modal').style.display = "none";
 };
 
-// Checkout final integration & Inventory lock checks
+// Calculate location fee
+window.calculateDeliveryFee = () => {
+  const locationSelect = document.getElementById('cust-location');
+  const selectedOption = locationSelect.options[locationSelect.selectedIndex];
+  deliveryFee = Number(selectedOption.getAttribute('data-fee')) || 0;
+  
+  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const total = subtotal + deliveryFee;
+  
+  document.getElementById('breakdown-delivery').innerText = `R${deliveryFee}`;
+  document.getElementById('breakdown-total').innerText = `R${total}`;
+};
+
+// Toggle display of payment instructions
+window.handlePaymentMethodChange = () => {
+  const method = document.getElementById('payment-method').value;
+  const eftBlock = document.getElementById('eft-instructions');
+  const onlineBlock = document.getElementById('online-instructions');
+  
+  if (method === "EFT Bank Transfer") {
+    eftBlock.style.display = "block";
+    onlineBlock.style.display = "none";
+  } else if (method === "Online Card / Instant EFT") {
+    eftBlock.style.display = "none";
+    onlineBlock.style.display = "block";
+  } else {
+    eftBlock.style.display = "none";
+    onlineBlock.style.display = "none";
+  }
+};
+
+// Checkout final integration & Inventory validations
 window.processCheckout = async (e) => {
   e.preventDefault();
   
   const name = document.getElementById("cust-name").value.trim();
   const phone = document.getElementById("cust-phone").value.trim();
   const address = document.getElementById("cust-address").value.trim();
+  const location = document.getElementById("cust-location").value;
+  const paymentMethod = document.getElementById("payment-method").value;
   
   const checkoutBtn = document.getElementById('checkout-btn');
   checkoutBtn.innerText = "Placing Order...";
@@ -627,12 +837,28 @@ window.processCheckout = async (e) => {
     }
   }
 
-  const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const subtotalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const finalTotal = subtotalAmount + deliveryFee;
+
   const order = {
-    customer: { name, phone, address },
+    customer: { 
+      name, 
+      phone, 
+      address,
+      coordinates: selectedCoordinates // Store coordinates in DB so admin panel can map them in real-time
+    },
+    delivery: {
+      location: location,
+      fee: deliveryFee
+    },
+    payment: {
+      method: paymentMethod,
+      status: paymentMethod === "Online Card / Instant EFT" ? "Pending Online Payment" : "Pending Verification"
+    },
     status: "Pending",
     items: cart.map(item => ({ id: item.id, name: item.name, price: item.price, quantity: item.quantity })),
-    total: totalAmount,
+    subtotal: subtotalAmount,
+    total: finalTotal,
     timestamp: Date.now()
   };
 
@@ -652,15 +878,33 @@ window.processCheckout = async (e) => {
 
     logEvent(analytics, 'purchase', {
       transaction_id: docRef.id,
-      value: totalAmount,
+      value: finalTotal,
       currency: 'ZAR',
       items: order.items.map(item => ({ item_id: item.id, item_name: item.name, price: item.price, quantity: item.quantity }))
     });
 
     closeCheckoutModal();
-    document.getElementById("popup-order-id").innerText = docRef.id;
-    document.getElementById("order-popup").style.display = "flex";
-    
+
+    // Trigger Payment Gateway Simulation if they chose Online
+    if (paymentMethod === "Online Card / Instant EFT") {
+      alert("Opening Secure Payment Window...\n(Simulating Paystack / Yoco sandbox gate)");
+      setTimeout(async () => {
+        const payConfirm = confirm("Simulated Merchant Response:\nDo you want to authorize this transaction of R" + finalTotal + "?");
+        if (payConfirm) {
+          await updateDoc(doc(db, "orders", docRef.id), {
+            "payment.status": "Paid",
+            "payment.reference": "PAY-" + Math.random().toString(36).substr(2, 9).toUpperCase()
+          });
+          alert("Payment verified successfully!");
+        } else {
+          alert("Payment cancelled or failed. Order placed as 'Unpaid'. Please contact the shop owner to settle.");
+        }
+        showSuccessArea(docRef.id);
+      }, 800);
+    } else {
+      showSuccessArea(docRef.id);
+    }
+
     // Reset Form & Clear Cart
     document.getElementById("checkout-form").reset();
     cart = [];
@@ -675,6 +919,11 @@ window.processCheckout = async (e) => {
     checkoutBtn.disabled = false;
   }
 };
+
+function showSuccessArea(orderId) {
+  document.getElementById("popup-order-id").innerText = orderId;
+  document.getElementById("order-popup").style.display = "flex";
+}
 
 // Fly Animation Particle
 function flyToCartAnimation(buttonEl) {
