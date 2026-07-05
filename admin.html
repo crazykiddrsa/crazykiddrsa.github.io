@@ -32,7 +32,8 @@ button:disabled{background:#555;color:#888;cursor:not-allowed;}
     <button onclick="show('dash')">Dashboard</button>
     <button onclick="show('products')">Products</button>
     <button onclick="show('categories')">Categories</button>
-    <button onclick="show('orders')">Orders</button>
+<button onclick="show('subcategories')">Subcategories</button>
+<button onclick="show('orders')">Orders</button>
     <button onclick="show('users')">Users</button>
     <button onclick="show('coupons')">Coupons</button>
     <button onclick="show('reports')">Reports</button>
@@ -47,16 +48,42 @@ button:disabled{background:#555;color:#888;cursor:not-allowed;}
       <label style="display:block; margin: 10px 0 5px 0; font-size:12px;">Product Image:</label>
       <input id="pi" type="file" accept="image/*">
       <select id="pc"></select>
-      <input id="ps" type="number" placeholder="Stock"><textarea id="pd" placeholder="Description"></textarea>
+
+<select id="psc">
+    <option value="">Select Subcategory</option>
+</select>
+
+<input id="ps" type="number" placeholder="Stock"><textarea id="pd" placeholder="Description"></textarea>
       <button id="save-prod-btn" onclick="saveProduct()">Save Product</button>
     </div>
     <div id="plist"></div>
   </section>
 
-  <section id="categories" class="page"><div class="card">
-    <input id="newCat" placeholder="Category"><button onclick="addCat()">Add Category</button><div id="cats"></div></div></section>
+ <section id="categories" class="page">
+<div class="card">
+    <input id="newCat" placeholder="Category">
+    <button onclick="addCat()">Add Category</button>
+    <div id="cats"></div>
+</div>
+</section>
 
-  <section id="orders" class="page"><div class="card"><div id="olist"></div></div></section>
+<section id="subcategories" class="page">
+<div class="card">
+
+<h3>Subcategories</h3>
+
+<select id="parentCat"></select>
+
+<input id="newSubCat" placeholder="Subcategory">
+
+<button onclick="addSubCat()">Add Subcategory</button>
+
+<div id="subcats"></div>
+
+</div>
+</section>
+
+<section id="orders" class="page"><div class="card"><div id="olist"></div></div></section>
   <section id="users" class="page"><div class="card"><div id="ulist"></div></div></section>
   <section id="coupons" class="page"><div class="card">Coupon manager placeholder.</div></section>
   <section id="reports" class="page"><div class="card">Sales, inventory and revenue reports placeholder.</div></section>
@@ -112,6 +139,9 @@ const pn = document.getElementById('pn');
 const pp = document.getElementById('pp');
 const pi = document.getElementById('pi');
 const pc = document.getElementById('pc');
+const psc = document.getElementById('psc');
+const parentCat = document.getElementById('parentCat');
+const newSubCat = document.getElementById('newSubCat');
 const ps = document.getElementById('ps');
 const pd = document.getElementById('pd');
 const plist = document.getElementById('plist');
@@ -120,8 +150,19 @@ const olist = document.getElementById('olist');
 const ulist = document.getElementById('ulist');
 const stats = document.getElementById('stats');
 
+pc.onchange = updateSubcategories;
+
+function updateSubcategories() {
+    psc.innerHTML =
+        '<option value="">Select Subcategory</option>' +
+        subcats
+            .filter(s => s.category === pc.value)
+            .map(s => `<option value="${s.name}">${s.name}</option>`)
+            .join('');
+}
 
 let cats = [];
+let subcats = [];
 
 onSnapshot(collection(db, "categories"), (snapshot) => {
     cats = [];
@@ -140,7 +181,22 @@ onSnapshot(collection(db, "categories"), (snapshot) => {
 let products = [];
 let orders = []; // Live orders synced from Firestore
 let edit = -1;
+onSnapshot(collection(db, "subcategories"), (snapshot) => {
 
+    subcats = [];
+
+    snapshot.forEach(doc => {
+
+        subcats.push({
+            id: doc.id,
+            ...doc.data()
+        });
+
+    });
+
+    if(auth.currentUser) refresh();
+
+});
 // Realtime Products
 onSnapshot(collection(db, "products"), (snapshot) => {
     products = [];
@@ -227,6 +283,23 @@ window.addCat = async () => {
 
     newCat.value = "";
 };
+window.addSubCat = async () => {
+
+    if(parentCat.value=="" || newSubCat.value.trim()==""){
+        alert("Choose a category and enter a subcategory.");
+        return;
+    }
+
+    await addDoc(collection(db,"subcategories"),{
+
+        category: parentCat.value,
+        name: newSubCat.value.trim()
+
+    });
+
+    newSubCat.value="";
+
+};
 // Product Operations (With Cloud Storage integration)
 window.deleteCategory = async (id) => {
 
@@ -280,9 +353,10 @@ window.saveProduct = async () => {
     name: pn.value,
     price: +pp.value,
     category: pc.value,
+    subcategory: psc.value,
     stock: +ps.value,
     description: pd.value
-  };
+};
 
   try {
     if (edit === -1) {
@@ -316,6 +390,8 @@ window.editP = (id) => {
   ps.value = p.stock;
   pd.value = p.description;
   pc.value = p.category;
+  updateSubcategories();
+psc.value = p.subcategory || "";
   window.show('products');
 };
 
@@ -349,14 +425,27 @@ function refresh() {
 ${c.name}
 </option>
 `).join('');
+parentCat.innerHTML = cats.map(c => `
+<option value="${c.name}">
+${c.name}
+</option>
+`).join('');
+updateSubcategories();
   document.getElementById("cats").innerHTML =
 cats.map(c => `
 <div class="card">
     <b>${c.name}</b><br><br>
-
     <button onclick="deleteCategory('${c.id}')">
         Delete
     </button>
+</div>
+`).join("");
+
+document.getElementById("subcats").innerHTML =
+subcats.map(s => `
+<div class="card">
+    <b>${s.category}</b><br>
+    ${s.name}
 </div>
 `).join("");
 
@@ -452,4 +541,5 @@ onAuthStateChanged(auth, (user) => {
         document.getElementById("admin-wrapper").style.display = "none";
     }
 });
+
 </script></body></html>
