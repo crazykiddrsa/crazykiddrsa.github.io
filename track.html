@@ -6,83 +6,260 @@
 <title>SbheneCart - Track Order</title>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7447247941010903" crossorigin="anonymous"></script>
 <style>
-body{font-family:Arial;background:#000;color:#0f8;margin:0}
-header{padding:15px;border-bottom:1px solid #0f8;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
-.container{max-width:700px;margin:auto;padding:20px}
-input,button{width:100%;padding:12px;margin:8px 0;box-sizing:border-box}
-input{background:#111;color:#0f8;border:1px solid #0f8}
-button{background:#0f8;color:#000;border:0;font-weight:bold}
-.card{border:1px solid #0f8;background:#111;padding:15px;margin-top:15px}
-.status{font-size:20px;font-weight:bold}
+body { font-family: Arial, sans-serif; background: #000; color: #0f8; margin: 0; }
+header {
+  padding: 15px;
+  border-bottom: 1px solid #0f8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+header h2 { margin: 0; }
+.container { max-width: 600px; margin: auto; padding: 20px; }
+input, button { width: 100%; padding: 12px; margin: 8px 0; box-sizing: border-box; border-radius: 4px; }
+input { background: #111; color: #0f8; border: 1px solid #0f8; font-size: 16px; }
+button { background: #0f8; color: #000; border: 0; font-weight: bold; cursor: pointer; transition: 0.2s; }
+button:hover { background: #0a6; color: #fff; }
+
+.card { border: 1px solid #0f8; background: #111; padding: 20px; margin-top: 15px; border-radius: 8px; }
+.error-msg { color: #ff4a4a; border-color: #ff4a4a; background: rgba(255, 74, 74, 0.05); }
+
+/* Visual Order Progress Tracker */
+.stepper {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  margin: 25px 0 30px 0;
+  padding: 0;
+}
+.stepper::before {
+  content: "";
+  position: absolute;
+  top: 15px;
+  left: 10px;
+  right: 10px;
+  height: 2px;
+  background: #333;
+  z-index: 1;
+}
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  position: relative;
+  z-index: 2;
+}
+.circle {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #222;
+  border: 2px solid #333;
+  color: #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  transition: 0.3s;
+}
+.step-label {
+  font-size: 11px;
+  color: #888;
+  margin-top: 8px;
+  text-align: center;
+  font-weight: bold;
+  transition: 0.3s;
+}
+.step.active .circle {
+  background: #000;
+  border-color: #0f8;
+  color: #0f8;
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+}
+.step.active .step-label { color: #0f8; }
+
+.step.completed .circle {
+  background: #0f8;
+  border-color: #0f8;
+  color: #000;
+}
+.step.completed .step-label { color: #0a6; }
+
+/* Cancelled State Accent */
+.cancelled-badge {
+  background: #ff4a4a;
+  color: #000;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-weight: bold;
+  display: inline-block;
+  margin-bottom: 15px;
+}
+#items p {
+  border-bottom: 1px solid #222;
+  padding-bottom: 8px;
+  margin: 8px 0;
+  font-size: 14px;
+}
 </style>
 </head>
 <body>
-<header><h2>SbheneCart - Track Order</h2><button onclick="location.href='index.html'">Home</button></header>
-<div class="container">
-<input id="orderId" placeholder="Enter Order ID">
-<button onclick="trackOrder()">Track Order</button>
 
-<div class="card">
-    <!-- SbheneCart -->
+<header>
+  <h2>SbheneCart - Track Order</h2>
+  <button onclick="location.href='index.html'" style="width:auto; margin:0; padding: 8px 16px;">Home</button>
+</header>
+
+<div class="container">
+  <input id="orderId" placeholder="Enter Order ID">
+  <button onclick="trackOrder()">Track Order</button>
+
+  <!-- Dynamic Status / Result Area -->
+  <div id="error-card" class="card error-msg" style="display:none">
+    <h3>⚠️ Order Not Found</h3>
+    <p>Please double-check your Order ID. Ensure there are no spaces or missing characters and try searching again.</p>
+  </div>
+
+  <div id="result" class="card" style="display:none">
+    <div id="cancelled-container" style="display:none">
+      <span class="cancelled-badge">❌ Order Cancelled</span>
+    </div>
+
+    <!-- Stepper Tracker -->
+    <div id="stepper-container" class="stepper">
+      <div class="step" id="step-pending">
+        <div class="circle">1</div>
+        <div class="step-label">Pending</div>
+      </div>
+      <div class="step" id="step-processing">
+        <div class="circle">2</div>
+        <div class="step-label">Processing</div>
+      </div>
+      <div class="step" id="step-shipped">
+        <div class="circle">3</div>
+        <div class="step-label">Shipped</div>
+      </div>
+      <div class="step" id="step-delivered">
+        <div class="circle">4</div>
+        <div class="step-label">Delivered</div>
+      </div>
+    </div>
+
+    <h3>Customer Details</h3>
+    <p><b>Name:</b> <span id="name"></span></p>
+    <p><b>Phone:</b> <span id="phone"></span></p>
+    <p><b>Address:</b> <span id="address"></span></p>
+    
+    <div id="items"></div>
+    <h3 style="margin-top:20px; border-top:1px dashed #0f8; padding-top:15px;">Total: R<span id="total"></span></h3>
+  </div>
+
+  <!-- AdSense Container -->
+  <div class="card" style="padding:10px;">
+    <!-- SbheneCart Ad Unit -->
     <ins class="adsbygoogle"
          style="display:block"
          data-ad-client="ca-pub-7447247941010903"
          data-ad-slot="1454624417"
          data-ad-format="auto"
          data-full-width-responsive="true"></ins>
-
     <script>
         (adsbygoogle = window.adsbygoogle || []).push({});
     </script>
-</div>
-
-<div id="result" class="card" style="display:none">
-<h3>Status: <span id="status" class="status"></span></h3>
-<p><b>Name:</b> <span id="name"></span></p>
-<p><b>Phone:</b> <span id="phone"></span></p>
-<p><b>Address:</b> <span id="address"></span></p>
-<div id="items"></div>
-<h3>Total: R<span id="total"></span></h3>
-</div>
+  </div>
 </div>
 
 <script type="module">
-import {initializeApp} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-import {getFirestore,doc,onSnapshot} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
-const firebaseConfig={
-apiKey:"AIzaSyC4BCz9GeNTgQYa8ydIJreTREVdPklganA",
-authDomain:"sbhenecart.firebaseapp.com",
-projectId:"sbhenecart",
-storageBucket:"sbhenecart.firebasestorage.app",
-messagingSenderId:"1074011270711",
-appId:"1:1074011270711:web:86e00970ad3bb3aaedd9b2"
+const firebaseConfig = {
+  apiKey: "AIzaSyC4BCz9GeNTgQYa8ydIJreTREVdPklganA",
+  authDomain: "sbhenecart.firebaseapp.com",
+  projectId: "sbhenecart",
+  storageBucket: "sbhenecart.firebasestorage.app",
+  messagingSenderId: "1074011270711",
+  appId: "1:1074011270711:web:86e00970ad3bb3aaedd9b2"
 };
 
-const db=getFirestore(initializeApp(firebaseConfig));
-const saved=localStorage.getItem("trackOrderId");
-if(saved){document.getElementById("orderId").value=saved;trackOrder();}
+const db = getFirestore(initializeApp(firebaseConfig));
 
-window.trackOrder=function(){
- const id=document.getElementById("orderId").value.trim();
- if(!id)return alert("Enter an Order ID");
- localStorage.setItem("trackOrderId",id);
- onSnapshot(doc(db,"orders",id),snap=>{
-   if(!snap.exists()){alert("Order not found");return;}
-   const o=snap.data();
-   document.getElementById("result").style.display = "block";
-document.getElementById("status").textContent = o.status || "Pending";
-document.getElementById("name").textContent = o.customer?.name || "";
-document.getElementById("phone").textContent = o.customer?.phone || "";
-document.getElementById("address").textContent = o.customer?.address || "";
-document.getElementById("total").textContent = o.total || 0;
+// Define tracking function first (Resolves chronological ReferenceError)
+window.trackOrder = function() {
+  const id = document.getElementById("orderId").value.trim();
+  if (!id) return alert("Please enter an Order ID");
+  
+  localStorage.setItem("trackOrderId", id);
+  
+  // Real-time listener for the order document
+  onSnapshot(doc(db, "orders", id), snap => {
+    const errorCard = document.getElementById("error-card");
+    const resultCard = document.getElementById("result");
 
-document.getElementById("items").innerHTML =
-    "<h3>Items</h3>" +
-    (o.items || []).map(i =>
-        `<p>${i.quantity} × ${i.name} - R${i.price}</p>`
-    ).join("");
-    });
+    if (!snap.exists()) {
+      errorCard.style.display = "block";
+      resultCard.style.display = "none";
+      return;
+    }
+
+    errorCard.style.display = "none";
+    resultCard.style.display = "block";
+    
+    const o = snap.data();
+    document.getElementById("name").textContent = o.customer?.name || "";
+    document.getElementById("phone").textContent = o.customer?.phone || "";
+    document.getElementById("address").textContent = o.customer?.address || "";
+    document.getElementById("total").textContent = o.total || 0;
+
+    document.getElementById("items").innerHTML =
+      "<h3 style='margin-top:20px;'>Items Ordered</h3>" +
+      (o.items || []).map(i =>
+          `<p><b>${i.quantity} ×</b> ${i.name} <span style="float:right">R${i.price * i.quantity}</span></p>`
+      ).join("");
+
+    updateProgressUI(o.status || "Pending");
+  });
+};
+
+// UI progression helper
+function updateProgressUI(status) {
+  const steps = ["Pending", "Processing", "Shipped", "Delivered"];
+  const currentIdx = steps.indexOf(status);
+
+  const cancelledContainer = document.getElementById("cancelled-container");
+  const stepperContainer = document.getElementById("stepper-container");
+
+  if (status === "Cancelled") {
+    cancelledContainer.style.display = "block";
+    stepperContainer.style.display = "none";
+    return;
+  }
+
+  cancelledContainer.style.display = "none";
+  stepperContainer.style.display = "flex";
+
+  steps.forEach((stepName, idx) => {
+    const el = document.getElementById(`step-${stepName.toLowerCase()}`);
+    if (!el) return;
+
+    el.classList.remove("active", "completed");
+
+    if (idx < currentIdx) {
+      el.classList.add("completed");
+    } else if (idx === currentIdx) {
+      el.classList.add("active");
+    }
+  });
+}
+
+// Safely execute tracking once DOM is ready if an order id exists in storage
+const saved = localStorage.getItem("trackOrderId");
+if (saved) {
+  document.getElementById("orderId").value = saved;
+  window.trackOrder();
 }
 </script>
 </body>
