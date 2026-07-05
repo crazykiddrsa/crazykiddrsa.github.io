@@ -1040,7 +1040,7 @@ window.processCheckout = async (e) => {
 
     closeCheckoutModal();
 
-    // Trigger Payment Gateway Simulation
+    // Trigger Payment Gateway Simulation / Redirection Logic
     if (paymentMethod === "Online Card / Instant EFT") {
       alert("Opening Secure Payment Window...\n(Simulating Paystack sandbox gate)");
       setTimeout(async () => {
@@ -1056,6 +1056,9 @@ window.processCheckout = async (e) => {
         }
         showSuccessArea(assignedOrderId);
       }, 800);
+    } else if (paymentMethod === "EFT Bank Transfer") {
+      // Redirect to checkout.html and pass Order ID & total in query parameters
+      window.location.href = `checkout.html?orderId=${assignedOrderId}&total=${finalTotal}`;
     } else {
       showSuccessArea(assignedOrderId);
     }
