@@ -41,12 +41,19 @@ button:hover{background:#0a6;color:#fff;}
 <header>
     
   <h2>SbheneCart</h2>
-  <div style="display:flex; gap:10px;">
-    <button id="cart-btn" onclick="toggleCart()">🛒 Cart <span id="cart-count">0</span></button>
-    <button onclick="location.href='admin.html'">Admin</button>
-  </div>
-</header>
+<div style="display:flex; gap:10px;">
+  <button id="cart-btn" onclick="toggleCart()">
+    🛒 Cart <span id="cart-count">0</span>
+  </button>
 
+  <button onclick="location.href='track.html'">
+    📦 Track Order
+  </button>
+
+  <button onclick="location.href='admin.html'">
+    Admin
+  </button>
+</div>
 <input
     id="search"
     type="text"
