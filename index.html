@@ -2,17 +2,21 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SbheneCart</title>
   
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7447247941010903"
      crossorigin="anonymous"></script>
 
-<!-- Google Maps JavaScript API with callback -->
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCBR2xh-Ks61EEMq7cjKDTVhmuAKGlQcAQ&libraries=places&callback=initAdminMap" async defer></script>
-
+<!-- Google Maps JavaScript API with matching callback 'initGoogleMaps' -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCBR2xh-Ks61EEMq7cjKDTVhmuAKGlQcAQ&libraries=places&callback=initGoogleMaps" async defer></script>
 
 <style>
+/* Universal Box-Sizing Reset prevents layout overflow/pinching on small screens */
+* {
+  box-sizing: border-box;
+}
+
 body { font-family: Arial, sans-serif; background: #000; color: #0f8; margin: 0; overflow-x: hidden; }
 header {
   padding: 15px;
@@ -39,25 +43,62 @@ header div { display: flex; gap: 10px; flex-wrap: wrap; }
 }
 select, input[type="text"], input[type="tel"], textarea {
   width: 100%;
-  padding: 10px;
+  padding: 12px; /* Marginally larger padding for easy tap target on mobile */
   border: 1px solid #0f8;
   background: #111;
   color: #0f8;
   box-sizing: border-box;
   border-radius: 4px;
+  font-size: 16px; /* Prevents iOS auto-zoom on input focus */
 }
 
-/* Product Grid (Two columns on mobile) */
+/* Category Shortcuts - BIGGER & VERTICAL STACK */
+.category-section-title {
+  padding: 20px 15px 5px 15px;
+  margin: 0;
+  font-size: 22px;
+  font-weight: bold;
+  border-bottom: 1px solid #222;
+}
+.category-shortcuts {
+  display: flex;
+  flex-direction: column; /* Vertical Stack */
+  gap: 12px;
+  padding: 15px;
+  box-sizing: border-box;
+}
+.cat-shortcut-btn {
+  background: #111;
+  color: #0f8;
+  border: 1px solid #0f8;
+  padding: 18px 24px; /* Bigger Padding */
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 18px; /* Bigger Font Size */
+  cursor: pointer;
+  transition: 0.2s;
+  display: flex; /* Flex alignment for emoji and text */
+  align-items: center;
+  gap: 15px;
+  width: 100%; /* Spans full width */
+  box-sizing: border-box;
+}
+.cat-shortcut-btn:hover, .cat-shortcut-btn.active {
+  background: #0f8;
+  color: #000;
+}
+
+/* Product Grid (Large cards on Desktop, 1 large readable column on mobile) */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
   padding: 15px;
 }
 @media (max-width: 600px) {
   .grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    grid-template-columns: 1fr; /* Full-width single column: absolutely no pinching needed */
+    gap: 15px;
     padding: 10px;
   }
 }
@@ -66,7 +107,7 @@ select, input[type="text"], input[type="tel"], textarea {
 .card {
   background: #111;
   border: 1px solid #0f8;
-  padding: 12px;
+  padding: 15px;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -77,18 +118,21 @@ select, input[type="text"], input[type="tel"], textarea {
 }
 .card:hover { transform: translateY(-2px); }
 
-/* Auto-sliding Product Image Gallery */
+/* Auto-sliding Product Image Gallery - SIGNIFICANTLY LARGER */
 .slider-wrapper {
   position: relative;
   width: 100%;
-  height: 140px;
-  border-radius: 4px;
-  margin-bottom: 10px;
+  height: 260px; /* Big, professional-sized pictures */
+  border-radius: 6px;
+  margin-bottom: 12px;
   overflow: hidden;
   background: #050505;
+  border: 1px solid #222;
 }
 @media (max-width: 600px) {
-  .slider-wrapper { height: 110px; }
+  .slider-wrapper { 
+    height: 240px; /* Giant vertical footprint on mobile */
+  }
 }
 .slider-content {
   display: flex;
@@ -104,9 +148,10 @@ select, input[type="text"], input[type="tel"], textarea {
 .slide-img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover; /* Fills the massive image wrapper beautifully without letterbox bars */
   flex-shrink: 0;
   scroll-snap-align: start;
+  cursor: zoom-in; /* Cursor queue indicating image can be opened in lightbox */
 }
 .slider-arrow {
   position: absolute;
@@ -116,23 +161,23 @@ select, input[type="text"], input[type="tel"], textarea {
   color: #0f8;
   border: 1px solid #0f8;
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
+  width: 32px; /* Marginally bigger arrow button for easy tapping */
+  height: 32px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 14px;
   z-index: 5;
   user-select: none;
 }
-.slider-arrow.prev { left: 5px; }
-.slider-arrow.next { right: 5px; }
+.slider-arrow.prev { left: 8px; }
+.slider-arrow.next { right: 8px; }
 
-.card-details { flex-grow: 1; margin-bottom: 8px; }
-.card-details h3 { margin: 5px 0; font-size: 15px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
-.card-details p { margin: 5px 0; font-weight: bold; color: #fff; font-size: 14px; }
-.card-details small { font-size: 11px; color: #888; display: block; }
+.card-details { flex-grow: 1; margin-bottom: 10px; }
+.card-details h3 { margin: 8px 0; font-size: 18px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+.card-details p { margin: 5px 0; font-weight: bold; color: #fff; font-size: 16px; }
+.card-details small { font-size: 12px; color: #888; display: block; margin-top: 4px; }
 
 /* Buttons & State Styles */
 button {
@@ -140,10 +185,11 @@ button {
   color: #000;
   font-weight: bold;
   border: 0;
-  padding: 8px 12px;
+  padding: 12px 16px; /* Enhanced tap height */
   cursor: pointer;
   border-radius: 4px;
   transition: 0.2s;
+  font-size: 15px;
 }
 button:hover { background: #0a6; color: #fff; }
 button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1px solid #555; }
@@ -166,11 +212,14 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
   color: #0f8;
   box-sizing: border-box;
 }
+@media (max-width: 360px) {
+  .sidebar { width: 100%; right: -100%; } /* Stretches edge-to-edge on very small screens */
+}
 .sidebar.open { right: 0; }
 .cart-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #0f8; padding-bottom: 10px; }
 #cart-items { max-height: 55vh; overflow-y: auto; margin: 15px 0; }
-.cart-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding: 10px 0; }
-.qty-btn { padding: 2px 6px; background: #222; color: #0f8; border: 1px solid #0f8; font-size: 12px; }
+.cart-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding: 12px 0; }
+.qty-btn { padding: 4px 10px; background: #222; color: #0f8; border: 1px solid #0f8; font-size: 14px; }
 
 /* Modal Styling */
 .modal {
@@ -190,7 +239,7 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
   background: #111;
   border: 2px solid #0f8;
   padding: 25px;
-  width: 90%;
+  width: 95%;
   max-width: 480px;
   border-radius: 10px;
   color: #0f8;
@@ -206,6 +255,37 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
   font-size: 24px;
   cursor: pointer;
   color: #0f8;
+}
+
+/* Image Zoom Lightbox Modal */
+.lightbox-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.95);
+  justify-content: center;
+  align-items: center;
+  z-index: 3000; /* Stacks on top of checkout and details modals */
+}
+.lightbox-content {
+  max-width: 95%;
+  max-height: 85%;
+  object-fit: contain;
+  border: 1px solid #0f8;
+  border-radius: 6px;
+  box-shadow: 0 0 20px rgba(0,255,136,0.3);
+}
+.close-lightbox {
+  position: absolute;
+  top: 20px;
+  right: 25px;
+  font-size: 35px;
+  color: #0f8;
+  cursor: pointer;
+  user-select: none;
 }
 
 /* Pay breakdown display */
@@ -276,6 +356,12 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
     <option value="">All Sub-subcategories</option>
   </select>
 </div>
+
+<!-- Category Shortcuts Section (VERTICAL & BIGGER) -->
+<h3 class="category-section-title">🛒 Browse Categories</h3>
+<div id="category-shortcuts" class="category-shortcuts">
+  <!-- Dynamic vertical shortcuts with static emoji mapping populate here -->
+</div>
     
 <div class="grid" id="products"></div>
 
@@ -301,7 +387,13 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
   </div>
 </div>
 
-<!-- Modern Checkout Modal with Google Maps Map & Address Autocomplete -->
+<!-- Lightbox Modal for Zooming Images -->
+<div id="lightbox-modal" class="lightbox-modal" onclick="closeLightbox()">
+  <span class="close-lightbox" onclick="closeLightbox()">&times;</span>
+  <img id="lightbox-img" class="lightbox-content" src="">
+</div>
+
+<!-- Checkout Modal with Google Maps Map & Address Autocomplete -->
 <div id="checkout-modal" class="modal">
   <div class="modal-content">
     <span class="close-modal-btn" onclick="closeCheckoutModal()">&times;</span>
@@ -311,8 +403,9 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
       <label style="display:block; margin: 10px 0 5px;">Customer Name *</label>
       <input type="text" id="cust-name" required placeholder="John Doe">
       
+      <!-- Optimized Phone input with dedicated number dialing keyboard context -->
       <label style="display:block; margin: 10px 0 5px;">Phone Number *</label>
-      <input type="tel" id="cust-phone" required placeholder="082 123 4567">
+      <input type="tel" id="cust-phone" inputmode="tel" autocomplete="tel" required placeholder="082 123 4567">
       
       <!-- Google Autocomplete Address Field -->
       <label style="display:block; margin: 10px 0 5px;">Delivery Address (Search with Google) *</label>
@@ -399,9 +492,8 @@ import {
   getFirestore,
   collection,
   onSnapshot,
-  addDoc,
   doc,
-  updateDoc
+  runTransaction
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
 
@@ -427,6 +519,19 @@ let dbSubsubcategories = [];
 let cart = [];
 let deliveryFee = 0;
 
+// Dynamic category list emoji mapper
+const emojiMap = {
+  "Electronics": "📱",
+  "Fashion": "👕",
+  "Food": "🍔",
+  "Beauty": "💄",
+  "Home": "🏠",
+  "Automotive": "🚗",
+  "Pets": "🐶",
+  "Sports": "⚽",
+  "Books": "📚"
+};
+
 // Google Maps global state variables
 let mapInstance;
 let mapMarker;
@@ -446,6 +551,7 @@ onSnapshot(collection(db, "categories"), (snap) => {
   dbCategories = [];
   snap.forEach(d => dbCategories.push({ id: d.id, ...d.data() }));
   populateCategoryFilters();
+  renderCategoryShortcuts();
 });
 
 onSnapshot(collection(db, "subcategories"), (snap) => {
@@ -467,6 +573,31 @@ onSnapshot(collection(db, "products"), (snap) => {
   updateCartUI(); 
 });
 
+// Category Shortcuts UI populator (Vertical & Larger Structure)
+function renderCategoryShortcuts() {
+  const shortcutContainer = document.getElementById('category-shortcuts');
+  const catFilter = document.getElementById('cat-filter');
+  const activeCat = catFilter.value;
+
+  const defaultBtn = `
+    <button class="cat-shortcut-btn ${!activeCat ? 'active' : ''}" onclick="filterCategory('')">
+      📦 All Products
+    </button>
+  `;
+
+  const dynamicBtns = dbCategories.map(c => {
+    const emoji = emojiMap[c.name] || "🏷️";
+    const isActive = activeCat === c.name ? "active" : "";
+    return `
+      <button class="cat-shortcut-btn ${isActive}" onclick="filterCategory('${c.name}')">
+        <span>${emoji}</span> <span>${c.name}</span>
+      </button>
+    `;
+  }).join('');
+
+  shortcutContainer.innerHTML = defaultBtn + dynamicBtns;
+}
+
 // Setup Cascading Filters
 function populateCategoryFilters() {
   const catFilter = document.getElementById('cat-filter');
@@ -475,6 +606,12 @@ function populateCategoryFilters() {
     dbCategories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
   catFilter.value = savedVal;
 }
+
+window.filterCategory = (category) => {
+  document.getElementById("cat-filter").value = category;
+  onCategoryFilterChange();
+  renderCategoryShortcuts();
+};
 
 window.onCategoryFilterChange = () => {
   const catVal = document.getElementById('cat-filter').value;
@@ -485,6 +622,7 @@ window.onCategoryFilterChange = () => {
     filteredSub.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
   
   onSubcategoryFilterChange();
+  renderCategoryShortcuts();
 };
 
 window.onSubcategoryFilterChange = () => {
@@ -523,7 +661,7 @@ window.renderProducts = () => {
             <div class="slider-wrapper" id="slider-${p.id}" onclick="event.stopPropagation()">
               ${images.length > 1 ? `<button class="slider-arrow prev" onclick="moveSlider('${p.id}', -1)">&#10094;</button>` : ''}
               <div class="slider-content">
-                ${images.map(img => `<img src="${img}" class="slide-img">`).join('')}
+                ${images.map(img => `<img src="${img}" class="slide-img" onclick="openLightbox('${img}')">`).join('')}
               </div>
               ${images.length > 1 ? `<button class="slider-arrow next" onclick="moveSlider('${p.id}', 1)">&#10095;</button>` : ''}
             </div>
@@ -541,7 +679,7 @@ window.renderProducts = () => {
     : "<p style='padding:20px'>No products found.</p>";
 };
 
-// Auto-sliding Logic (Moves active view every 4s)
+// Auto-sliding Logic
 setInterval(() => {
   document.querySelectorAll('.slider-content').forEach(slider => {
     if (slider.matches(':hover')) return;
@@ -662,10 +800,10 @@ window.openDetailsModal = (id) => {
   const isOutOfStock = p.stock <= 0;
 
   document.getElementById('modal-details-content').innerHTML = `
-    <div class="slider-wrapper" id="modal-slider-${p.id}" style="height: 200px;">
+    <div class="slider-wrapper" id="modal-slider-${p.id}" style="height: 280px;">
       ${images.length > 1 ? `<button class="slider-arrow prev" onclick="moveSlider('modal-slider-${p.id}', -1)">&#10094;</button>` : ''}
       <div class="slider-content">
-        ${images.map(img => `<img src="${img}" class="slide-img">`).join('')}
+        ${images.map(img => `<img src="${img}" class="slide-img" onclick="openLightbox('${img}')">`).join('')}
       </div>
       ${images.length > 1 ? `<button class="slider-arrow next" onclick="moveSlider('modal-slider-${p.id}', 1)">&#10095;</button>` : ''}
     </div>
@@ -685,18 +823,28 @@ window.closeDetailsModal = () => {
   document.getElementById('details-modal').style.display = "none";
 };
 
+// Lightbox Window Zoom Core
+window.openLightbox = (imgSrc) => {
+  const lightbox = document.getElementById('lightbox-modal');
+  const lightboxImg = document.getElementById('lightbox-img');
+  lightboxImg.src = imgSrc;
+  lightbox.style.display = 'flex';
+};
+
+window.closeLightbox = () => {
+  document.getElementById('lightbox-modal').style.display = 'none';
+};
+
 // Google Maps Initialization & Autocomplete Setup
 window.initGoogleMaps = () => {
   const addressInput = document.getElementById('cust-address');
   if (!addressInput) return;
 
-  // Bind Autocomplete to the address input element, restrict searches to South Africa
   const autocomplete = new google.maps.places.Autocomplete(addressInput, {
     types: ['address'],
     componentRestrictions: { country: 'za' }
   });
 
-  // Autocomplete change event listener
   autocomplete.addListener('place_changed', () => {
     const place = autocomplete.getPlace();
     if (!place.geometry || !place.geometry.location) {
@@ -709,11 +857,9 @@ window.initGoogleMaps = () => {
       lng: place.geometry.location.lng()
     };
 
-    // Render / Update visual Google Map element inside checkout
     const mapDiv = document.getElementById('checkout-map');
     mapDiv.style.display = 'block';
 
-    // Dark-themed style configurations for the Map
     const darkMapStyle = [
       { elementType: "geometry", stylers: [{ color: "#212121" }] },
       { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
@@ -739,7 +885,6 @@ window.initGoogleMaps = () => {
         animation: google.maps.Animation.DROP
       });
 
-      // Update position on pin drag
       mapMarker.addListener('dragend', () => {
         const newPos = mapMarker.getPosition();
         selectedCoordinates = { lat: newPos.lat(), lng: newPos.lng() };
@@ -756,11 +901,9 @@ window.openCheckoutModal = () => {
   if (cart.length === 0) return alert('Your cart is empty');
   toggleCart();
   
-  // Calculate Initial Prices
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   document.getElementById('breakdown-subtotal').innerText = `R${subtotal}`;
   
-  // Reset fields
   document.getElementById('cust-location').selectedIndex = 0;
   document.getElementById('payment-method').selectedIndex = 0;
   document.getElementById('eft-instructions').style.display = "none";
@@ -811,7 +954,7 @@ window.handlePaymentMethodChange = () => {
   }
 };
 
-// Checkout final integration & Inventory validations
+// Checkout integrated via atomic Firestore Transactions to prevent race conditions
 window.processCheckout = async (e) => {
   e.preventDefault();
   
@@ -825,27 +968,16 @@ window.processCheckout = async (e) => {
   checkoutBtn.innerText = "Placing Order...";
   checkoutBtn.disabled = true;
 
-  // Inventory integrity check before ordering
-  for (const item of cart) {
-    const product = dbProducts.find(p => p.id === item.id);
-    if (!product || product.stock < item.quantity) {
-      alert(`Checkout failed: ${item.name} does not have enough stock remaining. Refreshing your cart.`);
-      updateCartUI();
-      checkoutBtn.innerText = "Confirm and Place Order";
-      checkoutBtn.disabled = false;
-      return;
-    }
-  }
-
   const subtotalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const finalTotal = subtotalAmount + deliveryFee;
 
+  // Set up Order payload details
   const order = {
     customer: { 
       name, 
       phone, 
       address,
-      coordinates: selectedCoordinates // Store coordinates in DB so admin panel can map them in real-time
+      coordinates: selectedCoordinates
     },
     delivery: {
       location: location,
@@ -862,22 +994,45 @@ window.processCheckout = async (e) => {
     timestamp: Date.now()
   };
 
-  try {
-    const docRef = await addDoc(collection(db, "orders"), order);
-    await updateDoc(doc(db, "orders", docRef.id), { orderId: docRef.id });
+  let assignedOrderId = "";
 
-    // Decrement stock in real-time
-    for (const item of cart) {
-      const product = dbProducts.find(p => p.id === item.id);
-      if (product) {
-        await updateDoc(doc(db, "products", item.id), {
-          stock: product.stock - item.quantity
-        });
+  try {
+    // Run the entire order placement and stock decrement within an atomic transaction
+    await runTransaction(db, async (transaction) => {
+      const updates = [];
+
+      // Step A: Read and verify stock for all cart items first
+      for (const item of cart) {
+        const productRef = doc(db, "products", item.id);
+        const productDoc = await transaction.get(productRef);
+
+        if (!productDoc.exists()) {
+          throw new Error(`Product "${item.name}" no longer exists in the store.`);
+        }
+
+        const dbStock = productDoc.data().stock;
+        if (dbStock < item.quantity) {
+          throw new Error(`Inadequate stock! "${item.name}" only has ${dbStock} items left.`);
+        }
+
+        updates.push({ ref: productRef, newStock: dbStock - item.quantity });
       }
-    }
+
+      // Step B: Atomically write updated stock tallies
+      updates.forEach(up => {
+        transaction.update(up.ref, { stock: up.newStock });
+      });
+
+      // Step C: Atomically generate order reference, inject key ID, and write order payload
+      const orderRef = doc(collection(db, "orders"));
+      assignedOrderId = orderRef.id;
+      order.orderId = orderRef.id;
+
+      transaction.set(orderRef, order);
+    });
 
     logEvent(analytics, 'purchase', {
-      transaction_id: docRef.id,
+      transaction_id: assignedOrderId,
       value: finalTotal,
       currency: 'ZAR',
       items: order.items.map(item => ({ item_id: item.id, item_name: item.name, price: item.price, quantity: item.quantity }))
@@ -885,24 +1040,24 @@ window.processCheckout = async (e) => {
 
     closeCheckoutModal();
 
-    // Trigger Payment Gateway Simulation if they chose Online
+    // Trigger Payment Gateway Simulation
     if (paymentMethod === "Online Card / Instant EFT") {
-      alert("Opening Secure Payment Window...\n(Simulating Paystack / Yoco sandbox gate)");
+      alert("Opening Secure Payment Window...\n(Simulating Paystack sandbox gate)");
       setTimeout(async () => {
-        const payConfirm = confirm("Simulated Merchant Response:\nDo you want to authorize this transaction of R" + finalTotal + "?");
+        const payConfirm = confirm(`Simulated Merchant Response:\nDo you want to authorize this transaction of R${finalTotal}?`);
         if (payConfirm) {
-          await updateDoc(doc(db, "orders", docRef.id), {
+          await updateDoc(doc(db, "orders", assignedOrderId), {
             "payment.status": "Paid",
             "payment.reference": "PAY-" + Math.random().toString(36).substr(2, 9).toUpperCase()
           });
           alert("Payment verified successfully!");
         } else {
-          alert("Payment cancelled or failed. Order placed as 'Unpaid'. Please contact the shop owner to settle.");
+          alert("Payment cancelled or failed. Order placed as 'Unpaid'. Please settle payment manually.");
         }
-        showSuccessArea(docRef.id);
+        showSuccessArea(assignedOrderId);
       }, 800);
     } else {
-      showSuccessArea(docRef.id);
+      showSuccessArea(assignedOrderId);
     }
 
     // Reset Form & Clear Cart
@@ -912,8 +1067,9 @@ window.processCheckout = async (e) => {
     localStorage.removeItem("cart");
 
   } catch (error) {
-    console.error("Error writing order to Firestore: ", error);
-    alert("Checkout failed. Please check your connection and try again.");
+    console.error("Order Transaction Failed: ", error);
+    alert(error.message || "An error occurred while finalizing checkout. Please try again.");
+    updateCartUI();
   } finally {
     checkoutBtn.innerText = "Confirm and Place Order";
     checkoutBtn.disabled = false;
