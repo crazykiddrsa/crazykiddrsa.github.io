@@ -35,6 +35,7 @@ button:hover{background:#0a6;color:#fff;}
 </style></head><body>
 
 <header>
+    
   <h2>SbheneCart</h2>
   <div style="display:flex; gap:10px;">
     <button id="cart-btn" onclick="toggleCart()">🛒 Cart <span id="cart-count">0</span></button>
@@ -42,7 +43,15 @@ button:hover{background:#0a6;color:#fff;}
   </div>
 </header>
 
+<input
+    id="search"
+    type="text"
+    placeholder="🔍 Search products..."
+    oninput="renderProducts()"
+    style="width:100%;padding:10px;margin-bottom:15px;">
+    
 <div class="grid" id="products"></div>
+
 
 <!-- Slide-out Cart Sidebar -->
 <div id="cart-sidebar" class="sidebar">
@@ -56,6 +65,58 @@ button:hover{background:#0a6;color:#fff;}
     <span id="cart-total">R0</span>
   </div>
   <button id="checkout-btn" onclick="checkout()" style="width:100%; margin-top:15px;">Place Order</button>
+</div>
+
+<!-- Order Success Popup -->
+<div id="order-popup" style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.85);
+justify-content:center;
+align-items:center;
+z-index:9999;">
+
+  <div style="
+  background:#111;
+  border:2px solid #0f8;
+  padding:25px;
+  width:90%;
+  max-width:380px;
+  text-align:center;
+  border-radius:10px;
+  color:#0f8;">
+
+    <h2>✅ Order Successful</h2>
+
+    <p>Your Order ID</p>
+
+    <div id="popup-order-id"
+    style="
+    background:#000;
+    padding:12px;
+    border:1px solid #0f8;
+    font-size:18px;
+    word-break:break-all;
+    margin-bottom:20px;">
+    </div>
+
+    <button onclick="copyOrderId()" style="width:100%;margin-bottom:10px;">
+      📋 Copy Order ID
+    </button>
+
+    <button onclick="trackOrderPopup()" style="width:100%;margin-bottom:10px;">
+      📦 Track Order
+    </button>
+
+    <button onclick="closeOrderPopup()" style="width:100%;">
+      Done
+    </button>
+
+  </div>
 </div>
 
 <script type="module">
@@ -89,29 +150,64 @@ const analytics = getAnalytics(app);
 const box = document.getElementById('products');
 
 let dbProducts = [];
-let cart = JSON.parse(localStorage.getItem("cart")) || [];
+let cart;
+
+function renderProducts() {
+
+  const search = document.getElementById("search").value.toLowerCase();
+
+  const filtered = dbProducts.filter(p =>
+    (p.name || "").toLowerCase().includes(search) ||
+    (p.category || "").toLowerCase().includes(search) ||
+    (p.subcategory || "").toLowerCase().includes(search)
+  );
+
+  box.innerHTML = filtered.length
+    ? filtered.map(p => `
+      <div class="card" id="prod-${p.id}">
+        ${p.image ? `<img src="${p.image}">` : ""}
+        <div class="card-details">
+          <h3>${p.name}</h3>
+          <p>R${p.price}</p>
+          <small>${p.category}${p.subcategory ? " • " + p.subcategory : ""} • Stock: ${p.stock}</small>
+        </div>
+        <button onclick="addToCart('${p.id}', this)">
+          Add to Cart
+        </button>
+      </div>
+    `).join("")
+    : "<p style='padding:20px'>No products found.</p>";
+
+}
+
+try {
+    cart = JSON.parse(localStorage.getItem("cart"));
+
+    if (!Array.isArray(cart)) {
+        cart = [];
+    }
+} catch (e) {
+    cart = [];
+}
+
+localStorage.setItem("cart", JSON.stringify(cart));
 
 // Fetch products from Firestore in real-time
 onSnapshot(collection(db, "products"), (snapshot) => {
+
   dbProducts = [];
+
   snapshot.forEach(doc => {
-    dbProducts.push({ id: doc.id, ...doc.data() });
+    dbProducts.push({
+      id: doc.id,
+      ...doc.data()
+    });
   });
-  
-  box.innerHTML = dbProducts.length 
-    ? dbProducts.map(p => `
-        <div class="card" id="prod-${p.id}">
-          ${p.image ? `<img src="${p.image}">` : ''}
-          <div class="card-details">
-            <h3>${p.name}</h3>
-            <p>R${p.price}</p>
-            <small>${p.category} • Stock: ${p.stock}</small>
-          </div>
-          <button onclick="addToCart('${p.id}', this)">Add to Cart</button>
-        </div>
-      `).join('')
-    : '<p style="padding:20px">No products yet.</p>';
+
+  renderProducts();
+
 });
+  
 
 // Add to Cart Logic
 window.addToCart = (id, buttonEl) => {
@@ -245,6 +341,10 @@ const order = {
   
   try {
     const docRef = await addDoc(collection(db, "orders"), order);
+
+await updateDoc(doc(db, "orders", docRef.id), {
+  orderId: docRef.id
+});
     for (const item of cart) {
   const product = dbProducts.find(p => p.id === item.id);
 
@@ -267,7 +367,8 @@ const order = {
       }))
     });
 
-    alert('Order placed successfully! It has been sent directly to the Admin Dashboard.');
+    document.getElementById("popup-order-id").innerText = docRef.id;
+document.getElementById("order-popup").style.display = "flex";
     
     cart = [];
 updateCartUI();
@@ -282,5 +383,27 @@ window.toggleCart();
     checkoutBtn.disabled = false;
   }
 };
+window.copyOrderId = async () => {
+  const id = document.getElementById("popup-order-id").innerText;
+
+  try {
+    await navigator.clipboard.writeText(id);
+    alert("Order ID copied!");
+  } catch {
+    prompt("Copy this Order ID:", id);
+  }
+};
+
+window.closeOrderPopup = () => {
+  document.getElementById("order-popup").style.display = "none";
+};
+
+window.trackOrderPopup = () => {
+  const id = document.getElementById("popup-order-id").innerText;
+  localStorage.setItem("trackOrderId", id);
+  window.location.href = "track.html";
+};
 updateCartUI();
+
+
 </script></body></html>
