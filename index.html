@@ -1,43 +1,213 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SbheneCart</title>
   
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7447247941010903"
      crossorigin="anonymous"></script>
 <style>
-  
-body{font-family:Arial;background:#000;color:#0f8;margin:0;overflow-x:hidden;}
-header{
-  padding:15px;
-  border-bottom:1px solid #0f8;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  flex-wrap:wrap;
-  gap:10px;
-  background:#000;
-  position:sticky;
-  top:0;
-  z-index:100;
+body { font-family: Arial, sans-serif; background: #000; color: #0f8; margin: 0; overflow-x: hidden; }
+header {
+  padding: 15px;
+  border-bottom: 1px solid #0f8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: #000;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+header h2 { margin: 0; }
+header div { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* Filter Section */
+.filter-container {
+  padding: 15px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+select, input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #0f8;
+  background: #111;
+  color: #0f8;
+  box-sizing: border-box;
+  border-radius: 4px;
 }
 
-header h2{
-  margin:0;
+/* Product Grid (Two columns on mobile) */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 15px;
+  padding: 15px;
+}
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 10px;
+  }
 }
 
-header div{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
+/* Card Styling */
+.card {
+  background: #111;
+  border: 1px solid #0f8;
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.2s;
 }
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;padding:20px}
-.card{background:#111;border:1px solid #0f8;padding:15px;border-radius:8px;display:flex;flex-direction:column;justify-content:space-between;}
-.card img{width:100%;height:150px;object-fit:cover;border-radius:4px;margin-bottom:10px;}
-.card-details{flex-grow:1;margin-bottom:10px;}
-button{background:#0f8;color:#000;font-weight:bold;border:0;padding:8px 12px;cursor:pointer;border-radius:4px;transition:0.2s;}
-button:hover{background:#0a6;color:#fff;}
-#cart-btn{background:transparent;color:#0f8;border:1px solid #0f8;font-size:16px;display:flex;align-items:center;gap:8px;}
-#cart-count{background:#0f8;color:#000;border-radius:50%;padding:2px 8px;font-size:12px;font-weight:bold;}
+.card:hover { transform: translateY(-2px); }
+
+/* Auto-sliding Product Image Gallery */
+.slider-wrapper {
+  position: relative;
+  width: 100%;
+  height: 140px; /* Reduced picture size for cleaner display */
+  border-radius: 4px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  background: #050505;
+}
+@media (max-width: 600px) {
+  .slider-wrapper { height: 110px; } /* Even smaller on mobile */
+}
+.slider-content {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+}
+.slider-content::-webkit-scrollbar { display: none; }
+.slider-content { -ms-overflow-style: none; scrollbar-width: none; }
+
+.slide-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+}
+.slider-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0,0,0,0.6);
+  color: #0f8;
+  border: 1px solid #0f8;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  z-index: 5;
+  user-select: none;
+}
+.slider-arrow.prev { left: 5px; }
+.slider-arrow.next { right: 5px; }
+
+.card-details { flex-grow: 1; margin-bottom: 8px; }
+.card-details h3 { margin: 5px 0; font-size: 15px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+.card-details p { margin: 5px 0; font-weight: bold; color: #fff; font-size: 14px; }
+.card-details small { font-size: 11px; color: #888; display: block; }
+
+/* Buttons & State Styles */
+button {
+  background: #0f8;
+  color: #000;
+  font-weight: bold;
+  border: 0;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: 0.2s;
+}
+button:hover { background: #0a6; color: #fff; }
+button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1px solid #555; }
+#cart-btn { background: transparent; color: #0f8; border: 1px solid #0f8; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+#cart-count { background: #0f8; color: #000; border-radius: 50%; padding: 2px 8px; font-size: 12px; font-weight: bold; }
+
+/* Sidebar Drawer */
+.sidebar {
+  position: fixed;
+  top: 0;
+  right: -350px;
+  width: 320px;
+  height: 100%;
+  background: #111;
+  border-left: 2px solid #0f8;
+  z-index: 1000;
+  padding: 20px;
+  transition: 0.3s;
+  box-shadow: -5px 0 15px rgba(0,255,136,0.1);
+  color: #0f8;
+  box-sizing: border-box;
+}
+.sidebar.open { right: 0; }
+.cart-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #0f8; padding-bottom: 10px; }
+#cart-items { max-height: 55vh; overflow-y: auto; margin: 15px 0; }
+.cart-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding: 10px 0; }
+.qty-btn { padding: 2px 6px; background: #222; color: #0f8; border: 1px solid #0f8; font-size: 12px; }
+
+/* Modal Styling */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.85);
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  overflow-y: auto;
+}
+.modal-content {
+  background: #111;
+  border: 2px solid #0f8;
+  padding: 25px;
+  width: 90%;
+  max-width: 480px;
+  border-radius: 10px;
+  color: #0f8;
+  box-sizing: border-box;
+  position: relative;
+}
+.close-modal-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 24px;
+  cursor: pointer;
+  color: #0f8;
+}
+.modal-gallery {
+  width: 100%;
+  height: 200px;
+  background: #000;
+  border: 1px solid #0f8;
+  margin-bottom: 15px;
+  border-radius: 4px;
+}
 
 /* Fly to Cart Animation Particle */
 .flying-item {
@@ -50,45 +220,36 @@ button:hover{background:#0a6;color:#fff;}
   transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   pointer-events: none;
 }
-
-/* Sidebar Cart Drawer */
-.sidebar{position:fixed;top:0;right:-350px;width:300px;height:100%;background:#111;border-left:2px solid #0f8;z-index:1000;padding:20px;transition:0.3s;box-shadow:-5px 0 15px rgba(0,255,136,0.1);color:#0f8;box-sizing:border-box;}
-.sidebar.open{right:0;}
-.cart-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #0f8;padding-bottom:10px;}
-#cart-items{max-height:60vh;overflow-y:auto;margin:15px 0;}
-.cart-item{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #222;padding:10px 0;}
-.qty-btn{padding:2px 6px;background:#222;color:#0f8;border:1px solid #0f8;font-size:12px;}
-</style></head><body>
+</style>
+</head>
+<body>
     
-  <header>
+<header>
   <h2>SbheneCart</h2>
-
-  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+  <div>
     <button id="cart-btn" onclick="toggleCart()">
       🛒 Cart <span id="cart-count">0</span>
     </button>
-
-    <button onclick="location.href='track.html'">
-      📦 Track Order
-    </button>
-
-    <button onclick="location.href='admin.html'">
-      Admin
-    </button>
+    <button onclick="location.href='track.html'">📦 Track Order</button>
+    <button onclick="location.href='admin.html'">Admin</button>
   </div>
 </header>
 
-<div style="padding:15px;">
-  <input
-    id="search"
-    type="text"
-    placeholder="🔍 Search products..."
-    oninput="renderProducts()"
-    style="width:100%;padding:10px;border:1px solid #0f8;background:#111;color:#0f8;box-sizing:border-box;">
+<!-- Search and Dynamic Filters -->
+<div class="filter-container">
+  <input id="search" type="text" placeholder="🔍 Search products..." oninput="renderProducts()">
+  <select id="cat-filter" onchange="onCategoryFilterChange()">
+    <option value="">All Categories</option>
+  </select>
+  <select id="subcat-filter" onchange="onSubcategoryFilterChange()">
+    <option value="">All Subcategories</option>
+  </select>
+  <select id="subsubcat-filter" onchange="renderProducts()">
+    <option value="">All Sub-subcategories</option>
+  </select>
 </div>
     
 <div class="grid" id="products"></div>
-
 
 <!-- Slide-out Cart Sidebar -->
 <div id="cart-sidebar" class="sidebar">
@@ -101,58 +262,46 @@ button:hover{background:#0a6;color:#fff;}
     <span>Total:</span>
     <span id="cart-total">R0</span>
   </div>
-  <button id="checkout-btn" onclick="checkout()" style="width:100%; margin-top:15px;">Place Order</button>
+  <button id="checkout-trigger" onclick="openCheckoutModal()" style="width:100%; margin-top:15px;">Place Order</button>
+</div>
+
+<!-- Product Details Modal -->
+<div id="details-modal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal-btn" onclick="closeDetailsModal()">&times;</span>
+    <div id="modal-details-content"></div>
+  </div>
+</div>
+
+<!-- Modern Checkout Modal -->
+<div id="checkout-modal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal-btn" onclick="closeCheckoutModal()">&times;</span>
+    <h2>Complete Your Order</h2>
+    <form id="checkout-form" onsubmit="processCheckout(event)">
+      <label style="display:block; margin: 10px 0 5px;">Customer Name *</label>
+      <input type="text" id="cust-name" required placeholder="John Doe">
+      
+      <label style="display:block; margin: 10px 0 5px;">Phone Number *</label>
+      <input type="tel" id="cust-phone" required placeholder="082 123 4567">
+      
+      <label style="display:block; margin: 10px 0 5px;">Delivery Address *</label>
+      <input type="text" id="cust-address" required placeholder="123 Street Name, Suburb, City">
+      
+      <button type="submit" id="checkout-btn" style="width:100%; margin-top:20px;">Confirm and Place Order</button>
+    </form>
+  </div>
 </div>
 
 <!-- Order Success Popup -->
-<div id="order-popup" style="
-display:none;
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,.85);
-justify-content:center;
-align-items:center;
-z-index:9999;">
-
-  <div style="
-  background:#111;
-  border:2px solid #0f8;
-  padding:25px;
-  width:90%;
-  max-width:380px;
-  text-align:center;
-  border-radius:10px;
-  color:#0f8;">
-
+<div id="order-popup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.85); justify-content:center; align-items:center; z-index:9999;">
+  <div style="background:#111; border:2px solid #0f8; padding:25px; width:90%; max-width:380px; text-align:center; border-radius:10px; color:#0f8;">
     <h2>✅ Order Successful</h2>
-
     <p>Your Order ID</p>
-
-    <div id="popup-order-id"
-    style="
-    background:#000;
-    padding:12px;
-    border:1px solid #0f8;
-    font-size:18px;
-    word-break:break-all;
-    margin-bottom:20px;">
-    </div>
-
-    <button onclick="copyOrderId()" style="width:100%;margin-bottom:10px;">
-      📋 Copy Order ID
-    </button>
-
-    <button onclick="trackOrderPopup()" style="width:100%;margin-bottom:10px;">
-      📦 Track Order
-    </button>
-
-    <button onclick="closeOrderPopup()" style="width:100%;">
-      Done
-    </button>
-
+    <div id="popup-order-id" style="background:#000; padding:12px; border:1px solid #0f8; font-size:18px; word-break:break-all; margin-bottom:20px;"></div>
+    <button onclick="copyOrderId()" style="width:100%; margin-bottom:10px;">📋 Copy Order ID</button>
+    <button onclick="trackOrderPopup()" style="width:100%; margin-bottom:10px;">📦 Track Order</button>
+    <button onclick="closeOrderPopup()" style="width:100%;">Done</button>
   </div>
 </div>
 
@@ -166,10 +315,8 @@ import {
   doc,
   updateDoc
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
-
 import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
 
-// Your verified Firebase Configuration
 const firebaseConfig = {
   apiKey: "AIzaSyC4BCz9GeNTgQYa8ydIJreTREVdPklganA",
   authDomain: "sbhenecart.firebaseapp.com",
@@ -180,101 +327,356 @@ const firebaseConfig = {
   measurementId: "G-CVWM0DE46B"
 };
 
-// Initialize Firebase services
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const analytics = getAnalytics(app);
 const box = document.getElementById('products');
 
 let dbProducts = [];
-let cart;
+let dbCategories = [];
+let dbSubcategories = [];
+let dbSubsubcategories = [];
+let cart = [];
 
-function renderProducts() {
-
-  const search = document.getElementById("search").value.toLowerCase();
-
-  const filtered = dbProducts.filter(p =>
-    (p.name || "").toLowerCase().includes(search) ||
-    (p.category || "").toLowerCase().includes(search) ||
-    (p.subcategory || "").toLowerCase().includes(search)
-  );
-
-  box.innerHTML = filtered.length
-    ? filtered.map(p => `
-      <div class="card" id="prod-${p.id}">
-        ${p.image ? `<img src="${p.image}">` : ""}
-        <div class="card-details">
-          <h3>${p.name}</h3>
-          <p>R${p.price}</p>
-          <small>${p.category}${p.subcategory ? " • " + p.subcategory : ""} • Stock: ${p.stock}</small>
-        </div>
-        <button onclick="addToCart('${p.id}', this)">
-          Add to Cart
-        </button>
-      </div>
-    `).join("")
-    : "<p style='padding:20px'>No products found.</p>";
-
-}
-
+// Initialize LocalStorage Cart
 try {
-    cart = JSON.parse(localStorage.getItem("cart"));
-
-    if (!Array.isArray(cart)) {
-        cart = [];
-    }
+  cart = JSON.parse(localStorage.getItem("cart"));
+  if (!Array.isArray(cart)) cart = [];
 } catch (e) {
-    cart = [];
+  cart = [];
 }
-
 localStorage.setItem("cart", JSON.stringify(cart));
 
-// Fetch products from Firestore in real-time
-onSnapshot(collection(db, "products"), (snapshot) => {
+// Real-time Firestore Listeners
+onSnapshot(collection(db, "categories"), (snap) => {
+  dbCategories = [];
+  snap.forEach(d => dbCategories.push({ id: d.id, ...d.data() }));
+  populateCategoryFilters();
+});
 
+onSnapshot(collection(db, "subcategories"), (snap) => {
+  dbSubcategories = [];
+  snap.forEach(d => dbSubcategories.push({ id: d.id, ...d.data() }));
+  onCategoryFilterChange();
+});
+
+onSnapshot(collection(db, "subsubcategories"), (snap) => {
+  dbSubsubcategories = [];
+  snap.forEach(d => dbSubsubcategories.push({ id: d.id, ...d.data() }));
+  onSubcategoryFilterChange();
+});
+
+onSnapshot(collection(db, "products"), (snap) => {
   dbProducts = [];
+  snap.forEach(d => dbProducts.push({ id: d.id, ...d.data() }));
+  renderProducts();
+  updateCartUI(); 
+});
 
-  snapshot.forEach(doc => {
-    dbProducts.push({
-      id: doc.id,
-      ...doc.data()
-    });
+// Setup Cascading Filters
+function populateCategoryFilters() {
+  const catFilter = document.getElementById('cat-filter');
+  const savedVal = catFilter.value;
+  catFilter.innerHTML = '<option value="">All Categories</option>' + 
+    dbCategories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+  catFilter.value = savedVal;
+}
+
+window.onCategoryFilterChange = () => {
+  const catVal = document.getElementById('cat-filter').value;
+  const subcatFilter = document.getElementById('subcat-filter');
+  
+  const filteredSub = dbSubcategories.filter(s => !catVal || s.category === catVal);
+  subcatFilter.innerHTML = '<option value="">All Subcategories</option>' + 
+    filteredSub.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+  
+  onSubcategoryFilterChange();
+};
+
+window.onSubcategoryFilterChange = () => {
+  const subcatVal = document.getElementById('subcat-filter').value;
+  const subsubcatFilter = document.getElementById('subsubcat-filter');
+  
+  const filteredSubSub = dbSubsubcategories.filter(s => !subcatVal || s.subcategory === subcatVal);
+  subsubcatFilter.innerHTML = '<option value="">All Sub-subcategories</option>' + 
+    filteredSubSub.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+  
+  renderProducts();
+};
+
+// Render Product Grid
+window.renderProducts = () => {
+  const search = document.getElementById("search").value.toLowerCase();
+  const catVal = document.getElementById("cat-filter").value;
+  const subcatVal = document.getElementById("subcat-filter").value;
+  const subsubcatVal = document.getElementById("subsubcat-filter").value;
+
+  const filtered = dbProducts.filter(p => {
+    const matchesSearch = (p.name || "").toLowerCase().includes(search) || (p.description || "").toLowerCase().includes(search);
+    const matchesCat = !catVal || p.category === catVal;
+    const matchesSub = !subcatVal || p.subcategory === subcatVal;
+    const matchesSubSub = !subsubcatVal || p.subsubcategory === subsubcatVal;
+    return matchesSearch && matchesCat && matchesSub && matchesSubSub;
   });
 
-  renderProducts();
+  box.innerHTML = filtered.length
+    ? filtered.map(p => {
+        const images = p.images && p.images.length ? p.images : (p.image ? [p.image] : []);
+        const isOutOfStock = p.stock <= 0;
+        
+        return `
+          <div class="card" onclick="openDetailsModal('${p.id}')">
+            <div class="slider-wrapper" id="slider-${p.id}" onclick="event.stopPropagation()">
+              ${images.length > 1 ? `<button class="slider-arrow prev" onclick="moveSlider('${p.id}', -1)">&#10094;</button>` : ''}
+              <div class="slider-content">
+                ${images.map(img => `<img src="${img}" class="slide-img">`).join('')}
+              </div>
+              ${images.length > 1 ? `<button class="slider-arrow next" onclick="moveSlider('${p.id}', 1)">&#10095;</button>` : ''}
+            </div>
+            <div class="card-details">
+              <h3>${p.name}</h3>
+              <p>R${p.price}</p>
+              <small>${p.category}${p.subcategory ? " • " + p.subcategory : ""}${p.subsubcategory ? " • " + p.subsubcategory : ""} • Stock: ${p.stock}</small>
+            </div>
+            <button ${isOutOfStock ? 'disabled' : ''} onclick="event.stopPropagation(); addToCart('${p.id}', this)">
+              ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+            </button>
+          </div>
+        `;
+      }).join("")
+    : "<p style='padding:20px'>No products found.</p>";
+};
 
-});
-  
+// Auto-sliding Logic (Moves active view every 4s)
+setInterval(() => {
+  document.querySelectorAll('.slider-content').forEach(slider => {
+    if (slider.matches(':hover')) return;
+    const slideWidth = slider.clientWidth;
+    if (slideWidth === 0) return;
+    if (slider.scrollLeft + slideWidth >= slider.scrollWidth - 10) {
+      slider.scrollTo({ left: 0, behavior: 'smooth' });
+    } else {
+      slider.scrollBy({ left: slideWidth, behavior: 'smooth' });
+    }
+  });
+}, 4000);
 
-// Add to Cart Logic
+window.moveSlider = (id, direction) => {
+  const slider = document.querySelector(`#slider-${id} .slider-content`);
+  if (!slider) return;
+  const slideWidth = slider.clientWidth;
+  slider.scrollBy({ left: direction * slideWidth, behavior: 'smooth' });
+};
+
+// Add to Cart Logic with Stock Protections
 window.addToCart = (id, buttonEl) => {
   const product = dbProducts.find(p => p.id === id);
-  if (!product) return;
-
-  flyToCartAnimation(buttonEl);
+  if (!product || product.stock <= 0) return;
 
   const cartItem = cart.find(item => item.id === id);
+  const currentQty = cartItem ? cartItem.quantity : 0;
+
+  if (currentQty + 1 > product.stock) {
+    alert(`Cannot add more. Only ${product.stock} items left in stock.`);
+    return;
+  }
+
+  if (buttonEl) flyToCartAnimation(buttonEl);
+
   if (cartItem) {
     cartItem.quantity++;
   } else {
     cart.push({ ...product, quantity: 1 });
   }
 
-  // Google Analytics Event: Add to Cart
   logEvent(analytics, 'add_to_cart', {
     currency: 'ZAR',
     value: product.price,
-    items: [{
-      item_id: product.id,
-      item_name: product.name,
-      price: product.price,
-      quantity: 1
-    }]
+    items: [{ item_id: product.id, item_name: product.name, price: product.price, quantity: 1 }]
   });
 
   updateCartUI();
 };
 
+window.changeQty = (id, delta) => {
+  const cartItemIndex = cart.findIndex(item => item.id === id);
+  if (cartItemIndex === -1) return;
+
+  const product = dbProducts.find(p => p.id === id);
+  const targetQty = cart[cartItemIndex].quantity + delta;
+
+  if (delta > 0 && product && targetQty > product.stock) {
+    alert(`Cannot exceed available stock (${product.stock} left).`);
+    return;
+  }
+
+  if (targetQty <= 0) {
+    cart.splice(cartItemIndex, 1);
+  } else {
+    cart[cartItemIndex].quantity = targetQty;
+  }
+  updateCartUI();
+};
+
+function updateCartUI() {
+  const cartItemsContainer = document.getElementById('cart-items');
+  
+  // Real-time synchronization of items in cart to match up-to-date stocks
+  cart = cart.map(item => {
+    const fresh = dbProducts.find(p => p.id === item.id);
+    if (!fresh) return null; // Product removed from store
+    if (item.quantity > fresh.stock) {
+      item.quantity = fresh.stock; // Bound down to remaining inventory
+    }
+    return item.quantity > 0 ? { ...item, ...fresh } : null;
+  }).filter(Boolean);
+
+  const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  document.getElementById('cart-count').innerText = totalCount;
+  document.getElementById('cart-total').innerText = `R${totalPrice}`;
+
+  cartItemsContainer.innerHTML = cart.length
+    ? cart.map(item => `
+        <div class="cart-item">
+          <div>
+            <b>${item.name}</b><br>
+            <small>R${item.price} each (Stock: ${item.stock})</small>
+          </div>
+          <div style="display:flex; align-items:center; gap:5px;">
+            <button class="qty-btn" onclick="changeQty('${item.id}', -1)">-</button>
+            <span>${item.quantity}</span>
+            <button class="qty-btn" onclick="changeQty('${item.id}', 1)" ${item.quantity >= item.stock ? 'disabled' : ''}>+</button>
+          </div>
+        </div>
+      `).join('')
+    : '<p>Your cart is empty.</p>';
+    
+  localStorage.setItem("cart", JSON.stringify(cart));
+}
+
+// Sidebar Drawer Control
+window.toggleCart = () => {
+  document.getElementById('cart-sidebar').classList.toggle('open');
+};
+
+// Details Modal Core
+window.openDetailsModal = (id) => {
+  const p = dbProducts.find(x => x.id === id);
+  if (!p) return;
+  const images = p.images && p.images.length ? p.images : (p.image ? [p.image] : []);
+  const isOutOfStock = p.stock <= 0;
+
+  document.getElementById('modal-details-content').innerHTML = `
+    <div class="slider-wrapper" id="modal-slider-${p.id}" style="height: 200px;">
+      ${images.length > 1 ? `<button class="slider-arrow prev" onclick="moveSlider('modal-slider-${p.id}', -1)">&#10094;</button>` : ''}
+      <div class="slider-content">
+        ${images.map(img => `<img src="${img}" class="slide-img">`).join('')}
+      </div>
+      ${images.length > 1 ? `<button class="slider-arrow next" onclick="moveSlider('modal-slider-${p.id}', 1)">&#10095;</button>` : ''}
+    </div>
+    <h2>${p.name}</h2>
+    <h3 style="color:#fff;">R${p.price}</h3>
+    <p style="color:#888; font-size:12px;">Category: ${p.category} ${p.subcategory ? ' • ' + p.subcategory : ''} ${p.subsubcategory ? ' • ' + p.subsubcategory : ''}</p>
+    <p style="margin: 15px 0; line-height:1.4;">${p.description || "No description provided."}</p>
+    <p><b>Stock Available:</b> ${p.stock}</p>
+    <button ${isOutOfStock ? 'disabled' : ''} onclick="addToCart('${p.id}', null); closeDetailsModal();" style="width:100%; margin-top:10px;">
+      ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+    </button>
+  `;
+  document.getElementById('details-modal').style.display = "flex";
+};
+
+window.closeDetailsModal = () => {
+  document.getElementById('details-modal').style.display = "none";
+};
+
+// Checkout Modals Setup
+window.openCheckoutModal = () => {
+  if (cart.length === 0) return alert('Your cart is empty');
+  toggleCart();
+  document.getElementById('checkout-modal').style.display = "flex";
+};
+
+window.closeCheckoutModal = () => {
+  document.getElementById('checkout-modal').style.display = "none";
+};
+
+// Checkout final integration & Inventory lock checks
+window.processCheckout = async (e) => {
+  e.preventDefault();
+  
+  const name = document.getElementById("cust-name").value.trim();
+  const phone = document.getElementById("cust-phone").value.trim();
+  const address = document.getElementById("cust-address").value.trim();
+  
+  const checkoutBtn = document.getElementById('checkout-btn');
+  checkoutBtn.innerText = "Placing Order...";
+  checkoutBtn.disabled = true;
+
+  // Inventory integrity check before ordering
+  for (const item of cart) {
+    const product = dbProducts.find(p => p.id === item.id);
+    if (!product || product.stock < item.quantity) {
+      alert(`Checkout failed: ${item.name} does not have enough stock remaining. Refreshing your cart.`);
+      updateCartUI();
+      checkoutBtn.innerText = "Confirm and Place Order";
+      checkoutBtn.disabled = false;
+      return;
+    }
+  }
+
+  const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const order = {
+    customer: { name, phone, address },
+    status: "Pending",
+    items: cart.map(item => ({ id: item.id, name: item.name, price: item.price, quantity: item.quantity })),
+    total: totalAmount,
+    timestamp: Date.now()
+  };
+
+  try {
+    const docRef = await addDoc(collection(db, "orders"), order);
+    await updateDoc(doc(db, "orders", docRef.id), { orderId: docRef.id });
+
+    // Decrement stock in real-time
+    for (const item of cart) {
+      const product = dbProducts.find(p => p.id === item.id);
+      if (product) {
+        await updateDoc(doc(db, "products", item.id), {
+          stock: product.stock - item.quantity
+        });
+      }
+    }
+
+    logEvent(analytics, 'purchase', {
+      transaction_id: docRef.id,
+      value: totalAmount,
+      currency: 'ZAR',
+      items: order.items.map(item => ({ item_id: item.id, item_name: item.name, price: item.price, quantity: item.quantity }))
+    });
+
+    closeCheckoutModal();
+    document.getElementById("popup-order-id").innerText = docRef.id;
+    document.getElementById("order-popup").style.display = "flex";
+    
+    // Reset Form & Clear Cart
+    document.getElementById("checkout-form").reset();
+    cart = [];
+    updateCartUI();
+    localStorage.removeItem("cart");
+
+  } catch (error) {
+    console.error("Error writing order to Firestore: ", error);
+    alert("Checkout failed. Please check your connection and try again.");
+  } finally {
+    checkoutBtn.innerText = "Confirm and Place Order";
+    checkoutBtn.disabled = false;
+  }
+};
+
+// Fly Animation Particle
 function flyToCartAnimation(buttonEl) {
   const cartBtn = document.getElementById('cart-btn');
   const btnRect = buttonEl.getBoundingClientRect();
@@ -293,136 +695,12 @@ function flyToCartAnimation(buttonEl) {
     flyer.style.opacity = '0';
   });
 
-  flyer.addEventListener('transitionend', () => {
-    flyer.remove();
-  });
+  flyer.addEventListener('transitionend', () => flyer.remove());
 }
 
-window.toggleCart = () => {
-  document.getElementById('cart-sidebar').classList.toggle('open');
-};
-
-window.changeQty = (id, delta) => {
-  const cartItemIndex = cart.findIndex(item => item.id === id);
-  if (cartItemIndex === -1) return;
-
-  cart[cartItemIndex].quantity += delta;
-  if (cart[cartItemIndex].quantity <= 0) {
-    cart.splice(cartItemIndex, 1);
-  }
-  updateCartUI();
-};
-
-function updateCartUI() {
-  const cartItemsContainer = document.getElementById('cart-items');
-  const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-  document.getElementById('cart-count').innerText = totalCount;
-  document.getElementById('cart-total').innerText = `R${totalPrice}`;
-
-  cartItemsContainer.innerHTML = cart.length
-    ? cart.map(item => `
-        <div class="cart-item">
-          <div>
-            <b>${item.name}</b><br>
-            <small>R${item.price} each</small>
-          </div>
-          <div style="display:flex; align-items:center; gap:5px;">
-            <button class="qty-btn" onclick="changeQty('${item.id}', -1)">-</button>
-            <span>${item.quantity}</span>
-            <button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button>
-          </div>
-        </div>
-      `).join('')
-    : '<p>Your cart is empty.</p>';
-    localStorage.setItem("cart", JSON.stringify(cart));
-}
-
-// Checkout integration with Cloud Firestore & Google Analytics
-window.checkout = async () => {
-  if (cart.length === 0) return alert('Your cart is empty');
-  const customerName = prompt("Customer Name");
-if (!customerName) return;
-
-const customerPhone = prompt("Phone Number");
-if (!customerPhone) return;
-
-const customerAddress = prompt("Delivery Address");
-if (!customerAddress) return;
-  const checkoutBtn = document.getElementById('checkout-btn');
-  checkoutBtn.innerText = "Placing Order...";
-  checkoutBtn.disabled = true;
-
-  const totalAmount = cart.reduce(
-  (sum, item) => sum + (item.price * item.quantity),
-  0
-);
-
-const order = {
-  customer: {
-    name: customerName,
-    phone: customerPhone,
-    address: customerAddress
-  },
-  status: "Pending",
-  items: cart.map(item => ({
-    id: item.id,
-    name: item.name,
-    price: item.price,
-    quantity: item.quantity
-  })),
-  total: totalAmount,
-  timestamp: Date.now()
-};
-  
-  try {
-    const docRef = await addDoc(collection(db, "orders"), order);
-
-await updateDoc(doc(db, "orders", docRef.id), {
-  orderId: docRef.id
-});
-    for (const item of cart) {
-  const product = dbProducts.find(p => p.id === item.id);
-
-  if (product) {
-    await updateDoc(doc(db, "products", item.id), {
-      stock: product.stock - item.quantity
-    });
-  }
-}
-    // Google Analytics Event: Purchase
-    logEvent(analytics, 'purchase', {
-      transaction_id: docRef.id,
-      value: totalAmount,
-      currency: 'ZAR',
-      items: order.items.map(item => ({
-        item_id: item.id,
-        item_name: item.name,
-        price: item.price,
-        quantity: item.quantity
-      }))
-    });
-
-    document.getElementById("popup-order-id").innerText = docRef.id;
-document.getElementById("order-popup").style.display = "flex";
-    
-    cart = [];
-updateCartUI();
-localStorage.removeItem("cart");
-window.toggleCart();
-   
-  } catch (error) {
-    console.error("Error writing order to Firestore: ", error);
-    alert("Checkout failed. Please check your connection and try again.");
-  } finally {
-    checkoutBtn.innerText = "Place Order";
-    checkoutBtn.disabled = false;
-  }
-};
+// Post-checkout Popup Utilities
 window.copyOrderId = async () => {
   const id = document.getElementById("popup-order-id").innerText;
-
   try {
     await navigator.clipboard.writeText(id);
     alert("Order ID copied!");
@@ -440,7 +718,9 @@ window.trackOrderPopup = () => {
   localStorage.setItem("trackOrderId", id);
   window.location.href = "track.html";
 };
+
+// Initial Render on startup
 updateCartUI();
-
-
-</script></body></html>
+</script>
+</body>
+</html>
