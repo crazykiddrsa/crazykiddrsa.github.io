@@ -3,45 +3,160 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SbheneCart - Track Order</title>
+<title>SbheneCart - Quantum Order Tracker v10</title>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7447247941010903" crossorigin="anonymous"></script>
 <style>
-body { font-family: Arial, sans-serif; background: #000; color: #0f8; margin: 0; }
+/* Universal Box-Sizing & Futuristic Variable Palette */
+* {
+  box-sizing: border-box;
+}
+
+body { 
+  font-family: 'Courier New', Courier, monospace, Arial, sans-serif; 
+  background: #020202; 
+  color: #0f8; 
+  margin: 0; 
+  overflow-x: hidden;
+  background-image: radial-gradient(circle at 50% 50%, #0c2016 0%, #000000 80%);
+}
+
+/* Sci-fi Scanline Overlay */
+body::before {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 9999;
+  background-size: 100% 4px, 6px 100%;
+  pointer-events: none;
+}
+
 header {
-  padding: 15px;
-  border-bottom: 1px solid #0f8;
+  padding: 20px;
+  border-bottom: 2px solid #0f8;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 5px 25px rgba(0, 255, 136, 0.15);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
-header h2 { margin: 0; }
-.container { max-width: 600px; margin: auto; padding: 20px; }
-input, button { width: 100%; padding: 12px; margin: 8px 0; box-sizing: border-box; border-radius: 4px; }
-input { background: #111; color: #0f8; border: 1px solid #0f8; font-size: 16px; }
-button { background: #0f8; color: #000; border: 0; font-weight: bold; cursor: pointer; transition: 0.2s; }
-button:hover { background: #0a6; color: #fff; }
+header h2 { 
+  margin: 0; 
+  text-shadow: 0 0 10px #0f8, 0 0 20px rgba(0,255,136,0.3);
+  letter-spacing: 2px;
+}
+.container { max-width: 650px; margin: auto; padding: 20px; position: relative; }
 
-.card { border: 1px solid #0f8; background: #111; padding: 20px; margin-top: 15px; border-radius: 8px; }
-.error-msg { color: #ff4a4a; border-color: #ff4a4a; background: rgba(255, 74, 74, 0.05); }
+/* Futuristic Input & Cyberpunk Controls */
+.search-wrapper {
+  display: flex;
+  gap: 10px;
+  margin: 15px 0;
+}
+input { 
+  flex-grow: 1;
+  padding: 14px; 
+  background: #080808; 
+  color: #0f8; 
+  border: 1px solid #0a6; 
+  border-radius: 6px; 
+  font-size: 16px; 
+  outline: none;
+  font-family: inherit;
+  transition: all 0.3s ease;
+  box-shadow: inset 0 0 8px rgba(0, 255, 136, 0.1);
+}
+input:focus {
+  border-color: #0f8;
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.4), inset 0 0 8px rgba(0, 255, 136, 0.2);
+}
+button { 
+  background: #0f8; 
+  color: #000; 
+  border: 0; 
+  padding: 14px 20px;
+  border-radius: 6px;
+  font-weight: bold; 
+  font-family: inherit;
+  cursor: pointer; 
+  font-size: 15px;
+  letter-spacing: 1px;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.2);
+}
+button:hover { 
+  background: #000; 
+  color: #0f8; 
+  box-shadow: 0 0 20px #0f8;
+  border: 1px solid #0f8;
+  transform: translateY(-2px);
+}
+.clear-btn {
+  background: #222;
+  color: #888;
+  border: 1px solid #333;
+}
+.clear-btn:hover {
+  background: #ff4a4a;
+  color: #000;
+  border-color: #ff4a4a;
+  box-shadow: 0 0 15px #ff4a4a;
+}
 
-/* Visual Order Progress Tracker */
+/* Glassmorphic Cyber Panels */
+.card { 
+  border: 1px solid #0f8; 
+  background: rgba(10, 10, 10, 0.85); 
+  padding: 25px; 
+  margin-top: 20px; 
+  border-radius: 12px; 
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px rgba(0, 255, 136, 0.05), inset 0 0 15px rgba(0, 255, 136, 0.05);
+  transition: 0.3s;
+}
+.error-msg { 
+  color: #ff4a4a; 
+  border-color: #ff4a4a; 
+  background: rgba(255, 74, 74, 0.05); 
+  box-shadow: 0 0 20px rgba(255, 74, 74, 0.15);
+}
+
+/* Interactive Cyber Stepper Timeline */
 .stepper {
   display: flex;
   justify-content: space-between;
   position: relative;
-  margin: 25px 0 30px 0;
+  margin: 35px 0 40px 0;
   padding: 0;
 }
 .stepper::before {
   content: "";
   position: absolute;
-  top: 15px;
-  left: 10px;
-  right: 10px;
-  height: 2px;
-  background: #333;
+  top: 18px;
+  left: 15px;
+  right: 15px;
+  height: 4px;
+  background: #151515;
+  border-radius: 2px;
   z-index: 1;
+}
+/* Progress filling visual bar */
+.stepper-progress-bar {
+  position: absolute;
+  top: 18px;
+  left: 15px;
+  height: 4px;
+  width: 0%;
+  background: linear-gradient(90deg, #0a6, #0f8);
+  box-shadow: 0 0 12px #0f8;
+  z-index: 2;
+  transition: width 0.6s cubic-bezier(0.19, 1, 0.22, 1);
 }
 .step {
   display: flex;
@@ -49,78 +164,183 @@ button:hover { background: #0a6; color: #fff; }
   align-items: center;
   flex: 1;
   position: relative;
-  z-index: 2;
+  z-index: 3;
 }
 .circle {
-  width: 30px;
-  height: 30px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  background: #222;
+  background: #111;
   border: 2px solid #333;
-  color: #888;
+  color: #666;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  font-size: 14px;
-  transition: 0.3s;
+  font-size: 15px;
+  transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
 }
 .step-label {
   font-size: 11px;
-  color: #888;
-  margin-top: 8px;
+  color: #555;
+  margin-top: 10px;
   text-align: center;
   font-weight: bold;
-  transition: 0.3s;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: all 0.4s;
 }
+
+/* Stepper State Updates */
 .step.active .circle {
   background: #000;
   border-color: #0f8;
   color: #0f8;
-  box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+  text-shadow: 0 0 5px #0f8;
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.6), inset 0 0 8px rgba(0, 255, 136, 0.4);
+  transform: scale(1.15);
 }
-.step.active .step-label { color: #0f8; }
-
+.step.active .step-label { 
+  color: #0f8; 
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+}
 .step.completed .circle {
   background: #0f8;
   border-color: #0f8;
   color: #000;
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
 }
 .step.completed .step-label { color: #0a6; }
 
-/* Cancelled State Accent */
+/* Status Cyber-Badges */
 .cancelled-badge {
-  background: #ff4a4a;
-  color: #000;
-  padding: 6px 12px;
+  background: rgba(255, 74, 74, 0.15);
+  color: #ff4a4a;
+  border: 1px solid #ff4a4a;
+  padding: 8px 16px;
   border-radius: 4px;
   font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
   display: inline-block;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 0 15px rgba(255, 74, 74, 0.1);
+  animation: cyber-blink 2s infinite;
 }
+.payment-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: bold;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.payment-paid {
+  background: rgba(0, 255, 136, 0.1);
+  color: #0f8;
+  border: 1px solid #0f8;
+}
+.payment-pending {
+  background: rgba(255, 170, 0, 0.1);
+  color: #ffaa00;
+  border: 1px solid #ffaa00;
+  animation: cyber-pulse 1.5s infinite alternate;
+}
+
+/* PayFast Neon Alert Banner */
+.payfast-toast {
+  background: rgba(0, 255, 136, 0.15);
+  border: 1px solid #0f8;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 0 25px rgba(0, 255, 136, 0.2);
+  animation: slide-in-top 0.5s ease-out;
+}
+
 #items p {
-  border-bottom: 1px solid #222;
-  padding-bottom: 8px;
-  margin: 8px 0;
+  border-bottom: 1px solid #1a1a1a;
+  padding: 12px 0;
+  margin: 0;
   font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Keyframe Animations */
+@keyframes cyber-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+@keyframes cyber-pulse {
+  from { box-shadow: 0 0 5px rgba(255, 170, 0, 0.2); }
+  to { box-shadow: 0 0 15px rgba(255, 170, 0, 0.4); }
+}
+@keyframes slide-in-top {
+  from { transform: translateY(-30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Futuristic Heartbeat Pumping Animation for Payment Call-to-Action */
+@keyframes heartbeat {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+  }
+  14% {
+    transform: scale(1.04);
+    box-shadow: 0 0 25px rgba(0, 255, 136, 0.8);
+  }
+  28% {
+    transform: scale(1);
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+  }
+  42% {
+    transform: scale(1.04);
+    box-shadow: 0 0 25px rgba(0, 255, 136, 0.8);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+  }
+}
+.pump-heartbeat {
+  animation: heartbeat 1.8s infinite ease-in-out;
 }
 </style>
 </head>
 <body>
 
 <header>
-  <h2>SbheneCart - Track Order</h2>
-  <button onclick="location.href='index.html'" style="width:auto; margin:0; padding: 8px 16px;">Home</button>
+  <h2>SbheneCart / Tracker_v10</h2>
+  <button onclick="location.href='index.html'" style="width:auto; margin:0; padding: 10px 20px;">Return_Home</button>
 </header>
 
 <div class="container">
-  <input id="orderId" placeholder="Enter Order ID">
-  <button onclick="trackOrder()">Track Order</button>
+  
+  <!-- Dyn Confirmation Toast (from PayFast redirection payload) -->
+  <div id="payfast-success" class="payfast-toast" style="display:none;">
+    <span>⚡</span>
+    <div>
+      <strong style="color:#fff;">PAYMENT VERIFIED</strong><br>
+      <span style="font-size:12px; color:#888;">Transaction securely updated with PayFast.</span>
+    </div>
+  </div>
+
+  <div class="search-wrapper">
+    <input id="orderId" placeholder="Input Quantum Order Reference ID">
+    <button onclick="trackOrder()">Track_Sys</button>
+    <button onclick="clearSearch()" class="clear-btn" title="Track Different Order">Clear</button>
+  </div>
 
   <!-- Dynamic Status / Result Area -->
   <div id="error-card" class="card error-msg" style="display:none">
-    <h3>⚠️ Order Not Found</h3>
-    <p>Please double-check your Order ID. Ensure there are no spaces or missing characters and try searching again.</p>
+    <h3>⚠️ SEARCH EXCEPTION: ORDER NULL</h3>
+    <p>Reference key unrecognized. Please double-check your Order ID token and verify characters before initiating retry procedure.</p>
   </div>
 
   <div id="result" class="card" style="display:none">
@@ -128,38 +348,41 @@ button:hover { background: #0a6; color: #fff; }
       <span class="cancelled-badge">❌ Order Cancelled</span>
     </div>
 
-    <!-- Stepper Tracker -->
-    <div id="stepper-container" class="stepper">
-      <div class="step" id="step-pending">
-        <div class="circle">1</div>
-        <div class="step-label">Pending</div>
-      </div>
-      <div class="step" id="step-processing">
-        <div class="circle">2</div>
-        <div class="step-label">Processing</div>
-      </div>
-      <div class="step" id="step-shipped">
-        <div class="circle">3</div>
-        <div class="step-label">Shipped</div>
-      </div>
-      <div class="step" id="step-delivered">
-        <div class="circle">4</div>
-        <div class="step-label">Delivered</div>
+    <!-- Futuristic Stepper Tracker -->
+    <div id="stepper-wrapper" style="position:relative;">
+      <div class="stepper-progress-bar" id="stepper-glow"></div>
+      <div id="stepper-container" class="stepper">
+        <div class="step" id="step-pending">
+          <div class="circle">1</div>
+          <div class="step-label">Pending</div>
+        </div>
+        <div class="step" id="step-processing">
+          <div class="circle">2</div>
+          <div class="step-label">Processing</div>
+        </div>
+        <div class="step" id="step-shipped">
+          <div class="circle">3</div>
+          <div class="step-label">Shipped</div>
+        </div>
+        <div class="step" id="step-delivered">
+          <div class="circle">4</div>
+          <div class="step-label">Delivered</div>
+        </div>
       </div>
     </div>
 
-    <h3>Customer Details</h3>
-    <p><b>Name:</b> <span id="name"></span></p>
-    <p><b>Phone:</b> <span id="phone"></span></p>
-    <p><b>Address:</b> <span id="address"></span></p>
+    <h3 style="border-bottom:1px solid #222; padding-bottom:10px; margin-top:25px;">Manifest Details</h3>
+    <p><b>Recipient:</b> <span id="name" style="color:#fff;"></span></p>
+    <p><b>Comms Channel:</b> <span id="phone" style="color:#fff;"></span></p>
+    <p><b>Drop Point:</b> <span id="address" style="color:#fff;"></span></p>
+    <p><b>Pay Status:</b> <span id="payment-status-badge"></span></p>
     
     <div id="items"></div>
-    <h3 style="margin-top:20px; border-top:1px dashed #0f8; padding-top:15px;">Total: R<span id="total"></span></h3>
+    <h3 style="margin-top:25px; border-top:2px solid #0f8; padding-top:20px;">Total Checkout Value: R<span id="total" style="color:#fff;"></span></h3>
   </div>
 
   <!-- AdSense Container -->
   <div class="card" style="padding:10px;">
-    <!-- SbheneCart Ad Unit -->
     <ins class="adsbygoogle"
          style="display:block"
          data-ad-client="ca-pub-7447247941010903"
@@ -174,7 +397,7 @@ button:hover { background: #0a6; color: #fff; }
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC4BCz9GeNTgQYa8ydIJreTREVdPklganA",
@@ -185,17 +408,34 @@ const firebaseConfig = {
   appId: "1:1074011270711:web:86e00970ad3bb3aaedd9b2"
 };
 
-const db = getFirestore(initializeApp(firebaseConfig));
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-// Define tracking function first (Resolves chronological ReferenceError)
+// Keep track of any active unsubscriber to prevent memory leaks or overlapping listeners
+let activeUnsubscribe = null;
+
+// =========================================================================
+// PayFast Integration Config (Must match your index.html credentials)
+// =========================================================================
+const PAYFAST_MERCHANT_ID = "29675445"; // Replace with your real Merchant ID
+const PAYFAST_MERCHANT_KEY = "c1jn6gzhvg31l"; // Replace with your real Merchant Key
+const PAYFAST_PASSPHRASE = ""; // Optional: Add your passphrase salt if enabled in settings
+const IS_SANDBOX = true; // Set to false to accept live payments!
+
 window.trackOrder = function() {
   const id = document.getElementById("orderId").value.trim();
-  if (!id) return alert("Please enter an Order ID");
+  if (!id) return alert("System requires a valid Order ID parameter");
   
   localStorage.setItem("trackOrderId", id);
+
+  // Unsubscribe from previous real-time connections if searching a different order
+  if (activeUnsubscribe) {
+    activeUnsubscribe();
+    activeUnsubscribe = null;
+  }
   
-  // Real-time listener for the order document
-  onSnapshot(doc(db, "orders", id), snap => {
+  // Connect real-time order listener
+  activeUnsubscribe = onSnapshot(doc(db, "orders", id), snap => {
     const errorCard = document.getElementById("error-card");
     const resultCard = document.getElementById("result");
 
@@ -209,37 +449,104 @@ window.trackOrder = function() {
     resultCard.style.display = "block";
     
     const o = snap.data();
-    document.getElementById("name").textContent = o.customer?.name || "";
-    document.getElementById("phone").textContent = o.customer?.phone || "";
+    const orderId = snap.id;
+    const name = o.customer?.name || "";
+    const phone = o.customer?.phone || "";
+    const total = o.total || 0;
+
+    document.getElementById("name").textContent = name;
+    document.getElementById("phone").textContent = phone;
     document.getElementById("address").textContent = o.customer?.address || "";
-    document.getElementById("total").textContent = o.total || 0;
+    document.getElementById("total").textContent = total;
+
+    // Render payment badge status
+    const payBadge = document.getElementById("payment-status-badge");
+    const payStatus = o.payment?.status || "Pending Verification";
+    payBadge.className = "payment-badge " + (payStatus === "Paid" ? "payment-paid" : "payment-pending");
+    
+    // Customize badge message for unpaid online checkouts
+    if (payStatus === "Pending Online Payment") {
+      payBadge.textContent = "Pending : Pending Online Payment";
+    } else {
+      payBadge.textContent = payStatus;
+    }
+
+    // Clean up any dynamic checkout button from previous order lookups
+    const existingPayBtn = document.getElementById("track-payfast-btn");
+    if (existingPayBtn) existingPayBtn.remove();
+
+    // Inject heart-pumping "Pay for my Order" button right under the Pay Status if unpaid
+    if (payStatus === "Pending Online Payment") {
+      const payBtn = document.createElement("button");
+      payBtn.id = "track-payfast-btn";
+      payBtn.className = "pump-heartbeat"; // Pumping keyframe class
+      payBtn.innerText = `💳 Pay for my Order (R${total})`;
+      payBtn.style.marginTop = "15px";
+      payBtn.style.background = "#0f8";
+      payBtn.style.color = "#000";
+      payBtn.style.fontWeight = "bold";
+      payBtn.style.width = "100%";
+      payBtn.style.padding = "14px";
+      payBtn.style.borderRadius = "6px";
+      payBtn.style.border = "none";
+      payBtn.style.cursor = "pointer";
+      payBtn.style.letterSpacing = "1px";
+      
+      payBtn.onclick = () => {
+        triggerPayFastRedirect(orderId, total, name, phone);
+      };
+      
+      // Insert button immediately after the Payment Status paragraph
+      const payStatusParagraph = payBadge.parentElement;
+      payStatusParagraph.after(payBtn);
+    }
 
     document.getElementById("items").innerHTML =
-      "<h3 style='margin-top:20px;'>Items Ordered</h3>" +
+      "<h3 style='margin-top:25px; border-bottom:1px solid #222; padding-bottom:10px;'>Cargo Manifest</h3>" +
       (o.items || []).map(i =>
-          `<p><b>${i.quantity} ×</b> ${i.name} <span style="float:right">R${i.price * i.quantity}</span></p>`
+          `<p><span><b>${i.quantity} ×</b> ${i.name}</span> <span>R${i.price * i.quantity}</span></p>`
       ).join("");
 
     updateProgressUI(o.status || "Pending");
   });
 };
 
-// UI progression helper
+window.clearSearch = function() {
+  if (activeUnsubscribe) {
+    activeUnsubscribe();
+    activeUnsubscribe = null;
+  }
+  localStorage.removeItem("trackOrderId");
+  document.getElementById("orderId").value = "";
+  document.getElementById("error-card").style.display = "none";
+  document.getElementById("result").style.display = "none";
+};
+
+// UI timeline progress bar mapping
 function updateProgressUI(status) {
   const steps = ["Pending", "Processing", "Shipped", "Delivered"];
   const currentIdx = steps.indexOf(status);
 
   const cancelledContainer = document.getElementById("cancelled-container");
-  const stepperContainer = document.getElementById("stepper-container");
+  const stepperWrapper = document.getElementById("stepper-wrapper");
+  const glowLine = document.getElementById("stepper-glow");
 
   if (status === "Cancelled") {
     cancelledContainer.style.display = "block";
-    stepperContainer.style.display = "none";
+    stepperWrapper.style.display = "none";
     return;
   }
 
   cancelledContainer.style.display = "none";
-  stepperContainer.style.display = "flex";
+  stepperWrapper.style.display = "block";
+
+  // Calculate neon progress line width mathematically
+  if (currentIdx === -1 || currentIdx === 0) {
+    glowLine.style.width = "0%";
+  } else {
+    const percentage = (currentIdx / (steps.length - 1)) * 100;
+    glowLine.style.width = `calc(${percentage}% - 15px)`;
+  }
 
   steps.forEach((stepName, idx) => {
     const el = document.getElementById(`step-${stepName.toLowerCase()}`);
@@ -255,12 +562,128 @@ function updateProgressUI(status) {
   });
 }
 
-// Safely execute tracking once DOM is ready if an order id exists in storage
-const saved = localStorage.getItem("trackOrderId");
-if (saved) {
-  document.getElementById("orderId").value = saved;
-  window.trackOrder();
+// Redirect client to PayFast Checkout
+window.triggerPayFastRedirect = async (orderId, finalTotal, name, phone) => {
+  const payBtn = document.getElementById("track-payfast-btn");
+  if (payBtn) {
+    payBtn.innerText = "Redirecting to PayFast Secure Gate...";
+    payBtn.style.animation = "none"; // Temporarily freeze heartbeat when submitting
+    payBtn.disabled = true;
+  }
+
+  try {
+    const md5Module = await import("https://cdn.jsdelivr.net/npm/blueimp-md5@2.19.0/+esm");
+    const md5 = md5Module.default;
+
+    const payload = {
+      merchant_id: PAYFAST_MERCHANT_ID,
+      merchant_key: PAYFAST_MERCHANT_KEY,
+      return_url: `${window.location.origin}/track.html?orderId=${orderId}&paid=true`,
+      cancel_url: window.location.href,
+      name_first: name.split(" ")[0],
+      cell_number: phone,
+      m_payment_id: orderId,
+      amount: Number(finalTotal).toFixed(2),
+      item_name: `SbheneCart Order ${orderId}`
+    };
+
+    const pfEncode = (str) => {
+      return encodeURIComponent(str)
+        .replace(/%20/g, "+")
+        .replace(/[!'()*]/g, c => "%" + c.charCodeAt(0).toString(16).toUpperCase())
+        .replace(/%[0-9a-f]{2}/g, match => match.toUpperCase());
+    };
+
+    const fieldsInOrder = [
+      "merchant_id", "merchant_key", "return_url", "cancel_url", "notify_url",
+      "name_first", "name_last", "email_address", "cell_number",
+      "m_payment_id", "amount", "item_name", "item_description"
+    ];
+
+    const signatureParts = [];
+    fieldsInOrder.forEach(key => {
+      if (payload[key] !== undefined && payload[key] !== "") {
+        signatureParts.push(`${key}=${pfEncode(payload[key])}`);
+      }
+    });
+
+    if (PAYFAST_PASSPHRASE) {
+      signatureParts.push(`passphrase=${pfEncode(PAYFAST_PASSPHRASE)}`);
+    }
+
+    const signature = md5(signatureParts.join("&"));
+
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = IS_SANDBOX 
+      ? "https://sandbox.payfast.co.za/eng/process" 
+      : "https://www.payfast.co.za/eng/process";
+
+    for (const [key, val] of Object.entries(payload)) {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = key;
+      input.value = val;
+      form.appendChild(input);
+    }
+
+    const sigInput = document.createElement("input");
+    sigInput.type = "hidden";
+    sigInput.name = "signature";
+    sigInput.value = signature;
+    form.appendChild(sigInput);
+
+    document.body.appendChild(form);
+    form.submit();
+
+  } catch (err) {
+    console.error("PayFast initialization failed:", err);
+    alert("Could not load checkout engine. Please try again.");
+    if (payBtn) {
+      payBtn.className = "pump-heartbeat";
+      payBtn.innerText = `💳 Pay for my Order (R${finalTotal})`;
+      payBtn.disabled = false;
+    }
+  }
+};
+
+// =========================================================================
+// Automatic Init via URL Params (e.g. from Index/PayFast redirection)
+// =========================================================================
+async function initTracker() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlOrderId = urlParams.get("orderId");
+  const isPaid = urlParams.get("paid") === "true";
+
+  if (urlOrderId) {
+    document.getElementById("orderId").value = urlOrderId;
+    localStorage.setItem("trackOrderId", urlOrderId);
+
+    if (isPaid) {
+      try {
+        const orderRef = doc(db, "orders", urlOrderId);
+        await updateDoc(orderRef, {
+          "payment.status": "Paid",
+          "payment.reference": "PAYFAST-TX-" + Math.random().toString(36).substr(2, 9).toUpperCase()
+        });
+        document.getElementById("payfast-success").style.display = "flex";
+      } catch (err) {
+        console.error("Payment sync transaction failed:", err);
+      }
+    }
+    
+    window.trackOrder();
+  } else {
+    const saved = localStorage.getItem("trackOrderId");
+    if (saved) {
+      document.getElementById("orderId").value = saved;
+      window.trackOrder();
+    }
+  }
 }
+
+// Execute initial startup procedures
+initTracker();
 </script>
 </body>
 </html>
