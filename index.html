@@ -449,7 +449,7 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
 
       <!-- Online Card Block info -->
       <div id="online-instructions" class="eft-details" style="display:none; border-color:#0f8;">
-        💳 Securely process your Visa/Mastercard card payment or make an instant EFT. Powered by our payment integration.
+        💳 Securely process your Visa/Mastercard card payment or make an instant EFT. Powered by PayFast.
       </div>
 
       <!-- Price breakdown summary -->
@@ -481,8 +481,11 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
     <p>Your Order ID</p>
     <div id="popup-order-id" style="background:#000; padding:12px; border:1px solid #0f8; font-size:18px; word-break:break-all; margin-bottom:20px;"></div>
     <button onclick="copyOrderId()" style="width:100%; margin-bottom:10px;">📋 Copy Order ID</button>
-    <button onclick="trackOrderPopup()" style="width:100%; margin-bottom:10px;">📦 Track Order</button>
-    <button onclick="closeOrderPopup()" style="width:100%;">Done</button>
+    <button id="popup-track-btn" onclick="trackOrderPopup()" style="width:100%; margin-bottom:10px;">📦 Track Order</button>
+    <button id="popup-done-btn" onclick="closeOrderPopup()" style="width:100%;">Done</button>
+    
+    <!-- PayFast Redirection Trigger (Hidden by default, shown for Online payments) -->
+    <button id="popup-pay-btn" onclick="payWithPayFast()" style="width:100%; background:#0f8; color:#000; font-weight:bold; font-size:16px; display:none; margin-top:10px; box-shadow: 0 0 10px #0f8;">💳 Pay Now with PayFast</button>
   </div>
 </div>
 
@@ -493,9 +496,13 @@ import {
   collection,
   onSnapshot,
   doc,
-  runTransaction
+  runTransaction,
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
+
+// Secure MD5 package for PayFast signature generation
+import md5 from "https://cdn.jsdelivr.net/npm/blueimp-md5@2.19.0/+esm";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC4BCz9GeNTgQYa8ydIJreTREVdPklganA",
@@ -512,12 +519,19 @@ const db = getFirestore(app);
 const analytics = getAnalytics(app);
 const box = document.getElementById('products');
 
+// PayFast configuration settings
+const PAYFAST_MERCHANT_ID = "29675445"; // Replace with your actual PayFast merchant ID
+const PAYFAST_MERCHANT_KEY = "c1jn6gzhvg31l"; // Replace with your actual PayFast merchant key
+const PAYFAST_PASSPHRASE = ""; // Replace with your passphrase if enabled in PayFast dashboard settings
+const IS_SANDBOX = true; // Set to false when ready to launch live!
+
 let dbProducts = [];
 let dbCategories = [];
 let dbSubcategories = [];
 let dbSubsubcategories = [];
 let cart = [];
 let deliveryFee = 0;
+let pendingPayFastDetails = null; // Store order details until user clicks "Pay Now"
 
 // Dynamic category list emoji mapper
 const emojiMap = {
@@ -792,6 +806,7 @@ window.toggleCart = () => {
   document.getElementById('cart-sidebar').classList.toggle('open');
 };
 
+
 // Details Modal Core
 window.openDetailsModal = (id) => {
   const p = dbProducts.find(x => x.id === id);
@@ -1040,27 +1055,15 @@ window.processCheckout = async (e) => {
 
     closeCheckoutModal();
 
-    // Trigger Payment Gateway Simulation / Redirection Logic
+    // Route order flow based on payment method chosen
     if (paymentMethod === "Online Card / Instant EFT") {
-      alert("Opening Secure Payment Window...\n(Simulating Paystack sandbox gate)");
-      setTimeout(async () => {
-        const payConfirm = confirm(`Simulated Merchant Response:\nDo you want to authorize this transaction of R${finalTotal}?`);
-        if (payConfirm) {
-          await updateDoc(doc(db, "orders", assignedOrderId), {
-            "payment.status": "Paid",
-            "payment.reference": "PAY-" + Math.random().toString(36).substr(2, 9).toUpperCase()
-          });
-          alert("Payment verified successfully!");
-        } else {
-          alert("Payment cancelled or failed. Order placed as 'Unpaid'. Please settle payment manually.");
-        }
-        showSuccessArea(assignedOrderId);
-      }, 800);
+      // Show Order Success Modal first (giving order ID) with pay option
+      showSuccessArea(assignedOrderId, paymentMethod, finalTotal, name, phone);
     } else if (paymentMethod === "EFT Bank Transfer") {
       // Redirect to checkout.html and pass Order ID & total in query parameters
       window.location.href = `checkout.html?orderId=${assignedOrderId}&total=${finalTotal}`;
     } else {
-      showSuccessArea(assignedOrderId);
+      showSuccessArea(assignedOrderId, paymentMethod);
     }
 
     // Reset Form & Clear Cart
@@ -1079,10 +1082,125 @@ window.processCheckout = async (e) => {
   }
 };
 
-function showSuccessArea(orderId) {
+function showSuccessArea(orderId, paymentMethod, finalTotal, name, phone) {
+  const popup = document.getElementById("order-popup");
   document.getElementById("popup-order-id").innerText = orderId;
-  document.getElementById("order-popup").style.display = "flex";
+  
+  // Clean up any dynamic pay button from previous orders
+  const existingPayBtn = document.getElementById("dynamic-pay-btn");
+  if (existingPayBtn) existingPayBtn.remove();
+  
+  // If online checkout, inject "Pay with PayFast" button
+  if (paymentMethod === "Online Card / Instant EFT") {
+    const payBtn = document.createElement("button");
+    payBtn.id = "dynamic-pay-btn";
+    payBtn.innerText = `💳 Pay with PayFast (R${finalTotal})`;
+    payBtn.style.width = "100%";
+    payBtn.style.marginBottom = "10px";
+    payBtn.style.background = "#0f8";
+    payBtn.style.color = "#000";
+    payBtn.style.fontWeight = "bold";
+    payBtn.style.padding = "12px 16px";
+    payBtn.style.border = "0";
+    payBtn.style.borderRadius = "4px";
+    payBtn.style.cursor = "pointer";
+    
+    payBtn.onclick = () => {
+      triggerPayFastRedirect(orderId, finalTotal, name, phone);
+    };
+    
+    const popupContainer = popup.querySelector("div");
+    const lastBtn = popupContainer.lastElementChild;
+    popupContainer.insertBefore(payBtn, lastBtn);
+  }
+  
+  popup.style.display = "flex";
 }
+
+// Redirect client to PayFast Checkout
+window.triggerPayFastRedirect = async (orderId, finalTotal, name, phone) => {
+  const payBtn = document.getElementById("dynamic-pay-btn");
+  if (payBtn) {
+    payBtn.innerText = "Redirecting to PayFast...";
+    payBtn.disabled = true;
+  }
+
+  try {
+    // Dynamically import MD5 library to keep logic localized
+    const md5Module = await import("https://cdn.jsdelivr.net/npm/blueimp-md5@2.19.0/+esm");
+    const md5 = md5Module.default;
+
+    const payload = {
+      merchant_id: PAYFAST_MERCHANT_ID,
+      merchant_key: PAYFAST_MERCHANT_KEY,
+      return_url: `${window.location.origin}/track.html?orderId=${orderId}&paid=true`,
+      cancel_url: window.location.href,
+      name_first: name.split(" ")[0],
+      cell_number: phone,
+      m_payment_id: orderId,
+      amount: Number(finalTotal).toFixed(2),
+      item_name: `SbheneCart Order ${orderId}`
+    };
+
+    const pfEncode = (str) => {
+      return encodeURIComponent(str)
+        .replace(/%20/g, "+")
+        .replace(/[!'()*]/g, c => "%" + c.charCodeAt(0).toString(16).toUpperCase())
+        .replace(/%[0-9a-f]{2}/g, match => match.toUpperCase());
+    };
+
+    const fieldsInOrder = [
+      "merchant_id", "merchant_key", "return_url", "cancel_url", "notify_url",
+      "name_first", "name_last", "email_address", "cell_number",
+      "m_payment_id", "amount", "item_name", "item_description"
+    ];
+
+    const signatureParts = [];
+    fieldsInOrder.forEach(key => {
+      if (payload[key] !== undefined && payload[key] !== "") {
+        signatureParts.push(`${key}=${pfEncode(payload[key])}`);
+      }
+    });
+
+    if (PAYFAST_PASSPHRASE) {
+      signatureParts.push(`passphrase=${pfEncode(PAYFAST_PASSPHRASE)}`);
+    }
+
+    const signature = md5(signatureParts.join("&"));
+
+    // POST Payload via a dynamic hidden form
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = IS_SANDBOX 
+      ? "https://sandbox.payfast.co.za/eng/process" 
+      : "https://www.payfast.co.za/eng/process";
+
+    for (const [key, val] of Object.entries(payload)) {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = key;
+      input.value = val;
+      form.appendChild(input);
+    }
+
+    const sigInput = document.createElement("input");
+    sigInput.type = "hidden";
+    sigInput.name = "signature";
+    sigInput.value = signature;
+    form.appendChild(sigInput);
+
+    document.body.appendChild(form);
+    form.submit();
+
+  } catch (err) {
+    console.error("PayFast initialization failed:", err);
+    alert("Could not load checkout engine. Please try again.");
+    if (payBtn) {
+      payBtn.innerText = `💳 Pay with PayFast (R${finalTotal})`;
+      payBtn.disabled = false;
+    }
+  }
+};
 
 // Fly Animation Particle
 function flyToCartAnimation(buttonEl) {
@@ -1132,3 +1250,4 @@ updateCartUI();
 </script>
 </body>
 </html>
+
