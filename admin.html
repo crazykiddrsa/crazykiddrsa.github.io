@@ -2,8 +2,8 @@
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SbheneCart Admin Pro</title>
 
-<!-- Google Maps JavaScript API with callback -->
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDhBswSXZk-jPuZ-cKavCqP_fO1pSFT-eM=places&callback=initAdminMap" async defer></script>
+<!-- Fixed Google Maps JavaScript API with correct libraries query format -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDhBswSXZk-jPuZ-cKavCqP_fO1pSFT-eM&libraries=places&callback=initAdminMap" async defer></script>
 
 <style>
 body{margin:0;font-family:Arial;background:#111;color:#0f8}header{background:#000;padding:15px;border-bottom:2px solid #0f8}
@@ -40,7 +40,24 @@ button:disabled{background:#555;color:#888;cursor:not-allowed;}
   display: inline-block;
   animation: pulse-glow 1.8s infinite;
 }
+
+/* Screen Flash Alert CSS Overlay */
+@keyframes flash-screen {
+  0% { background: rgba(0, 255, 136, 0); }
+  50% { background: rgba(0, 255, 136, 0.2); }
+  100% { background: rgba(0, 255, 136, 0); }
+}
+.screen-alert-flash {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 99999;
+  pointer-events: none;
+  animation: flash-screen 0.8s ease-out;
+}
 </style></head><body>
+
+<!-- Dynamic Screen Alert Overlay container -->
+<div id="alert-overlay"></div>
 
 <!-- Login Lock Screen -->
 <div id="login-screen" style="max-width: 400px; margin: 100px auto; padding: 25px; border: 1px solid #0f8; background: #000; border-radius: 8px; text-align: center;">
@@ -55,7 +72,10 @@ button:disabled{background:#555;color:#888;cursor:not-allowed;}
 <div id="admin-wrapper" style="display:none;">
   <header style="display:flex; justify-content:space-between; align-items:center;">
     <h2>SbheneCart Admin Pro</h2>
-    <button onclick="logoutAdmin()" style="background:#222; color:#0f8; border:1px solid #0f8;">Lock Panel</button>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <button id="audio-toggle-btn" onclick="toggleAudioAlerts()" style="background:#222; color:#0f8; border:1px solid #0f8;">🔊 Alerts: ON</button>
+      <button onclick="logoutAdmin()" style="background:#222; color:#0f8; border:1px solid #0f8;">Lock Panel</button>
+    </div>
   </header>
   
   <nav>
@@ -257,6 +277,11 @@ let knownOrderIds = new Set();
 let adminMap;
 let mapMarkers = [];
 
+// Audio and Tab flashing globals
+let audioAlertsEnabled = true;
+let isTitleFlashing = false;
+let titleFlashInterval = null;
+
 onSnapshot(collection(db, "categories"), (snapshot) => {
     cats = [];
     snapshot.forEach(doc => { cats.push({ id: doc.id, ...doc.data() }); });
@@ -303,6 +328,7 @@ window.showToast = (message, duration = 3000) => {
 
 // Synthesized Beep/Chime notification via Web Audio API (completely no-cost!)
 function playOrderChime() {
+    if (!audioAlertsEnabled) return;
     try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
@@ -336,11 +362,62 @@ function playOrderChime() {
     }
 }
 
+// Audio Alerts Opt-In/Toggle helper
+window.toggleAudioAlerts = () => {
+  audioAlertsEnabled = !audioAlertsEnabled;
+  const toggleBtn = document.getElementById("audio-toggle-btn");
+  if (audioAlertsEnabled) {
+    toggleBtn.innerText = "🔊 Alerts: ON";
+    toggleBtn.style.color = "#0f8";
+    toggleBtn.style.borderColor = "#0f8";
+    playOrderChime(); // Play diagnostic sound confirmation
+    showToast("🔔 Order sound alerts activated and unlocked!");
+  } else {
+    toggleBtn.innerText = "🔇 Alerts: MUTED";
+    toggleBtn.style.color = "#ff1744";
+    toggleBtn.style.borderColor = "#ff1744";
+    showToast("🔕 Sound alerts muted.");
+  }
+};
+
+// Cyber Matrix Tab title flashing logic
+function flashTabTitle() {
+  if (isTitleFlashing) return;
+  isTitleFlashing = true;
+  let toggle = true;
+  titleFlashInterval = setInterval(() => {
+    document.title = toggle ? "🚨 NEW ORDER! SbheneCart" : "SbheneCart Admin Pro";
+    toggle = !toggle;
+  }, 1000);
+}
+
+// Stop flashing when admin focuses on the window
+window.addEventListener("focus", () => {
+  if (titleFlashInterval) {
+    clearInterval(titleFlashInterval);
+    titleFlashInterval = null;
+  }
+  isTitleFlashing = false;
+  document.title = "SbheneCart Admin Pro";
+});
+
+// Trigger a visual glowing screen border pulse overlay
+function triggerVisualScreenFlash() {
+  const overlayContainer = document.getElementById("alert-overlay");
+  const flashDiv = document.createElement("div");
+  flashDiv.className = "screen-alert-flash";
+  overlayContainer.appendChild(flashDiv);
+  
+  // Auto-remove after the animation completes
+  flashDiv.addEventListener("animationend", () => flashDiv.remove());
+}
+
 // Real-time Orders Sync, Notification, Badge, & Map Trigger
 onSnapshot(collection(db, "orders"), (snapshot) => {
     orders = [];
     let isInitialLoad = (knownOrderIds.size === 0);
     let triggerAlert = false;
+    let latestOrderCustomer = "";
 
     snapshot.forEach(d => {
         const orderData = { id: d.id, ...d.data() };
@@ -351,9 +428,12 @@ onSnapshot(collection(db, "orders"), (snapshot) => {
             knownOrderIds.add(d.id);
             if (!isInitialLoad && orderData.status === "Pending") {
                 triggerAlert = true;
+                latestOrderCustomer = orderData.customer?.name || "Customer";
+                
+                // Fire Native Push notification
                 if (typeof Notification !== "undefined" && Notification.permission === "granted") {
                     new Notification("🛒 New SbheneCart Order!", {
-                        body: `${orderData.customer?.name || "Customer"} placed an order of R${orderData.total}`,
+                        body: `${latestOrderCustomer} placed an order of R${orderData.total}`,
                         tag: d.id
                     });
                 }
@@ -361,7 +441,12 @@ onSnapshot(collection(db, "orders"), (snapshot) => {
         }
     });
 
-    if (triggerAlert) { playOrderChime(); }
+    if (triggerAlert) { 
+        playOrderChime(); 
+        triggerVisualScreenFlash();
+        flashTabTitle();
+        showToast(`🛒 ALERT: New Order received from ${latestOrderCustomer}!`, 5000);
+    }
 
     orders.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
     if (auth.currentUser) {
@@ -809,6 +894,10 @@ function refresh() {
         actionBtn = `<button onclick="unarchiveOrder('${o.id}')" style="background:#29b6f6; color:#000; display:block; width:100%; margin-top:10px; border-radius:4px; font-weight:bold;">📂 Unarchive Transaction</button>`;
     }
 
+    // Interactive colored payment status tracking badge
+    const payStatus = o.payment?.status || "Pending Verification";
+    const payStatusColor = payStatus === "Paid" ? "#00ff66" : (payStatus === "Pending Online Payment" ? "#ffaa00" : "#ff1744");
+
     return `
       <div class="card">
           <b>Order ID:</b> ${o.id}<br>
@@ -816,7 +905,7 @@ function refresh() {
           <b>Customer:</b> ${o.customer?.name || "Unknown"}<br>
           <b>Phone:</b> ${o.customer?.phone || "-"}<br>
           <b>Address:</b> ${o.customer?.address || "-"}<br>
-          <b>Payment:</b> ${o.payment?.method || "N/A"} (${o.payment?.status || "Pending"})<br>
+          <b>Payment:</b> ${o.payment?.method || "N/A"} (<span style="color:${payStatusColor}; font-weight:bold;">${payStatus}</span>)<br>
           <b>Total:</b> R${o.total} (Inc. R${o.delivery?.fee || 0} delivery)<br>
           <b>Items:</b><br>
           ${o.items ? o.items.map(item => `• ${item.name} (x${item.quantity}) - R${item.price}`).join("<br>") : "No items"}<br><br>
