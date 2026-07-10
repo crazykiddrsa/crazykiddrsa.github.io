@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SbheneCart - Home Decorations Space</title>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7447247941010903" crossorigin="anonymous"></script>
+
+<style>
+:root {
+  --bg: #000;
+  --text: #0f8;
+  --primary: #0f8;
+  --card: #111;
+}
+* { box-sizing: border-box; }
+body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; overflow-x: hidden; }
+
+header {
+  padding: 15px;
+  border-bottom: 1px solid var(--primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+}
+
+/* Header UI Elements */
+.header-left { display: flex; align-items: center; gap: 15px; }
+.header-right { display: flex; gap: 10px; }
+
+/* Dynamic Inspiration Board Slider */
+.inspiration-section { padding: 15px; }
+.inspiration-section h3 { margin: 0 0 10px 0; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; }
+.inspiration-grid { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+.inspiration-grid::-webkit-scrollbar { display: none; }
+.inspiration-card {
+  flex-shrink: 0;
+  width: 160px;
+  height: 100px;
+  background: #222;
+  border: 1px solid #333;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 10px;
+  transition: 0.2s;
+  font-size: 13px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  overflow: hidden;
+}
+.inspiration-card::before {
+  content: "";
+  position: absolute;
+  top:0; left:0; right:0; bottom:0;
+  background: rgba(0,0,0,0.6);
+  z-index: 1;
+}
+.inspiration-card span { position: relative; z-index: 2; text-shadow: 0 2px 4px #000; }
+.inspiration-card:hover, .inspiration-card.active {
+  border-color: var(--primary);
+  transform: scale(1.03);
+}
+
+/* Grid & Products */
+.filter-container { padding: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+select, input[type="text"] {
+  width: 100%; padding: 12px; border: 1px solid var(--primary); background: #111; color: var(--text); border-radius: 4px; font-size: 16px;
+}
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding: 15px; }
+@media (max-width: 600px) { .grid { grid-template-columns: 1fr; gap: 15px; padding: 10px; } }
+
+/* Cards & Slider Galleries */
+.card { background: var(--card); border: 1px solid var(--primary); padding: 15px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; position: relative; transition: transform 0.2s; }
+.card:hover { transform: translateY(-2px); }
+.slider-wrapper { position: relative; width: 100%; height: 260px; border-radius: 6px; margin-bottom: 12px; overflow: hidden; background: #050505; border: 1px solid #222; }
+.slider-content { display: flex; width: 100%; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; scrollbar-width: none; }
+.slider-content::-webkit-scrollbar { display: none; }
+.slide-img { width: 100%; height: 100%; object-fit: cover; flex-shrink: 0; scroll-snap-align: start; cursor: zoom-in; }
+.slider-arrow { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.6); color: var(--primary); border: 1px solid var(--primary); border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 5; }
+.slider-arrow.prev { left: 8px; }
+.slider-arrow.next { right: 8px; }
+
+/* Buttons & Navigation Panels */
+button { background: var(--primary); color: #000; font-weight: bold; border: 0; padding: 12px 16px; cursor: pointer; border-radius: 4px; transition: 0.2s; font-size: 15px; }
+button:hover { background: #0a6; color: #fff; }
+button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1px solid #555; }
+#cart-btn { background: transparent; color: var(--primary); border: 1px solid var(--primary); font-size: 16px; display: flex; align-items: center; gap: 8px; }
+#cart-count { background: var(--primary); color: #000; border-radius: 50%; padding: 2px 8px; font-size: 12px; font-weight: bold; }
+
+/* Sidebar Drawers */
+.sidebar { position: fixed; top: 0; right: -350px; width: 320px; height: 100%; background: #111; border-left: 2px solid var(--primary); z-index: 1000; padding: 20px; transition: 0.3s; box-shadow: -5px 0 15px rgba(0,255,136,0.1); color: var(--text); box-sizing: border-box; }
+.sidebar.open { right: 0; }
+.cart-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--primary); padding-bottom: 10px; }
+#cart-items { max-height: 55vh; overflow-y: auto; margin: 15px 0; }
+.cart-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding: 12px 0; }
+.qty-btn { padding: 4px 10px; background: #222; color: var(--primary); border: 1px solid var(--primary); }
+
+/* Modals */
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 2000; }
+.modal-content { background: #111; border: 2px solid var(--primary); padding: 25px; width: 95%; max-width: 480px; border-radius: 10px; color: var(--text); position: relative; max-height: 90vh; overflow-y: auto; }
+.close-modal-btn { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: var(--primary); }
+
+/* Fly to Cart Particle */
+.flying-item { position: fixed; width: 20px; height: 20px; background: var(--primary); border-radius: 50%; z-index: 9999; transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <button id="menu-btn" onclick="toggleMenu()" style="background: transparent; color: var(--primary); border: none; font-size: 26px; cursor: pointer;">☰</button>
+    <h2>SbheneCart / Decor</h2>
+  </div>
+  <div class="header-right">
+    <button id="cart-btn" onclick="toggleCart()">🛒 Cart <span id="cart-count">0</span></button>
+    <button onclick="location.href='track.html'" style="background:transparent; color:var(--primary); border:1px solid var(--primary); padding:10px 15px;">📦 Track</button>
+  </div>
+</header>
+
+<!-- Slide-out Menu (Only Admin and Profile) -->
+<div id="left-menu" style="position: fixed; top: 0; left: -320px; width: 300px; height: 100%; background: var(--card); border-right: 2px solid var(--primary); z-index: 2500; padding: 20px; transition: 0.3s cubic-bezier(0.19, 1, 0.22, 1); box-shadow: 5px 0 15px rgba(0,0,0,0.5); color: var(--text); box-sizing: border-box; display: flex; flex-direction: column; gap: 20px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--primary); padding-bottom: 10px;">
+    <h3 style="margin: 0;">🧭 Navigation</h3>
+    <button onclick="toggleMenu()" style="background: #222; color: var(--primary); border: 1px solid var(--primary); padding: 6px 12px; border-radius: 4px;">◀ Back</button>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <button onclick="location.href='index.html'" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px;">🏠 Storefront</button>
+    <button onclick="location.href='admin.html'" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px;">🔑 Admin Console</button>
+    <button id="auth-status-btn" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px;">🔑 Sign In / Register</button>
+  </div>
+  <div style="border-top: 1px dashed #333; padding-top: 15px;">
+    <h4 style="margin: 0 0 12px 0;">🎨 Switch Theme</h4>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <button onclick="changeTheme('neon')" style="background: #000; color: #0f8; border: 1px solid #0f8; padding: 10px; border-radius: 4px; text-align: left;">🟩 Cyber Neon</button>
+      <button onclick="changeTheme('dark')" style="background: #0a0a0a; color: #fff; border: 1px solid #fff; padding: 10px; border-radius: 4px; text-align: left;">⬛ Obsidian Dark</button>
+      <button onclick="changeTheme('light')" style="background: #fff; color: #000; border: 1px solid #000; padding: 10px; border-radius: 4px; text-align: left;">⬜ Classic Light</button>
+      <button onclick="changeTheme('blue')" style="background: #0a0f1d; color: #0cf; border: 1px solid #0cf; padding: 10px; border-radius: 4px; text-align: left;">🟦 Matrix Blue</button>
+      <button onclick="changeTheme('purple')" style="background: #0d0a1a; color: #d8f; border: 1px solid #d8f; padding: 10px; border-radius: 4px; text-align: left;">🟪 Synthwave Purple</button>
+    </div>
+  </div>
+</div>
+
+<!-- "Shop the Look" Inspiration Section -->
+<div class="inspiration-section">
+  <h3>✨ Shop the Look: Inspiration Rooms</h3>
+  <div class="inspiration-grid" id="inspiration-rooms">
+    <div class="inspiration-card active" onclick="filterByMoodTag('')">
+      <span>📦 Show All Decor</span>
+    </div>
+    <div class="inspiration-card" onclick="filterByMoodTag('Minimalist Living Room')">
+      <span>🛋️ Minimalist Living Room</span>
+    </div>
+    <div class="inspiration-card" onclick="filterByMoodTag('Rustic Cozy Bedroom')">
+      <span>🛏️ Rustic Cozy Bedroom</span>
+    </div>
+    <div class="inspiration-card" onclick="filterByMoodTag('Modern Study Office')">
+      <span>📚 Modern Office</span>
+    </div>
+    <div class="inspiration-card" onclick="filterByMoodTag('Aesthetic Hallway')">
+      <span>🏺 Aesthetic Hallway</span>
+    </div>
+  </div>
+</div>
+
+<!-- Standard Filters -->
+<div class="filter-container">
+  <input id="search" type="text" placeholder="🔍 Search decorations..." oninput="filterDecorations()">
+  <select id="subcat-filter" onchange="filterDecorations()">
+    <option value="">All Subcategories</option>
+  </select>
+</div>
+
+<!-- Products Display Grid -->
+<div class="grid" id="products"></div>
+
+<!-- Slide-out Cart Sidebar -->
+<div id="cart-sidebar" class="sidebar">
+  <div class="cart-header">
+    <h3>Your Cart</h3>
+    <button onclick="toggleCart()" style="background:#222; color:var(--primary); border:1px solid var(--primary);">Close</button>
+  </div>
+  <div id="cart-items"></div>
+  <div style="margin-top:15px; font-weight:bold; display:flex; justify-content:space-between;">
+    <span>Subtotal:</span>
+    <span id="cart-total">R0</span>
+  </div>
+  <button onclick="openStorefrontCheckout()" style="width:100%; margin-top:15px;">Check Out</button>
+</div>
+
+<!-- Product Details Modal -->
+<div id="details-modal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal-btn" onclick="closeDetailsModal()">&times;</span>
+    <div id="modal-details-content"></div>
+  </div>
+</div>
+
+<!-- Lightbox Modal -->
+<div id="lightbox-modal" class="modal" onclick="closeLightbox()" style="z-index: 3000;">
+  <span class="close-modal-btn" onclick="closeLightbox()" style="font-size: 35px; top: 20px; right: 25px;">&times;</span>
+  <img id="lightbox-img" class="slide-img" style="max-width:95%; max-height:85%; object-fit:contain; border: 1px solid var(--primary); border-radius: 6px;" src="">
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC4BCz9GeNTgQYa8ydIJreTREVdPklganA",
+  authDomain: "sbhenecart.firebaseapp.com",
+  projectId: "sbhenecart",
+  storageBucket: "sbhenecart.firebasestorage.app",
+  messagingSenderId: "1074011270711",
+  appId: "1:1074011270711:web:86e00970ad3bb3aaedd9b2",
+  measurementId: "G-CVWM0DE46B"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const analytics = getAnalytics(app);
+const box = document.getElementById('products');
+
+let dbProducts = [];
+let dbSubcategories = [];
+let cart = [];
+let userProfile = { wishlist: [] };
+let selectedMoodTag = "";
+
+try {
+  cart = JSON.parse(localStorage.getItem("cart")) || [];
+  if (!Array.isArray(cart)) cart = [];
+} catch (e) {
+  cart = [];
+}
+
+// Real-time Database Stream (Filtered to Decoration)
+onSnapshot(collection(db, "products"), (snap) => {
+  dbProducts = snap.docs
+    .map(doc => ({ id: doc.id, ...doc.data() }))
+    .filter(p => p.category === "Decoration" && p.visible !== false);
+  filterDecorations();
+  updateCartUI();
+});
+
+onSnapshot(collection(db, "subcategories"), (snap) => {
+  dbSubcategories = snap.docs
+    .map(doc => ({ id: doc.id, ...doc.data() }))
+    .filter(s => s.category === "Decoration");
+  
+  const subcatFilter = document.getElementById("subcat-filter");
+  subcatFilter.innerHTML = '<option value="">All Subcategories</option>' +
+    dbSubcategories.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+});
+
+// Profile & Account Management
+let currentUser = null;
+onAuthStateChanged(auth, (user) => {
+  currentUser = user;
+  const authBtn = document.getElementById("auth-status-btn");
+  if (user) {
+    if (authBtn) authBtn.innerText = "👤 My Profile";
+    onSnapshot(doc(db, "users", user.uid), (snap) => {
+      if (snap.exists()) userProfile = { ...userProfile, ...snap.data() };
+    });
+  } else {
+    if (authBtn) authBtn.innerText = "🔑 Sign In / Register";
+    userProfile = { wishlist: [] };
+  }
+});
+
+// "Shop the Look" Inspiration Room Controller
+window.filterByMoodTag = (tag) => {
+  selectedMoodTag = tag;
+  const cards = document.querySelectorAll(".inspiration-card");
+  cards.forEach(card => card.classList.remove("active"));
+  
+  event.currentTarget.classList.add("active");
+  filterDecorations();
+};
+
+window.filterDecorations = () => {
+  const searchVal = document.getElementById("search").value.toLowerCase().trim();
+  const subcatVal = document.getElementById("subcat-filter").value;
+
+  const filtered = dbProducts.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchVal) || (p.description || "").toLowerCase().includes(searchVal);
+    const matchesSub = !subcatVal || p.subcategory === subcatVal;
+    const matchesMood = !selectedMoodTag || p.decorTag === selectedMoodTag;
+    return matchesSearch && matchesSub && matchesMood;
+  });
+
+  renderGrid(filtered);
+};
+
+function renderGrid(list) {
+  box.innerHTML = list.length
+    ? list.map(p => {
+        const images = p.images && p.images.length ? p.images : (p.image ? [p.image] : []);
+        const isOutOfStock = p.stock <= 0;
+
+        let badgeHtml = "";
+        if (p.badge) {
+          const styles = { "Hot Deal": "background:#ff1744; color:#fff;", "New": "background:#00e676; color:#000;", "Featured": "background:#29b6f6; color:#000;", "Sale": "background:#ffd600; color:#000;" };
+          badgeHtml = `<span style="position:absolute; top:20px; left:20px; z-index:10; padding:4px 8px; font-size:10px; font-weight:bold; border-radius:4px; text-transform:uppercase; ${styles[p.badge] || 'background:#333; color:#fff;'}">${p.badge}</span>`;
+        }
+
+        let stockAlert = "";
+        if (p.stock > 0 && p.stock <= 2) {
+          stockAlert = `<span style="color:#ff1744; font-size:11px; font-weight:bold; display:block; margin-top:4px;">⚠️ Only ${p.stock} left - Selling Fast!</span>`;
+        } else if (p.stock > 2 && p.stock <= 5) {
+          stockAlert = `<span style="color:#ffaa00; font-size:11px; font-weight:bold; display:block; margin-top:4px;">🔥 High Demand</span>`;
+        }
+
+        return `
+          <div class="card" onclick="openDetailsModal('${p.id}')">
+            ${badgeHtml}
+            <div class="slider-wrapper" id="slider-${p.id}" onclick="event.stopPropagation()">
+              ${images.length > 1 ? `<button class="slider-arrow prev" onclick="moveSlider('${p.id}', -1)">&#10094;</button>` : ''}
+              <div class="slider-content">
+                ${images.map(img => `<img src="${img}" class="slide-img" onclick="openLightbox('${img}')">`).join('')}
+              </div>
+              ${images.length > 1 ? `<button class="slider-arrow next" onclick="moveSlider('${p.id}', 1)">&#10095;</button>` : ''}
+            </div>
+            <div class="card-details">
+              <h3>${p.name}</h3>
+              <p>R${p.price}</p>
+              <small>${p.subcategory || "Home Decor"} • Stock: ${p.stock}</small>
+              ${stockAlert}
+            </div>
+            <button ${isOutOfStock ? 'disabled' : ''} onclick="event.stopPropagation(); addToCart('${p.id}', this)">
+              ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+            </button>
+          </div>
+        `;
+      }).join("")
+    : "<p style='padding:20px'>No decoration matches found in this room style.</p>";
+}
+
+// Sliding Controls
+window.moveSlider = (id, direction) => {
+  const slider = document.querySelector(`#slider-${id} .slider-content`);
+  if (!slider) return;
+  const slideWidth = slider.clientWidth;
+  slider.scrollBy({ left: direction * slideWidth, behavior: 'smooth' });
+};
+
+// Add to Cart Controllers
+window.addToCart = (id, buttonEl) => {
+  const product = dbProducts.find(p => p.id === id);
+  if (!product || product.stock <= 0) return;
+
+  const cartItem = cart.find(item => item.id === id);
+  const currentQty = cartItem ? cartItem.quantity : 0;
+
+  if (currentQty + 1 > product.stock) {
+    alert(`Only ${product.stock} items remaining in inventory.`);
+    return;
+  }
+
+  if (buttonEl) flyToCartAnimation(buttonEl);
+
+  if (cartItem) {
+    cartItem.quantity++;
+  } else {
+    cart.push({ ...product, quantity: 1 });
+  }
+
+  updateCartUI();
+};
+
+window.changeQty = (id, delta) => {
+  const index = cart.findIndex(item => item.id === id);
+  if (index === -1) return;
+
+  const p = dbProducts.find(prod => prod.id === id);
+  const target = cart[index].quantity + delta;
+
+  if (delta > 0 && p && target > p.stock) return alert(`Maximum stock reached.`);
+
+  if (target <= 0) {
+    cart.splice(index, 1);
+  } else {
+    cart[index].quantity = target;
+  }
+  updateCartUI();
+};
+
+function updateCartUI() {
+  const container = document.getElementById("cart-items");
+  if (!container) return;
+
+  cart = cart.map(item => {
+    const fresh = dbProducts.find(p => p.id === item.id);
+    if (!fresh) return null;
+    if (item.quantity > fresh.stock) item.quantity = fresh.stock;
+    return item.quantity > 0 ? { ...item, ...fresh } : null;
+  }).filter(Boolean);
+
+  const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  document.getElementById("cart-count").innerText = totalCount;
+  document.getElementById("cart-total").innerText = `R${totalPrice}`;
+
+  container.innerHTML = cart.length
+    ? cart.map(item => `
+        <div class="cart-item">
+          <div>
+            <b>${item.name}</b><br>
+            <small>R${item.price} (Stock: ${item.stock})</small>
+          </div>
+          <div style="display:flex; align-items:center; gap:5px;">
+            <button class="qty-btn" onclick="changeQty('${item.id}', -1)">-</button>
+            <span>${item.quantity}</span>
+            <button class="qty-btn" onclick="changeQty('${item.id}', 1)" ${item.quantity >= item.stock ? 'disabled' : ''}>+</button>
+          </div>
+        </div>
+      `).join('')
+    : '<p>Your decor cart is empty.</p>';
+
+  localStorage.setItem("cart", JSON.stringify(cart));
+}
+
+// Sidebar drawers
+window.toggleCart = () => document.getElementById("cart-sidebar").classList.toggle("open");
+window.toggleMenu = () => {
+  const menu = document.getElementById("left-menu");
+  menu.style.left = menu.style.left === "0px" ? "-320px" : "0px";
+};
+
+// Details Modal Viewer
+window.openDetailsModal = (id) => {
+  const p = dbProducts.find(x => x.id === id);
+  if (!p) return;
+  const images = p.images && p.images.length ? p.images : (p.image ? [p.image] : []);
+  const isOutOfStock = p.stock <= 0;
+
+  const inWishlist = userProfile.wishlist?.includes(p.id);
+  const wishlistText = inWishlist ? "❤️ Saved" : "🤍 Save to Wishlist";
+
+  document.getElementById('modal-details-content').innerHTML = `
+    <div class="slider-wrapper" id="modal-slider-${p.id}" style="height: 280px;">
+      ${images.length > 1 ? `<button class="slider-arrow prev" onclick="moveSlider('modal-slider-${p.id}', -1)">&#10094;</button>` : ''}
+      <div class="slider-content">
+        ${images.map(img => `<img src="${img}" class="slide-img" onclick="openLightbox('${img}')">`).join('')}
+      </div>
+      ${images.length > 1 ? `<button class="slider-arrow next" onclick="moveSlider('modal-slider-${p.id}', 1)">&#10095;</button>` : ''}
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+      <h2>${p.name}</h2>
+      <button onclick="toggleWishlist('${p.id}')" style="background:transparent; color:var(--primary); border:1px solid var(--primary); padding:6px 12px; border-radius:4px; cursor:pointer;">${wishlistText}</button>
+    </div>
+    <h3 style="color:#fff;">R${p.price}</h3>
+    <p style="margin: 15px 0; line-height:1.4;">${p.description || "No decorative description provided."}</p>
+    <p><b>Design Spec Tag:</b> <span style="color:var(--primary); font-weight:bold;">${p.decorTag || "General Decor"}</span></p>
+    <p><b>In Stock:</b> ${p.stock}</p>
+    <button ${isOutOfStock ? 'disabled' : ''} onclick="addToCart('${p.id}', null); closeDetailsModal();" style="width:100%; margin-top:10px;">
+      ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+    </button>
+  `;
+  document.getElementById('details-modal').style.display = "flex";
+};
+
+window.closeDetailsModal = () => document.getElementById("details-modal").style.display = "none";
+
+window.openLightbox = (imgSrc) => {
+  const lightbox = document.getElementById('lightbox-modal');
+  const lightboxImg = document.getElementById('lightbox-img');
+  lightboxImg.src = imgSrc;
+  lightbox.style.display = 'flex';
+};
+window.closeLightbox = () => document.getElementById("lightbox-modal").style.display = "none";
+
+window.toggleWishlist = async (productId) => {
+  if (!currentUser) return alert("Please sign in to manage wishlists.");
+  const index = userProfile.wishlist.indexOf(productId);
+  let updated = [...userProfile.wishlist];
+  if (index === -1) {
+    updated.push(productId);
+  } else {
+    updated.splice(index, 1);
+  }
+  await updateDoc(doc(db, "users", currentUser.uid), { wishlist: updated });
+};
+
+window.openStorefrontCheckout = () => {
+  localStorage.setItem("cart", JSON.stringify(cart));
+  window.location.href = "index.html?checkout=true";
+};
+
+window.changeTheme = (themeName) => {
+  const themes = {
+    neon: { bg: "#000", text: "#0f8", primary: "#0f8", card: "#111" },
+    dark: { bg: "#0a0a0a", text: "#aaa", primary: "#fff", card: "#151515" },
+    light: { bg: "#f9f9f9", text: "#333", primary: "#000", card: "#fff" },
+    blue: { bg: "#0a0f1d", text: "#0cf", primary: "#0af", card: "#111827" },
+    purple: { bg: "#0d0a1a", text: "#d8f", primary: "#b5f", card: "#1a1235" }
+  };
+  const theme = themes[themeName] || themes.neon;
+  document.documentElement.style.setProperty('--bg', theme.bg);
+  document.documentElement.style.setProperty('--text', theme.text);
+  document.documentElement.style.setProperty('--primary', theme.primary);
+  document.documentElement.style.setProperty('--card', theme.card);
+
+  document.body.style.background = theme.bg;
+  document.body.style.color = theme.text;
+  localStorage.setItem("selectedTheme", themeName);
+  window.toggleMenu();
+};
+
+function flyToCartAnimation(buttonEl) {
+  const cartBtn = document.getElementById('cart-btn');
+  const btnRect = buttonEl.getBoundingClientRect();
+  const cartRect = cartBtn.getBoundingClientRect();
+
+  const flyer = document.createElement('div');
+  flyer.className = 'flying-item';
+  flyer.style.left = `${btnRect.left + btnRect.width / 2 - 10}px`;
+  flyer.style.top = `${btnRect.top + btnRect.height / 2 - 10}px`;
+  document.body.appendChild(flyer);
+
+  requestAnimationFrame(() => {
+    flyer.style.left = `${cartRect.left + cartRect.width / 2 - 10}px`;
+    flyer.style.top = `${cartRect.top + cartRect.height / 2 - 10}px`;
+    flyer.style.transform = 'scale(0.2)';
+    flyer.style.opacity = '0';
+  });
+
+  flyer.addEventListener('transitionend', () => flyer.remove());
+}
+
+// Initial Bootstrapping
+const theme = localStorage.getItem("selectedTheme") || "neon";
+window.changeTheme(theme);
+window.toggleMenu(); // Closes menu opened by changeTheme initialization
+updateCartUI();
+</script>
+</body>
+</html>
