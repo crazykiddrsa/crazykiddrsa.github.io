@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SbheneCart - My Account Portal</title>
+
+<!-- Google Maps JavaScript API with matching callback 'initProfileAutocomplete' -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCBR2xh-Ks61EEMq7cjKDTVhmuAKGlQcAQ&libraries=places&callback=initProfileAutocomplete" async defer></script>
+<!-- AdSense optional script -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7447247941010903" crossorigin="anonymous"></script>
+
+<style>
+:root {
+  --bg: #000;
+  --text: #0f8;
+  --primary: #0f8;
+  --card: #111;
+}
+* { box-sizing: border-box; }
+body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; overflow-x: hidden; }
+
+header {
+  padding: 15px;
+  border-bottom: 1px solid var(--primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+}
+
+.header-left { display: flex; align-items: center; gap: 15px; }
+.header-right { display: flex; gap: 10px; }
+
+.container { max-width: 650px; margin: auto; padding: 15px; }
+.card { background: var(--card); border: 1px solid var(--primary); padding: 25px; border-radius: 12px; margin-bottom: 20px; position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+
+/* Dynamic Auth Screen Toggles */
+.auth-form { display: flex; flex-direction: column; gap: 12px; }
+input, select, textarea {
+  width: 100%; padding: 12px; border: 1px solid var(--primary); background: #111; color: var(--text); border-radius: 6px; font-size: 16px;
+}
+input:focus { outline: none; border-color: #0a6; box-shadow: 0 0 10px var(--primary); }
+
+button { background: var(--primary); color: #000; font-weight: bold; border: 0; padding: 12px 16px; cursor: pointer; border-radius: 6px; transition: 0.2s; font-size: 15px; }
+button:hover { background: #0a6; color: #fff; }
+button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1px solid #555; }
+
+/* Sub-Tab layouts */
+.tab-nav { display: flex; border-bottom: 1px solid #333; margin-bottom: 20px; gap: 5px; }
+.tab-btn { flex: 1; padding: 14px; background: transparent; color: #888; border: none; font-weight: bold; cursor: pointer; border-bottom: 2px solid transparent; text-transform: uppercase; font-size: 13px; transition: 0.2s; }
+.tab-btn.active { color: var(--primary); border-color: var(--primary); text-shadow: 0 0 10px var(--primary); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* Sidebar Drawers */
+.sidebar { position: fixed; top: 0; right: -350px; width: 320px; height: 100%; background: #111; border-left: 2px solid var(--primary); z-index: 1000; padding: 20px; transition: 0.3s; box-shadow: -5px 0 15px rgba(0,255,136,0.1); color: var(--text); box-sizing: border-box; }
+.sidebar.open { right: 0; }
+.cart-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--primary); padding-bottom: 10px; }
+#cart-items { max-height: 55vh; overflow-y: auto; margin: 15px 0; }
+.cart-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding: 12px 0; }
+.qty-btn { padding: 4px 10px; background: #222; color: var(--primary); border: 1px solid var(--primary); }
+
+/* Grid Styles for wishlist products */
+.wish-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+@media (max-width: 480px) { .wish-grid { grid-template-columns: 1fr; } }
+.wish-card { border: 1px solid #222; padding: 15px; border-radius: 8px; text-align: center; background: #151515; }
+.wish-card img { width: 100%; height: 140px; object-fit: cover; border-radius: 6px; margin-bottom: 8px; border: 1px solid #333; }
+
+/* Order receipts styling */
+.receipt { border-left: 3px solid var(--primary); padding-left: 15px; margin-bottom: 20px; }
+.status-badge { display: inline-block; padding: 4px 8px; font-size: 10px; font-weight: bold; border-radius: 4px; text-transform: uppercase; margin-bottom: 8px; }
+.empty-state { text-align: center; color: #666; padding: 30px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <button id="menu-btn" onclick="toggleMenu()" style="background: transparent; color: var(--primary); border: none; font-size: 26px; cursor: pointer;">☰</button>
+    <h2>SbheneCart / Account</h2>
+  </div>
+  <div class="header-right">
+    <button id="cart-btn" onclick="toggleCart()">🛒 Cart <span id="cart-count">0</span></button>
+    <button onclick="location.href='index.html'" style="background:transparent; color:var(--primary); border:1px solid var(--primary); padding:10px 15px;">🏠 Store</button>
+  </div>
+</header>
+
+<!-- Slide-out Menu (Consistently matching storefront) -->
+<div id="left-menu" style="position: fixed; top: 0; left: -320px; width: 300px; height: 100%; background: var(--card); border-right: 2px solid var(--primary); z-index: 2500; padding: 20px; transition: 0.3s cubic-bezier(0.19, 1, 0.22, 1); box-shadow: 5px 0 15px rgba(0,0,0,0.5); color: var(--text); box-sizing: border-box; display: flex; flex-direction: column; gap: 20px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--primary); padding-bottom: 10px;">
+    <h3 style="margin: 0;">🧭 Navigation</h3>
+    <button onclick="toggleMenu()" style="background: #222; color: var(--primary); border: 1px solid var(--primary); padding: 6px 12px; border-radius: 4px;">◀ Back</button>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <button onclick="location.href='index.html'" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px;">🏠 Storefront</button>
+    <button onclick="location.href='track.html'" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px;">📦 Track Order</button>
+    <button onclick="location.href='admin.html'" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px;">🔑 Admin Console</button>
+  </div>
+  <div style="border-top: 1px dashed #333; padding-top: 15px;">
+    <h4 style="margin: 0 0 12px 0;">🎨 Switch Theme</h4>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <button onclick="changeTheme('neon')" style="background: #000; color: #0f8; border: 1px solid #0f8; padding: 10px; border-radius: 4px; text-align: left;">🟩 Cyber Neon</button>
+      <button onclick="changeTheme('dark')" style="background: #0a0a0a; color: #fff; border: 1px solid #fff; padding: 10px; border-radius: 4px; text-align: left;">⬛ Obsidian Dark</button>
+      <button onclick="changeTheme('light')" style="background: #fff; color: #000; border: 1px solid #000; padding: 10px; border-radius: 4px; text-align: left;">⬜ Classic Light</button>
+      <button onclick="changeTheme('blue')" style="background: #0a0f1d; color: #0cf; border: 1px solid #0cf; padding: 10px; border-radius: 4px; text-align: left;">🟦 Matrix Blue</button>
+      <button onclick="changeTheme('purple')" style="background: #0d0a1a; color: #d8f; border: 1px solid #d8f; padding: 10px; border-radius: 4px; text-align: left;">🟪 Synthwave Purple</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  
+  <!-- Guest Authentication Screen -->
+  <div id="logged-out-panel" class="card" style="display:none;">
+    <h2 id="auth-title" style="margin-top:0;">Access My Account</h2>
+    <p id="auth-desc" style="color:#888;">Save your shipping metrics, claim points, and track receipts.</p>
+    
+    <div class="auth-form">
+      <input type="email" id="auth-email" placeholder="Email Address">
+      <input type="password" id="auth-pw" placeholder="Password PIN Key">
+      
+      <button id="main-auth-btn" onclick="processAuth()" style="width:100%; margin-top:10px;">Sign In</button>
+      
+      <!-- High Visibility Google SSO -->
+      <button onclick="loginWithGoogle()" style="width:100%; margin-top:10px; background:#4285f4; color:#fff; display:flex; align-items:center; justify-content:center; gap:10px; font-weight:bold; border-radius:6px; border:none;">
+        🌐 Sign In with Google
+      </button>
+
+      <!-- Forgot Password link -->
+      <p style="text-align:center; font-size:13px; margin: 15px 0 5px 0;">
+        <span onclick="forgotPassword()" style="color:var(--primary); cursor:pointer; text-decoration:underline;">Forgot Password?</span>
+      </p>
+
+      <p style="text-align:center; font-size:13px; margin: 0;">
+        <span id="auth-switch" onclick="toggleAuthMode()" style="color:var(--primary); cursor:pointer; text-decoration:underline;">Don't have an account? Sign Up</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- Signed-In Dashboard Section -->
+  <div id="logged-in-panel" style="display:none;">
+    
+    <!-- User Overview & Loyalty Points -->
+    <div class="card" style="text-align:center; padding:25px;">
+      <div id="profile-avatar-box" style="margin-bottom:10px;"></div>
+      <h2 style="margin:0 0 5px 0;" id="user-display-name">SbheneCart Loyalty Center</h2>
+      <div id="loyalty-badge" style="font-size:36px; font-weight:bold; margin:15px 0; color:var(--primary); text-shadow: 0 0 10px var(--primary);">💎 0 PTS</div>
+      <p style="margin:0; font-size:14px; color:#aaa;" id="cash-credit-lbl">Calculated Credit Value: R0</p>
+      <button onclick="logoutCustomer()" style="background:#222; color:#fff; border:1px solid #ff1744; font-size:12px; padding:6px 12px; margin-top:15px; border-radius:4px; transition:0.2s;">🔑 Sign Out</button>
+    </div>
+
+    <!-- Switchable Account Tabs -->
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchAccountTab('settings')">⚙️ Settings</button>
+      <button class="tab-btn" onclick="switchAccountTab('wishlist')">❤️ Wishlist</button>
+      <button class="tab-btn" onclick="switchAccountTab('history')">📦 Receipts</button>
+    </div>
+
+    <!-- TAB 1: Account Settings -->
+    <div id="panel-settings" class="tab-panel active card">
+      <h3 style="margin-top:0;">Fulfillment Details</h3>
+      <label style="font-size:12px; display:block; margin-bottom:4px;">Default Shipping Address (Search with Google)</label>
+      <input type="text" id="user-address" placeholder="Start typing your shipping address...">
+      
+      <label style="font-size:12px; display:block; margin: 15px 0 4px 0;">Primary Contact Number</label>
+      <input type="tel" id="user-phone" placeholder="e.g. 082 123 4567">
+      
+      <button id="save-profile-btn" onclick="saveCustomerProfile()" style="width:100%; margin-top:20px;">💾 Save Profile Settings</button>
+    </div>
+
+    <!-- TAB 2: Wishlist Catalog -->
+    <div id="panel-wishlist" class="tab-panel card">
+      <h3 style="margin-top:0;">My Saved Favorites</h3>
+      <div id="wishlist-container" class="wish-grid"></div>
+    </div>
+
+    <!-- TAB 3: Order Receipts History -->
+    <div id="panel-history" class="tab-panel card">
+      <h3 style="margin-top:0;">Past Cargo Transactions</h3>
+      <div id="order-history-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Slide-out Cart Sidebar -->
+<div id="cart-sidebar" class="sidebar">
+  <div class="cart-header">
+    <h3>Your Cart</h3>
+    <button onclick="toggleCart()" style="background:#222; color:var(--primary); border:1px solid var(--primary);">Close</button>
+  </div>
+  <div id="cart-items"></div>
+  <div style="margin-top:15px; font-weight:bold; display:flex; justify-content:space-between;">
+    <span>Subtotal:</span>
+    <span id="cart-total">R0</span>
+  </div>
+  <button onclick="openStorefrontCheckout()" style="width:100%; margin-top:15px;">Check Out</button>
+</div>
+
+<!-- Details Modal -->
+<div id="details-modal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal-btn" onclick="closeDetailsModal()">&times;</span>
+    <div id="modal-details-content"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+import { 
+  getFirestore, doc, onSnapshot, updateDoc, collection, query, where, getDoc, setDoc 
+} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+import { 
+  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged,
+  GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail
+} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC4BCz9GeNTgQYa8ydIJreTREVdPklganA",
+  authDomain: "sbhenecart.firebaseapp.com",
+  projectId: "sbhenecart",
+  storageBucket: "sbhenecart.firebasestorage.app",
+  messagingSenderId: "1074011270711",
+  appId: "1:1074011270711:web:86e00970ad3bb3aaedd9b2"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+let currentUser = null;
+let userProfile = { points: 0, wishlist: [], address: "", savedPhone: "" };
+let allProducts = [];
+let cart = [];
+let authMode = "login";
+
+try {
+  cart = JSON.parse(localStorage.getItem("cart")) || [];
+  if (!Array.isArray(cart)) cart = [];
+} catch (e) {
+  cart = [];
+}
+
+// Global Products Snapshot Listener
+onSnapshot(collection(db, "products"), (snap) => {
+  allProducts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  if (currentUser) renderWishlist();
+  updateCartUI();
+});
+
+// Authentication Observer
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+  const outPanel = document.getElementById("logged-out-panel");
+  const inPanel = document.getElementById("logged-in-panel");
+
+  if (user) {
+    outPanel.style.display = "none";
+    inPanel.style.display = "block";
+    
+    // Connect user profiles document stream
+    const userRef = doc(db, "users", user.uid);
+    onSnapshot(userRef, async (snap) => {
+      if (snap.exists()) {
+        userProfile = { ...userProfile, ...snap.data() };
+      } else {
+        const fresh = { points: 0, wishlist: [], address: "", savedPhone: "", name: user.displayName || "Google User", email: user.email || "" };
+        await setDoc(userRef, fresh);
+        userProfile = fresh;
+      }
+      
+      // Update UI panels with profile states
+      document.getElementById("user-display-name").innerText = userProfile.name || "SbheneCart Member";
+      document.getElementById("loyalty-badge").innerHTML = `💎 <b>${userProfile.points || 0}</b> PTS`;
+      document.getElementById("cash-credit-lbl").innerText = `Calculated Credit Value: R${Math.floor((userProfile.points || 0)/10)}`;
+      document.getElementById("user-address").value = userProfile.address || "";
+      document.getElementById("user-phone").value = userProfile.savedPhone || "";
+      
+      const avatarBox = document.getElementById("profile-avatar-box");
+      if (user.photoURL) {
+        avatarBox.innerHTML = `<img src="${user.photoURL}" style="width:70px; height:70px; border-radius:50%; border:2px solid var(--primary); box-shadow: 0 0 10px var(--primary);">`;
+      } else {
+        avatarBox.innerHTML = `<div style="font-size:45px;">👤</div>`;
+      }
+      
+      renderWishlist();
+    });
+
+    // Connect real-time order history lookup
+    const orderQuery = query(collection(db, "orders"), where("userId", "==", user.uid));
+    onSnapshot(orderQuery, (snap) => {
+      const orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      orders.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      renderOrderHistory(orders);
+    });
+
+  } else {
+    outPanel.style.display = "block";
+    inPanel.style.display = "none";
+    userProfile = { points: 0, wishlist: [], address: "", savedPhone: "" };
+  }
+});
+
+// Autocomplete Initialization for Default Address Input
+window.initProfileAutocomplete = () => {
+  const addressInput = document.getElementById('user-address');
+  if (!addressInput) return;
+
+  const autocomplete = new google.maps.places.Autocomplete(addressInput, {
+    types: ['address'],
+    componentRestrictions: { country: 'za' }
+  });
+
+  autocomplete.addListener('place_changed', () => {
+    const place = autocomplete.getPlace();
+    if (!place.geometry || !place.geometry.location) {
+      alert("No geometry details available for the selected address.");
+      return;
+    }
+  });
+};
+
+// Login / Register router
+window.toggleAuthMode = () => {
+  authMode = authMode === "login" ? "register" : "login";
+  const title = document.getElementById("auth-title");
+  const desc = document.getElementById("auth-desc");
+  const btn = document.getElementById("main-auth-btn");
+  const sw = document.getElementById("auth-switch");
+
+  if (authMode === "register") {
+    title.innerText = "Register Account";
+    desc.innerText = "Provision a secure profile footprint and claim R10 sign-up loyalty points!";
+    btn.innerText = "Create Account";
+    sw.innerText = "Already have an account? Sign In";
+  } else {
+    title.innerText = "Access My Account";
+    desc.innerText = "Save your shipping metrics, claim points, and track receipts.";
+    btn.innerText = "Sign In";
+    sw.innerText = "Don't have an account? Sign Up";
+  }
+};
+
+window.processAuth = async () => {
+  const email = document.getElementById("auth-email").value.trim();
+  const pw = document.getElementById("auth-pw").value;
+  const btn = document.getElementById("main-auth-btn");
+
+  if (!email || !pw) return alert("All fields are required.");
+  btn.disabled = true;
+
+  try {
+    if (authMode === "login") {
+      await signInWithEmailAndPassword(auth, email, pw);
+      alert("🔓 Signed in successfully!");
+    } else {
+      const cred = await createUserWithEmailAndPassword(auth, email, pw);
+      await setDoc(doc(db, "users", cred.user.uid), {
+        points: 100, wishlist: [], address: "", savedPhone: "", name: email.split("@")[0], email: email
+      });
+      alert("🎁 Profile created with 100 bonus loyalty points!");
+    }
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+// Branded Google Auth POPUP
+window.loginWithGoogle = async () => {
+  const provider = new GoogleAuthProvider();
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+
+    const userRef = doc(db, "users", user.uid);
+    const snap = await getDoc(userRef);
+
+    const googleMetadata = {
+      name: user.displayName || "Google User",
+      email: user.email || "",
+      photoURL: user.photoURL || "",
+    };
+
+    if (!snap.exists()) {
+      await setDoc(userRef, {
+        ...googleMetadata,
+        points: 100,
+        wishlist: [],
+        address: "",
+        savedPhone: user.phoneNumber || ""
+      });
+      alert("🎁 Google Account linked with 100 bonus loyalty points!");
+    } else {
+      await updateDoc(userRef, googleMetadata);
+      alert("🔓 Welcome back!");
+    }
+  } catch (err) {
+    console.error("Google Auth failed:", err);
+    alert(err.message || "Google Sign-In failed. Please try again.");
+  }
+};
+
+window.forgotPassword = async () => {
+  const email = document.getElementById("auth-email").value.trim();
+  if (!email) return alert("⚠️ Please enter your email address first so we know where to send the reset link.");
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+    alert("📧 Secure password reset link has been dispatched to your inbox!");
+  } catch (err) {
+    alert(err.message || "Failed to trigger password reset. Verify email spelling.");
+  }
+};
+
+window.logoutCustomer = async () => {
+  await signOut(auth);
+  alert("🔒 Locked out.");
+};
+
+window.saveCustomerProfile = async () => {
+  if (!currentUser) return;
+  const btn = document.getElementById("save-profile-btn");
+  btn.disabled = true;
+
+  const addr = document.getElementById("user-address").value.trim();
+  const tel = document.getElementById("user-phone").value.trim();
+
+  try {
+    await updateDoc(doc(db, "users", currentUser.uid), {
+      address: addr, savedPhone: tel
+    });
+    alert("💾 Profile details successfully saved!");
+  } catch {
+    alert("Could not update profile. Please try again.");
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+// Wishlist Grid Renderer
+function renderWishlist() {
+  const container = document.getElementById("wishlist-container");
+  if (!container) return;
+
+  const favorited = allProducts.filter(p => userProfile.wishlist?.includes(p.id));
+  container.innerHTML = favorited.length
+    ? favorited.map(p => `
+        <div class="wish-card">
+          <img src="${p.image || ''}">
+          <h4 style="margin:5px 0 2px 0;">${p.name}</h4>
+          <p style="color:var(--primary); font-weight:bold; margin:0 0 10px 0;">R${p.price}</p>
+          <button onclick="window.addToCart('${p.id}', null)" style="width:100%; font-size:12px; padding:8px 12px; margin-bottom:5px;">🛒 Add to Cart</button>
+          <button onclick="window.toggleWishlist('${p.id}')" style="width:100%; background:#222; color:#ff1744; font-size:11px; padding:6px; border:1px solid #ff1744;">💔 Remove</button>
+        </div>
+      `).join('')
+    : `
+      <div class="empty-state">
+        <p>❤️ Your Saved Favorites folder is empty.</p>
+        <button onclick="location.href='index.html'" style="font-size:12px; padding:6px 12px;">Browse Catalog</button>
+      </div>
+    `;
+}
+
+window.toggleWishlist = async (id) => {
+  if (!currentUser) return;
+  const idx = userProfile.wishlist.indexOf(id);
+  let list = [...userProfile.wishlist];
+  if (idx === -1) {
+    list.push(id);
+  } else {
+    list.splice(idx, 1);
+  }
+  await updateDoc(doc(db, "users", currentUser.uid), { wishlist: list });
+};
+
+window.addToCart = (id) => {
+  const p = allProducts.find(x => x.id === id);
+  if (!p || p.stock <= 0) return alert("Product is currently out of stock.");
+
+  const item = cart.find(x => x.id === id);
+  if (item) {
+    if (item.quantity + 1 > p.stock) return alert("Stock capacity limit reached.");
+    item.quantity++;
+  } else {
+    cart.push({ ...p, quantity: 1 });
+  }
+  updateCartUI();
+  alert("🛒 Item added to your cart!");
+};
+
+// Real-Time Order History & Atomic Reorder
+function renderOrderHistory(ordersList) {
+  const container = document.getElementById("order-history-list");
+  if (!container) return;
+
+  container.innerHTML = ordersList.length
+    ? ordersList.map(o => {
+        let date = "N/A";
+        if (o.timestamp) date = new Date(o.timestamp).toLocaleString();
+
+        const badgeStyle = o.status === "Pending" ? "background:#ffaa00; color:#000;" 
+          : (o.status === "Delivered" ? "background:#00e676; color:#000;" : "background:#222; color:var(--text);");
+
+        return `
+          <div class="receipt">
+            <span class="status-badge" style="${badgeStyle}">${o.status}</span><br>
+            <b>Order ID:</b> <small>${o.id}</small><br>
+            <b>Fulfillment Date:</b> ${date}<br>
+            <b>Grand Total:</b> R${o.total}<br>
+            <b>Items Purchased:</b><br>
+            <div style="font-size:12px; color:#aaa; margin:5px 0;">
+              ${o.items ? o.items.map(i => `• ${i.name} (x${i.quantity}) - R${i.price}`).join("<br>") : "Cargo null"}
+            </div>
+            <button onclick="window.reorderPreviousCart(${JSON.stringify(o.items).replace(/"/g, '&quot;')})" style="background:#222; color:var(--primary); border:1px solid var(--primary); width:100%; margin-top:10px; padding:10px; font-size:13px;">
+              🔁 Buy This Order Again
+            </button>
+          </div>
+        `;
+      }).join('<hr style="border-color:#222; margin:15px 0;">')
+    : `
+      <div class="empty-state">
+        <p>📦 You haven't placed any orders yet.</p>
+        <button onclick="location.href='index.html'" style="font-size:12px; padding:6px 12px;">Place Your First Order</button>
+      </div>
+    `;
+}
+
+window.reorderPreviousCart = (items) => {
+  cart = [];
+  items.forEach(item => {
+    const p = allProducts.find(prod => prod.id === item.id);
+    if (p && p.stock > 0) {
+      const qty = Math.min(item.quantity, p.stock);
+      cart.push({ ...p, quantity: qty });
+    }
+  });
+  updateCartUI();
+  toggleCart();
+  alert("🛒 Previous order copied to your cart!");
+};
+
+window.switchAccountTab = (tab) => {
+  document.querySelectorAll(".tab-nav button").forEach(btn => btn.classList.remove("active"));
+  document.querySelectorAll(".tab-panel").forEach(panel => panel.classList.remove("active"));
+
+  event.currentTarget.classList.add("active");
+  document.getElementById(`panel-${tab}`).classList.add("active");
+};
+
+window.toggleCart = () => document.getElementById("cart-sidebar").classList.toggle("open");
+window.toggleMenu = () => {
+  const menu = document.getElementById("left-menu");
+  menu.style.left = menu.style.left === "0px" ? "-320px" : "0px";
+};
+
+window.changeTheme = (themeName) => {
+  const themes = {
+    neon: { bg: "#000", text: "#0f8", primary: "#0f8", card: "#111" },
+    dark: { bg: "#0a0a0a", text: "#aaa", primary: "#fff", card: "#151515" },
+    light: { bg: "#f9f9f9", text: "#333", primary: "#000", card: "#fff" },
+    blue: { bg: "#0a0f1d", text: "#0cf", primary: "#0af", card: "#111827" },
+    purple: { bg: "#0d0a1a", text: "#d8f", primary: "#b5f", card: "#1a1235" }
+  };
+  const theme = themes[themeName] || themes.neon;
+  document.documentElement.style.setProperty('--bg', theme.bg);
+  document.documentElement.style.setProperty('--text', theme.text);
+  document.documentElement.style.setProperty('--primary', theme.primary);
+  document.documentElement.style.setProperty('--card', theme.card);
+
+  document.body.style.background = theme.bg;
+  document.body.style.color = theme.text;
+  localStorage.setItem("selectedTheme", themeName);
+  window.toggleMenu();
+};
+
+window.openStorefrontCheckout = () => {
+  localStorage.setItem("cart", JSON.stringify(cart));
+  window.location.href = "index.html?checkout=true";
+};
+
+function updateCartUI() {
+  const container = document.getElementById("cart-items");
+  if (!container) return;
+
+  cart = cart.map(item => {
+    const fresh = allProducts.find(p => p.id === item.id);
+    if (!fresh) return null;
+    if (item.quantity > fresh.stock) item.quantity = fresh.stock;
+    return item.quantity > 0 ? { ...item, ...fresh } : null;
+  }).filter(Boolean);
+
+  const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  document.getElementById("cart-count").innerText = totalCount;
+  document.getElementById("cart-total").innerText = `R${totalPrice}`;
+
+  container.innerHTML = cart.length
+    ? cart.map(item => `
+        <div class="cart-item">
+          <div>
+            <b>${item.name}</b><br>
+            <small>R${item.price} (Stock: ${item.stock})</small>
+          </div>
+          <div style="display:flex; align-items:center; gap:5px;">
+            <button class="qty-btn" onclick="window.changeQty('${item.id}', -1)">-</button>
+            <span>${item.quantity}</span>
+            <button class="qty-btn" onclick="window.changeQty('${item.id}', 1)" ${item.quantity >= item.stock ? 'disabled' : ''}>+</button>
+          </div>
+        </div>
+      `).join('')
+    : '<p>Your cart is empty.</p>';
+
+  localStorage.setItem("cart", JSON.stringify(cart));
+}
+
+window.changeQty = (id, delta) => {
+  const idx = cart.findIndex(item => item.id === id);
+  if (idx === -1) return;
+  const p = allProducts.find(prod => prod.id === id);
+  const target = cart[idx].quantity + delta;
+
+  if (delta > 0 && p && target > p.stock) return alert("Stock capacity reached.");
+  if (target <= 0) {
+    cart.splice(idx, 1);
+  } else {
+    cart[idx].quantity = target;
+  }
+  updateCartUI();
+};
+
+const savedTheme = localStorage.getItem("selectedTheme") || "neon";
+window.changeTheme(savedTheme);
+window.toggleMenu();
+updateCartUI();
+</script>
+</body>
+</html>
