@@ -1,118 +1,164 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SbheneCart Admin Pro</title>
 
-<!-- Fixed Google Maps JavaScript API with correct libraries query format -->
+<!-- Google Maps JavaScript API with correct libraries query format -->
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCBR2xh-Ks61EEMq7cjKDTVhmuAKGlQcAQ&libraries=places&callback=initAdminMap" async defer></script>
+<!-- Chart.js for real-time visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body{margin:0;font-family:Arial;background:#111;color:#0f8}header{background:#000;padding:15px;border-bottom:2px solid #0f8}
-nav{display:flex;gap:8px;flex-wrap:wrap;padding:10px;background:#181818}nav button{padding:8px; display:flex; align-items:center; gap:5px;}
-.page{display:none;padding:20px}.active{display:block}.card{border:1px solid #0f8;padding:12px;margin:10px 0;background:#1a1a1a}
-input,select,textarea{width:100%;margin:5px 0;padding:8px;box-sizing:border-box;background:#222;color:#0f8;border:1px solid #0f8;}
-button{background:#0f8;color:#000;font-weight:bold;border:0;padding:8px 12px;cursor:pointer;border-radius:4px;transition:0.2s;}
-button:hover{background:#0a6;color:#fff;}
-button:disabled{background:#555;color:#888;cursor:not-allowed;}
-
-/* Live Order Map Frame */
-#admin-map {
-  width: 100%;
-  height: 350px;
-  border: 1px solid #0f8;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  background: #000;
+:root {
+  --bg: #000;
+  --text: #0f8;
+  --primary: #0f8;
+  --card: #111;
 }
+body { margin:0; font-family:Arial, sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+header { background:#000; padding:15px; border-bottom:2px solid var(--primary); display: flex; justify-content: space-between; align-items: center; }
+nav { display:flex; gap:8px; flex-wrap:wrap; padding:10px; background:#181818; }
+nav button { padding:10px 15px; background: #222; color: var(--text); border: 1px solid var(--primary); border-radius: 4px; }
+nav button:hover, nav button.active { background: var(--primary); color: #000; font-weight: bold; }
+.page { display:none; padding:20px; }
+.page.active { display:block; }
+.card { border:1px solid var(--primary); padding:20px; margin:15px 0; background: var(--card); border-radius: 8px; }
+input, select, textarea { width:100%; margin:8px 0; padding:10px; box-sizing:border-box; background:#1e1e1e; color: var(--text); border:1px solid var(--primary); border-radius: 4px; font-size: 14px; }
+button { background: var(--primary); color: #000; font-weight: bold; border: 0; padding: 10px 15px; cursor: pointer; border-radius: 4px; transition: 0.2s; font-size: 14px; }
+button:hover { background: #0a6; color: #fff; }
+button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1px solid #444; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+@media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
 
-/* Pulsing Badge CSS Animation */
+#admin-map { width: 100%; height: 350px; border: 1px solid var(--primary); border-radius: 8px; margin-bottom: 20px; background: #000; }
+.pulsing-badge { display: inline-block; animation: pulse-glow 1.8s infinite; }
 @keyframes pulse-glow {
-  0% {
-    box-shadow: 0 0 0 0 rgba(255, 17, 68, 0.7);
-  }
-  70% {
-    box-shadow: 0 0 0 8px rgba(255, 17, 68, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(255, 17, 68, 0);
-  }
+  0% { box-shadow: 0 0 0 0 rgba(255, 17, 68, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(255, 17, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 17, 68, 0); }
 }
-.pulsing-badge {
-  display: inline-block;
-  animation: pulse-glow 1.8s infinite;
-}
-
-/* Screen Flash Alert CSS Overlay */
+.screen-alert-flash { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 99999; pointer-events: none; animation: flash-screen 0.8s ease-out; }
 @keyframes flash-screen {
   0% { background: rgba(0, 255, 136, 0); }
   50% { background: rgba(0, 255, 136, 0.2); }
   100% { background: rgba(0, 255, 136, 0); }
 }
-.screen-alert-flash {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  z-index: 99999;
-  pointer-events: none;
-  animation: flash-screen 0.8s ease-out;
-}
-</style></head><body>
+.chart-container { width: 100%; max-width: 500px; height: 260px; margin: auto; }
+</style>
+</head>
+<body>
 
-<!-- Dynamic Screen Alert Overlay container -->
 <div id="alert-overlay"></div>
 
 <!-- Login Lock Screen -->
-<div id="login-screen" style="max-width: 400px; margin: 100px auto; padding: 25px; border: 1px solid #0f8; background: #000; border-radius: 8px; text-align: center;">
-  <h2 style="margin-top:0;">SbheneCart Gatekeeper</h2>
+<div id="login-screen" style="max-width: 400px; margin: 100px auto; padding: 25px; border: 1px solid var(--primary); background: #000; border-radius: 8px; text-align: center;">
+  <h2>SbheneCart Gatekeeper</h2>
   <p style="color:#888;">Enter your administrator password to unlock the console.</p>
-  <input id="login-email" type="email" placeholder="Admin Email" style="margin-bottom:10px;">
-  <input id="login-pw" type="password" placeholder="Password" style="margin-bottom:15px;">
+  <input id="login-email" type="email" placeholder="Admin Email">
+  <input id="login-pw" type="password" placeholder="Password">
   <button id="login-btn" onclick="loginAdmin()" style="width:100%;">Unlock Console</button>
 </div>
 
 <!-- Main Admin Panel Wrapper -->
 <div id="admin-wrapper" style="display:none;">
-  <header style="display:flex; justify-content:space-between; align-items:center;">
+  <header>
     <h2>SbheneCart Admin Pro</h2>
     <div style="display:flex; gap:10px; align-items:center;">
-      <button id="audio-toggle-btn" onclick="toggleAudioAlerts()" style="background:#222; color:#0f8; border:1px solid #0f8;">🔊 Alerts: ON</button>
-      <button onclick="logoutAdmin()" style="background:#222; color:#0f8; border:1px solid #0f8;">Lock Panel</button>
+      <button id="audio-toggle-btn" onclick="toggleAudioAlerts()" style="background:#222; color:var(--primary); border:1px solid var(--primary);">🔊 Alerts: ON</button>
+      <button onclick="logoutAdmin()" style="background:#222; color:var(--primary); border:1px solid var(--primary);">Lock Panel</button>
     </div>
   </header>
   
-  <nav>
-    <button onclick="show('dash')">Dashboard</button>
-    <button onclick="show('products')">Products</button>
-    <button onclick="show('categories')">Categories</button>
-    <button onclick="show('subcategories')">Subcategories</button>
-    <button onclick="show('subsubcategories')">Sub-subcategories</button>
-    <button onclick="show('orders')">
-      Orders & Map 
-      <span id="orders-badge" class="pulsing-badge" style="background:#ff1744; color:#fff; border-radius:50%; padding:2px 6px; font-size:11px; font-weight:bold; display:none;">0</span>
-    </button>
-    <button onclick="show('users')">Users</button>
-    <button onclick="show('coupons')">Coupons</button>
-    <button onclick="show('reports')">Reports</button>
-    <button onclick="show('settings')">Settings</button>
+  <nav id="admin-nav">
+    <button onclick="showPage('dash')" class="active">Dashboard</button>
+    <button onclick="showPage('products')">Products</button>
+    <button onclick="showPage('categories')">Categories</button>
+    <button onclick="showPage('subcategories')">Subcategories</button>
+    <button onclick="showPage('subsubcategories')">Sub-subcategories</button>
+    <button onclick="showPage('orders')">Orders & Map <span id="orders-badge" class="pulsing-badge" style="background:#ff1744; color:#fff; border-radius:50%; padding:2px 6px; font-size:11px; font-weight:bold; display:none;">0</span></button>
+    <button onclick="showPage('users')">Customers & Loyalty</button>
+    <button onclick="showPage('alerts')">Low Stock Alerts</button>
   </nav>
 
-  <section id="dash" class="page active"><div class="card"><div id="stats"></div></div></section>
+  <!-- Dashboard Page with Dynamic Chart.js -->
+  <section id="dash" class="page active">
+    <div class="card">
+      <div id="stats" style="margin-bottom: 20px; line-height: 1.6;"></div>
+      <div class="grid-2">
+        <div class="card" style="margin: 0; padding:10px;">
+          <h3 style="text-align: center; margin: 5px 0;">Revenue Stream (ZAR)</h3>
+          <div class="chart-container"><canvas id="revenueChart"></canvas></div>
+        </div>
+        <div class="card" style="margin: 0; padding:10px;">
+          <h3 style="text-align: center; margin: 5px 0;">Product Stock Status</h3>
+          <div class="chart-container"><canvas id="stockChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </section>
 
+  <!-- Product Management Page with Badge Toggles & Dynamic Sizing Fields -->
   <section id="products" class="page">
     <div class="card">
-      <input id="pn" placeholder="Name"><input id="pp" type="number" placeholder="Price">
-      <label style="display:block; margin: 10px 0 5px 0; font-size:12px;">Product Images:</label>
+      <h3>Add / Edit Product</h3>
+      <input id="pn" placeholder="Product Name">
+      <div class="grid-2">
+        <input id="pp" type="number" placeholder="Sale Price (ZAR)">
+        <input id="p_original" type="number" placeholder="Original Price (Before Discount)">
+      </div>
+      
+      <label style="display:block; margin: 10px 0 5px 0; font-size:12px;">Product Image Gallery (Select Multiple):</label>
       <input id="pi" type="file" accept="image/*" multiple>
-      <select id="pc"></select>
-      <select id="psc"><option value="">Select Subcategory</option></select>
+      
+      <div class="grid-2">
+        <select id="pc"></select>
+        <select id="psc"><option value="">Select Subcategory</option></select>
+      </div>
       <select id="pssc"><option value="">Select Sub-subcategory</option></select>
-      <input id="ps" type="number" placeholder="Stock"><textarea id="pd" placeholder="Description"></textarea>
-      <button id="save-prod-btn" onclick="saveProduct()">Save Product</button>
+      
+      <div class="grid-2">
+        <input id="ps" type="number" placeholder="Stock Quantity">
+        <select id="p_badge" onchange="toggleFlashSaleInput()">
+          <option value="">No Badge / Standard Item</option>
+          <option value="Hot Deal">🔥 Hot Deal</option>
+          <option value="New">🆕 New Arrival</option>
+          <option value="Featured">⭐ Featured Product</option>
+          <option value="Sale">💥 Sale</option>
+        </select>
+      </div>
+
+      <!-- Expiration Date for Flash Sales (Conditional Display) -->
+      <div id="flash-sale-scheduler" style="display:none;">
+        <label style="display:block; font-size:12px; margin-top:5px;">Set Flash Sale Expiration Target:</label>
+        <input id="p_flash_end" type="datetime-local">
+      </div>
+
+      <!-- Tailoring & Mood Board Sizing Metrics -->
+      <div class="grid-2" style="margin-top: 10px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="p_requires_sizing" style="width:auto; margin:0;">
+          <label for="p_requires_sizing">📐 Requires Sewing Measurements (Bust, Waist, etc.)</label>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="p_visible" style="width:auto; margin:0;" checked>
+          <label for="p_visible">👁️ Visible on Storefront (Show/Hide)</label>
+        </div>
+      </div>
+      
+      <input id="p_decor_tag" placeholder="Inspiration / Decor Room Tag (e.g. Minimalist Living Room, Rustic Cozy)">
+      <textarea id="pd" placeholder="Detailed Product Description"></textarea>
+      
+      <button id="save-prod-btn" onclick="saveProduct()" style="width:100%; margin-top:15px;">Save Product</button>
     </div>
     <div id="plist"></div>
   </section>
 
+  <!-- Categories -->
   <section id="categories" class="page">
     <div class="card">
-      <input id="newCat" placeholder="Category">
+      <input id="newCat" placeholder="Category Name">
       <button onclick="addCat()">Add Category</button>
       <div id="cats"></div>
     </div>
@@ -120,9 +166,8 @@ button:disabled{background:#555;color:#888;cursor:not-allowed;}
 
   <section id="subcategories" class="page">
     <div class="card">
-      <h3>Subcategories</h3>
       <select id="parentCat"></select>
-      <input id="newSubCat" placeholder="Subcategory">
+      <input id="newSubCat" placeholder="Subcategory Name">
       <button onclick="addSubCat()">Add Subcategory</button>
       <div id="subcats"></div>
     </div>
@@ -130,26 +175,24 @@ button:disabled{background:#555;color:#888;cursor:not-allowed;}
 
   <section id="subsubcategories" class="page">
     <div class="card">
-      <h3>Sub-subcategories</h3>
       <select id="parentCategorySS"></select>
       <select id="parentSubcategorySS"><option value="">Select Subcategory</option></select>
-      <input id="newSubSubCat" placeholder="Sub-subcategory">
+      <input id="newSubSubCat" placeholder="Sub-subcategory Name">
       <button onclick="addSubSubCat()">Add Sub-subcategory</button>
       <div id="subsubcats"></div>
     </div>
   </section>
 
+  <!-- Order Queue and Maps -->
   <section id="orders" class="page">
     <div class="card">
       <h3>Live Order Fulfillment Map</h3>
-      <!-- Dynamic Google Map Render Area -->
       <div id="admin-map"></div>
       
-      <!-- Toggleable Order Tabs -->
       <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
-        <button id="tab-active-btn" onclick="toggleOrderTab('active')" style="background:#0f8; color:#000;">Active Queue</button>
-        <button id="tab-history-btn" onclick="toggleOrderTab('history')" style="background:#222; color:#0f8; border:1px solid #0f8;">Completed & Cancelled</button>
-        <button id="tab-archived-btn" onclick="toggleOrderTab('archived')" style="background:#222; color:#0f8; border:1px solid #0f8;">Archived Transactions</button>
+        <button id="tab-active-btn" onclick="toggleOrderTab('active')" style="background:var(--primary); color:#000;">Active Queue</button>
+        <button id="tab-history-btn" onclick="toggleOrderTab('history')" style="background:#222; color:var(--primary); border:1px solid var(--primary);">Completed & Cancelled</button>
+        <button id="tab-archived-btn" onclick="toggleOrderTab('archived')" style="background:#222; color:var(--primary); border:1px solid var(--primary);">Archived Transactions</button>
       </div>
 
       <h3 id="current-tab-title">Active Queue</h3>
@@ -157,21 +200,25 @@ button:disabled{background:#555;color:#888;cursor:not-allowed;}
     </div>
   </section>
 
-  <section id="users" class="page"><div class="card"><div id="ulist"></div></div></section>
-  <section id="coupons" class="page"><div class="card">Coupon manager placeholder.</div></section>
-  <section id="reports" class="page"><div class="card">Sales, inventory and revenue reports placeholder.</div></section>
- 
-  <section id="settings" class="page">
+  <!-- Customers and Loyalty Management Table -->
+  <section id="users" class="page">
     <div class="card">
-        <h3>Administrator Settings</h3>
-        <p>Administrator accounts are managed through Firebase Authentication.</p>
-        <p>Create, remove or reset passwords in the Firebase Console.</p>
+      <h3>Customer Profiles & Loyalty Center</h3>
+      <div id="ulist"></div>
+    </div>
+  </section>
+
+  <!-- Low Stock Alerts Center with click-to-restock -->
+  <section id="alerts" class="page">
+    <div class="card">
+      <h3>Critical Inventory Warnings</h3>
+      <p style="color:#888;">Items showing below 5 remaining units require immediate restock attention.</p>
+      <div id="critical-stock-list"></div>
     </div>
   </section>
 </div>
 
-<!-- Bottom-Right Glowing Toast Notification Component -->
-<div id="toast-notif" style="position:fixed; bottom:20px; right:20px; background:#0f8; color:#000; padding:15px 25px; border-radius:4px; font-weight:bold; box-shadow:0 4px 15px rgba(0,255,136,0.3); display:none; z-index:10000; transition: opacity 0.3s ease; opacity:0;"></div>
+<div id="toast-notif" style="position:fixed; bottom:20px; right:20px; background:var(--primary); color:#000; padding:15px 25px; border-radius:4px; font-weight:bold; box-shadow:0 4px 15px rgba(0,255,136,0.3); display:none; z-index:10000; transition: opacity 0.3s ease; opacity:0;"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
@@ -210,13 +257,19 @@ if (typeof Notification !== "undefined" && Notification.permission !== "granted"
   Notification.requestPermission();
 }
 
-// DOM Elements
+// Bind Inputs
 const pn = document.getElementById('pn');
 const pp = document.getElementById('pp');
+const p_original = document.getElementById('p_original');
 const pi = document.getElementById('pi');
 const pc = document.getElementById('pc');
 const psc = document.getElementById('psc');
 const pssc = document.getElementById("pssc");
+const p_badge = document.getElementById("p_badge");
+const p_flash_end = document.getElementById("p_flash_end");
+const p_requires_sizing = document.getElementById("p_requires_sizing");
+const p_visible = document.getElementById("p_visible");
+const p_decor_tag = document.getElementById("p_decor_tag");
 const parentCat = document.getElementById('parentCat');
 const newSubCat = document.getElementById('newSubCat');
 const ps = document.getElementById('ps');
@@ -232,255 +285,199 @@ const newSubSubCat = document.getElementById("newSubSubCat");
 
 parentCategorySS.onchange = updateSSSubcategories;
 pc.onchange = updateSubcategories;
+psc.onchange = updateProductSubSubcategories;
 
 function updateSubcategories() {
-    psc.innerHTML =
-        '<option value="">Select Subcategory</option>' +
-        subcats
-            .filter(s => s.category === pc.value)
-            .map(s => `<option value="${s.name}">${s.name}</option>`)
-            .join('');
+  psc.innerHTML = '<option value="">Select Subcategory</option>' +
+    subcats.filter(s => s.category === pc.value).map(s => `<option value="${s.name}">${s.name}</option>`).join('');
 }
 function updateSSSubcategories() {
-    parentSubcategorySS.innerHTML =
-        '<option value="">Select Subcategory</option>' +
-        subcats
-            .filter(s => s.category === parentCategorySS.value)
-            .map(s => `<option value="${s.name}">${s.name}</option>`)
-            .join('');
+  parentSubcategorySS.innerHTML = '<option value="">Select Subcategory</option>' +
+    subcats.filter(s => s.category === parentCategorySS.value).map(s => `<option value="${s.name}">${s.name}</option>`).join('');
 }
 function updateProductSubSubcategories() {
-    pssc.innerHTML =
-        '<option value="">Select Sub-subcategory</option>' +
-        subsubcats
-            .filter(s => s.subcategory === psc.value)
-            .map(s => `<option value="${s.name}">${s.name}</option>`)
-            .join('');
+  pssc.innerHTML = '<option value="">Select Sub-subcategory</option>' +
+    subsubcats.filter(s => s.subcategory === psc.value).map(s => `<option value="${s.name}">${s.name}</option>`).join('');
 }
 
-psc.onchange = updateProductSubSubcategories;
+window.toggleFlashSaleInput = () => {
+  const target = document.getElementById("flash-sale-scheduler");
+  target.style.display = p_badge.value === "Sale" ? "block" : "none";
+};
 
 let cats = [];
 let subcats = [];
 let subsubcats = [];
 let products = [];
 let orders = [];
+let customers = [];
 let edit = -1;
 
-// Navigation State Setup
-let currentOrderTab = 'active'; // 'active', 'history', or 'archived'
-
-// Track unique order ids to trigger alerts only on new items
+let currentOrderTab = 'active';
 let knownOrderIds = new Set();
-
-// Maps Instance Globals
 let adminMap;
 let mapMarkers = [];
 
-// Audio and Tab flashing globals
 let audioAlertsEnabled = true;
 let isTitleFlashing = false;
 let titleFlashInterval = null;
 
-onSnapshot(collection(db, "categories"), (snapshot) => {
-    cats = [];
-    snapshot.forEach(doc => { cats.push({ id: doc.id, ...doc.data() }); });
-    cats.sort((a,b)=>a.name.localeCompare(b.name));
-    if(auth.currentUser) refresh();
+// Dynamic Dashboard Chart State Holders
+let revChartInstance = null;
+let stockChartInstance = null;
+
+// Real-time Collections Listeners
+onSnapshot(collection(db, "categories"), (snap) => {
+  cats = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a,b)=>a.name.localeCompare(b.name));
+  if (auth.currentUser) refresh();
 });
 
-onSnapshot(collection(db, "subcategories"), (snapshot) => {
-    subcats = [];
-    snapshot.forEach(doc => { subcats.push({ id: doc.id, ...doc.data() }); });
-    if(auth.currentUser) refresh();
+onSnapshot(collection(db, "subcategories"), (snap) => {
+  subcats = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  if (auth.currentUser) refresh();
 });
 
-onSnapshot(collection(db, "subsubcategories"), (snapshot) => {
-    subsubcats = [];
-    snapshot.forEach(doc => { subsubcats.push({ id: doc.id, ...doc.data() }); });
-    if(auth.currentUser) refresh();
+onSnapshot(collection(db, "subsubcategories"), (snap) => {
+  subsubcats = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  if (auth.currentUser) refresh();
 });
 
-onSnapshot(collection(db, "products"), (snapshot) => {
-    products = [];
-    snapshot.forEach(d => { products.push({ id: d.id, ...d.data() }); });
-    if (auth.currentUser) refresh();
+onSnapshot(collection(db, "products"), (snap) => {
+  products = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  if (auth.currentUser) {
+    refresh();
+    renderLowStockWarnings();
+  }
 });
 
-// Glowing System Toast Popups
-window.showToast = (message, duration = 3000) => {
-    const toast = document.getElementById("toast-notif");
-    toast.innerText = message;
-    toast.style.display = "block";
-    
-    // Tiny delay so CSS transitions can register
-    setTimeout(() => {
-        toast.style.opacity = "1";
-    }, 50);
+onSnapshot(collection(db, "users"), (snap) => {
+  customers = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  if (auth.currentUser) refresh();
+});
 
-    setTimeout(() => {
-        toast.style.opacity = "0";
-        setTimeout(() => {
-            toast.style.display = "none";
-        }, 300);
-    }, duration);
+// Notifications chime & visual flashers
+window.showToast = (msg, duration = 3000) => {
+  const toast = document.getElementById("toast-notif");
+  toast.innerText = msg;
+  toast.style.display = "block";
+  setTimeout(() => toast.style.opacity = "1", 50);
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    setTimeout(() => toast.style.display = "none", 300);
+  }, duration);
 };
 
-// Synthesized Beep/Chime notification via Web Audio API (completely no-cost!)
 function playOrderChime() {
-    if (!audioAlertsEnabled) return;
-    try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        // Note 1: Bass foundation
-        const osc1 = audioCtx.createOscillator();
-        const gain1 = audioCtx.createGain();
-        osc1.type = 'triangle';
-        osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
-        gain1.gain.setValueAtTime(0.15, audioCtx.currentTime);
-        gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
-        osc1.connect(gain1);
-        gain1.connect(audioCtx.destination);
-        osc1.start();
-        osc1.stop(audioCtx.currentTime + 0.35);
-        
-        // Note 2: Harmonious chime offset
-        setTimeout(() => {
-            const osc2 = audioCtx.createOscillator();
-            const gain2 = audioCtx.createGain();
-            osc2.type = 'triangle';
-            osc2.frequency.setValueAtTime(783.99, audioCtx.currentTime); // G5
-            gain2.gain.setValueAtTime(0.15, audioCtx.currentTime);
-            gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.45);
-            osc2.connect(gain2);
-            gain2.connect(audioCtx.destination);
-            osc2.start();
-            osc2.stop(audioCtx.currentTime + 0.45);
-        }, 110);
-    } catch (e) {
-        console.warn("Audio chime block bypass activated: ", e);
-    }
+  if (!audioAlertsEnabled) return;
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc1 = audioCtx.createOscillator();
+    const gain1 = audioCtx.createGain();
+    osc1.type = 'triangle';
+    osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+    gain1.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+    osc1.connect(gain1);
+    gain1.connect(audioCtx.destination);
+    osc1.start(); osc1.stop(audioCtx.currentTime + 0.35);
+    
+    setTimeout(() => {
+      const osc2 = audioCtx.createOscillator();
+      const gain2 = audioCtx.createGain();
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(783.99, audioCtx.currentTime);
+      gain2.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.45);
+      osc2.connect(gain2);
+      gain2.connect(audioCtx.destination);
+      osc2.start(); osc2.stop(audioCtx.currentTime + 0.45);
+    }, 110);
+  } catch (e) {
+    console.warn("Audio block bypassed: ", e);
+  }
 }
 
-// Audio Alerts Opt-In/Toggle helper
 window.toggleAudioAlerts = () => {
   audioAlertsEnabled = !audioAlertsEnabled;
-  const toggleBtn = document.getElementById("audio-toggle-btn");
+  const btn = document.getElementById("audio-toggle-btn");
   if (audioAlertsEnabled) {
-    toggleBtn.innerText = "🔊 Alerts: ON";
-    toggleBtn.style.color = "#0f8";
-    toggleBtn.style.borderColor = "#0f8";
-    playOrderChime(); // Play diagnostic sound confirmation
-    showToast("🔔 Order sound alerts activated and unlocked!");
+    btn.innerText = "🔊 Alerts: ON"; btn.style.color = "var(--primary)"; btn.style.borderColor = "var(--primary)";
+    playOrderChime();
+    showToast("🔔 Sound alerts activated!");
   } else {
-    toggleBtn.innerText = "🔇 Alerts: MUTED";
-    toggleBtn.style.color = "#ff1744";
-    toggleBtn.style.borderColor = "#ff1744";
+    btn.innerText = "🔇 Alerts: MUTED"; btn.style.color = "#ff1744"; btn.style.borderColor = "#ff1744";
     showToast("🔕 Sound alerts muted.");
   }
 };
 
-// Cyber Matrix Tab title flashing logic
-function flashTabTitle() {
-  if (isTitleFlashing) return;
-  isTitleFlashing = true;
-  let toggle = true;
-  titleFlashInterval = setInterval(() => {
-    document.title = toggle ? "🚨 NEW ORDER! SbheneCart" : "SbheneCart Admin Pro";
-    toggle = !toggle;
-  }, 1000);
-}
+onSnapshot(collection(db, "orders"), (snap) => {
+  orders = [];
+  let isInitialLoad = (knownOrderIds.size === 0);
+  let triggerAlert = false;
+  let clientName = "";
 
-// Stop flashing when admin focuses on the window
-window.addEventListener("focus", () => {
-  if (titleFlashInterval) {
-    clearInterval(titleFlashInterval);
-    titleFlashInterval = null;
-  }
-  isTitleFlashing = false;
-  document.title = "SbheneCart Admin Pro";
-});
+  snap.forEach(d => {
+    const data = { id: d.id, ...d.data() };
+    orders.push(data);
 
-// Trigger a visual glowing screen border pulse overlay
-function triggerVisualScreenFlash() {
-  const overlayContainer = document.getElementById("alert-overlay");
-  const flashDiv = document.createElement("div");
-  flashDiv.className = "screen-alert-flash";
-  overlayContainer.appendChild(flashDiv);
-  
-  // Auto-remove after the animation completes
-  flashDiv.addEventListener("animationend", () => flashDiv.remove());
-}
-
-// Real-time Orders Sync, Notification, Badge, & Map Trigger
-onSnapshot(collection(db, "orders"), (snapshot) => {
-    orders = [];
-    let isInitialLoad = (knownOrderIds.size === 0);
-    let triggerAlert = false;
-    let latestOrderCustomer = "";
-
-    snapshot.forEach(d => {
-        const orderData = { id: d.id, ...d.data() };
-        orders.push(orderData);
-
-        // Notify if a brand new Pending order enters the collection
-        if (!knownOrderIds.has(d.id)) {
-            knownOrderIds.add(d.id);
-            if (!isInitialLoad && orderData.status === "Pending") {
-                triggerAlert = true;
-                latestOrderCustomer = orderData.customer?.name || "Customer";
-                
-                // Fire Native Push notification
-                if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-                    new Notification("🛒 New SbheneCart Order!", {
-                        body: `${latestOrderCustomer} placed an order of R${orderData.total}`,
-                        tag: d.id
-                    });
-                }
-            }
+    if (!knownOrderIds.has(d.id)) {
+      knownOrderIds.add(d.id);
+      if (!isInitialLoad && data.status === "Pending") {
+        triggerAlert = true;
+        clientName = data.customer?.name || "Customer";
+        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+          new Notification("🛒 New SbheneCart Order!", {
+            body: `${clientName} ordered products worth R${data.total}`,
+            tag: d.id
+          });
         }
-    });
-
-    if (triggerAlert) { 
-        playOrderChime(); 
-        triggerVisualScreenFlash();
-        flashTabTitle();
-        showToast(`🛒 ALERT: New Order received from ${latestOrderCustomer}!`, 5000);
+      }
     }
+  });
 
-    orders.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-    if (auth.currentUser) {
-        refresh();
-        updateAdminMapPins();
-    }
+  if (triggerAlert) {
+    playOrderChime();
+    const alertOverlay = document.getElementById("alert-overlay");
+    const flash = document.createElement("div");
+    flash.className = "screen-alert-flash";
+    alertOverlay.appendChild(flash);
+    flash.addEventListener("animationend", () => flash.remove());
+    showToast(`🛒 ALERT: New Order received from ${clientName}!`, 5000);
+  }
+
+  orders.sort((a,b)=>(b.timestamp || 0) - (a.timestamp || 0));
+  if (auth.currentUser) {
+    refresh();
+    updateAdminMapPins();
+  }
 });
 
 // Authentication Handlers
 window.loginAdmin = async () => {
-    const email = document.getElementById("login-email").value.trim();
-    const password = document.getElementById("login-pw").value;
-    try {
-        await signInWithEmailAndPassword(auth, email, password);
-        document.getElementById("login-email").value = "";
-        document.getElementById("login-pw").value = "";
-        showToast("🔑 Access Granted. Welcome back!");
-    } catch (err) {
-        alert(err.message);
-    }
+  const email = document.getElementById("login-email").value.trim();
+  const pw = document.getElementById("login-pw").value;
+  try {
+    await signInWithEmailAndPassword(auth, email, pw);
+    document.getElementById("login-email").value = "";
+    document.getElementById("login-pw").value = "";
+    showToast("🔑 Access Granted!");
+  } catch (err) {
+    alert(err.message);
+  }
 };
 
-window.logoutAdmin = async () => { 
-    await signOut(auth); 
-    showToast("🔒 Panel Locked.");
+window.logoutAdmin = async () => {
+  await signOut(auth);
+  showToast("🔒 Locked out.");
 };
 
-// Navigation Control
-window.show = (id) => {
+window.showPage = (id) => {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  document.querySelectorAll('#admin-nav button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
   refresh();
   
-  // Re-trigger visual resizing for Google Map if changing viewports to Orders Tab
   if (id === 'orders' && adminMap) {
     google.maps.event.trigger(adminMap, "resize");
     updateAdminMapPins();
@@ -495,14 +492,11 @@ window.initAdminMap = () => {
   const darkMapStyle = [
     { elementType: "geometry", stylers: [{ color: "#212121" }] },
     { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-    { elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
-    { elementType: "labels.text.stroke", stylers: [{ color: "#212121" }] },
-    { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#757575" }] },
     { featureType: "water", elementType: "geometry", stylers: [{ color: "#000000" }] }
   ];
 
   adminMap = new google.maps.Map(mapDiv, {
-    center: { lat: -29.8587, lng: 31.0218 }, // Default centering (South Africa)
+    center: { lat: -29.8587, lng: 31.0218 },
     zoom: 8,
     styles: darkMapStyle,
     zoomControl: true,
@@ -513,307 +507,280 @@ window.initAdminMap = () => {
   updateAdminMapPins();
 };
 
-// Plot live order coordinates pins in real-time
 function updateAdminMapPins() {
   if (!adminMap || !orders.length) return;
-
-  // Clear previous markers
   mapMarkers.forEach(m => m.setMap(null));
   mapMarkers = [];
 
   const bounds = new google.maps.LatLngBounds();
-  let hasValidCoordinates = false;
+  let validCoord = false;
 
   orders.forEach(o => {
     if (o.customer?.coordinates && o.customer.coordinates.lat && o.customer.coordinates.lng) {
-      const latLng = {
-        lat: Number(o.customer.coordinates.lat),
-        lng: Number(o.customer.coordinates.lng)
-      };
-
-      // Set Pin color configurations relative to order status
-      let pinColor = "#00e676"; // Pending = Neon Green
-      if (o.status === "Processing") pinColor = "#ffd600"; // Processing = Yellow
-      if (o.status === "Shipped") pinColor = "#29b6f6"; // Shipped = Blue
-      if (o.status === "Delivered") pinColor = "#388e3c"; // Delivered = Forest Green
-      if (o.status === "Cancelled") pinColor = "#ff1744"; // Cancelled = Red
+      const pos = { lat: Number(o.customer.coordinates.lat), lng: Number(o.customer.coordinates.lng) };
+      let color = "#00e676";
+      if (o.status === "Processing") color = "#ffd600";
+      if (o.status === "Shipped") color = "#29b6f6";
+      if (o.status === "Delivered") color = "#388e3c";
+      if (o.status === "Cancelled") color = "#ff1744";
 
       const marker = new google.maps.Marker({
-        position: latLng,
+        position: pos,
         map: adminMap,
-        title: `Order #${o.id} - ${o.customer.name}`,
+        title: `Order #${o.id.substring(0,8)}`,
         icon: {
           path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-          fillColor: pinColor,
+          fillColor: color,
           fillOpacity: 1,
           strokeColor: "#000",
-          strokeWeight: 1.5,
           scale: 6
         }
       });
 
-      // Information click window
-      const infoWindow = new google.maps.InfoWindow({
-        content: `
-          <div style="color:#000; font-family:Arial; padding:5px; font-size:12px;">
-            <strong>Order ID: ${o.id.substring(0, 8)}...</strong><br>
-            Customer: ${o.customer.name}<br>
-            Address: ${o.customer.address}<br>
-            Phone: ${o.customer.phone}<br>
-            Payment: ${o.payment?.method || "N/A"}<br>
-            Status: <strong>${o.status}</strong><br>
-            Total: <strong>R${o.total}</strong>
-          </div>
-        `
+      const info = new google.maps.InfoWindow({
+        content: `<div style="color:#000; font-family:Arial; font-size:12px; line-height:1.4;">
+          <strong>Order ID: ${o.id.substring(0, 8)}...</strong><br>
+          Customer: ${o.customer.name}<br>
+          Address: ${o.customer.address}<br>
+          Status: <strong>${o.status}</strong><br>
+          Total: <strong>R${o.total}</strong>
+        </div>`
       });
 
-      marker.addListener('click', () => {
-        infoWindow.open(adminMap, marker);
-      });
-
+      marker.addListener('click', () => info.open(adminMap, marker));
       mapMarkers.push(marker);
-      bounds.extend(latLng);
-      hasValidCoordinates = true;
+      bounds.extend(pos);
+      validCoord = true;
     }
   });
 
-  // Fit boundaries automatically to envelop all plotted order coordinates
-  if (hasValidCoordinates) {
-    adminMap.fitBounds(bounds);
-  }
+  if (validCoord) adminMap.fitBounds(bounds);
 }
 
 // Category Operations
 window.addCat = async () => {
-    const name = newCat.value.trim();
-    if (!name) return;
-    if (cats.some(c => c.name.toLowerCase() === name.toLowerCase())) {
-        showToast("⚠️ Category already exists.");
-        return;
-    }
-    await addDoc(collection(db, "categories"), { name });
-    newCat.value = "";
-    showToast("📁 Category added successfully!");
+  const name = newCat.value.trim();
+  if (!name) return;
+  if (cats.some(c => c.name.toLowerCase() === name.toLowerCase())) return showToast("⚠️ Category exists.");
+  await addDoc(collection(db, "categories"), { name });
+  newCat.value = "";
+  showToast("📁 Category added!");
 };
 
 window.addSubCat = async () => {
-    if(parentCat.value=="" || newSubCat.value.trim()==""){
-        showToast("⚠️ Select a category and enter a name.");
-        return;
-    }
-    await addDoc(collection(db,"subcategories"),{
-        category: parentCat.value,
-        name: newSubCat.value.trim()
-    });
-    newSubCat.value="";
-    showToast("📂 Subcategory added successfully!");
+  if (parentCat.value === "" || newSubCat.value.trim() === "") return showToast("⚠️ Fill fields.");
+  await addDoc(collection(db, "subcategories"), { category: parentCat.value, name: newSubCat.value.trim() });
+  newSubCat.value = "";
+  showToast("📂 Subcategory added!");
 };
 
 window.addSubSubCat = async () => {
-    if (parentCategorySS.value == "" || parentSubcategorySS.value == "" || newSubSubCat.value.trim() == "") {
-        showToast("⚠️ Complete all sub-subcategory selection fields.");
-        return;
-    }
-    await addDoc(collection(db, "subsubcategories"), {
-        category: parentCategorySS.value,
-        subcategory: parentSubcategorySS.value,
-        name: newSubSubCat.value.trim()
-    });
-    newSubSubCat.value = "";
-    showToast("🏷️ Sub-subcategory added successfully!");
+  if (parentCategorySS.value === "" || parentSubcategorySS.value === "" || newSubSubCat.value.trim() === "") return showToast("⚠️ Complete fields.");
+  await addDoc(collection(db, "subsubcategories"), {
+    category: parentCategorySS.value,
+    subcategory: parentSubcategorySS.value,
+    name: newSubSubCat.value.trim()
+  });
+  newSubSubCat.value = "";
+  showToast("🏷️ Sub-subcategory added!");
 };
 
-window.deleteCategory = async (id) => {
-    if(!confirm("Delete this category?")) return;
-    await deleteDoc(doc(db,"categories",id));
-    showToast("🗑️ Category deleted.");
-};
+window.deleteCategory = async (id) => { if (confirm("Delete?")) { await deleteDoc(doc(db, "categories", id)); showToast("🗑️ Deleted."); } };
+window.deleteSubCategory = async (id) => { if (confirm("Delete?")) { await deleteDoc(doc(db, "subcategories", id)); showToast("🗑️ Deleted."); } };
+window.deleteSubSubCategory = async (id) => { if (confirm("Delete?")) { await deleteDoc(doc(db, "subsubcategories", id)); showToast("🗑️ Deleted."); } };
 
-window.deleteSubCategory = async (id) => {
-    if(!confirm("Delete this subcategory?")) return;
-    await deleteDoc(doc(db,"subcategories",id));
-    showToast("🗑️ Subcategory deleted.");
-};
-
-window.deleteSubSubCategory = async (id) => {
-    if(!confirm("Delete this sub-subcategory?")) return;
-    await deleteDoc(doc(db,"subsubcategories",id));
-    showToast("🗑️ Sub-subcategory deleted.");
-};
-
-// Save Product Logic
+// Product Operations
 window.saveProduct = async () => {
-  const saveBtn = document.getElementById('save-prod-btn');
-  saveBtn.innerText = "Processing...";
-  saveBtn.disabled = true;
+  const btn = document.getElementById('save-prod-btn');
+  btn.innerText = "Uploading Gallery...";
+  btn.disabled = true;
 
   if (!pn.value.trim() || !pp.value || !pc.value || !ps.value) {
-      showToast("⚠️ Please complete all required fields.");
-      saveBtn.innerText = "Save Product";
-      saveBtn.disabled = false;
-      return;
+    showToast("⚠️ Missing required product configurations.");
+    btn.innerText = "Save Product"; btn.disabled = false;
+    return;
   }
 
   const files = [...pi.files];
-  let imageUrls = [];
+  let galleryUrls = [];
 
-  for (const file of files) {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", "SbheneCart");
-    const response = await fetch("https://api.cloudinary.com/v1_1/qocn8gjn/image/upload", {
-        method: "POST",
-        body: formData
-    });
-    const data = await response.json();
-    if (!response.ok || !data.secure_url) {
-        showToast("⚠️ Cloudinary upload failed.");
-        saveBtn.innerText = "Save Product";
-        saveBtn.disabled = false;
-        return;
+  for (const f of files) {
+    const form = new FormData();
+    form.append("file", f);
+    form.append("upload_preset", "SbheneCart");
+    try {
+      const resp = await fetch("https://api.cloudinary.com/v1_1/qocn8gjn/image/upload", { method: "POST", body: form });
+      const data = await resp.json();
+      if (resp.ok && data.secure_url) galleryUrls.push(data.secure_url);
+    } catch {
+      showToast("⚠️ Image upload failed.");
+      btn.innerText = "Save Product"; btn.disabled = false;
+      return;
     }
-    imageUrls.push(data.secure_url);
   }
 
-  let p = {
-    name: pn.value,
-    price: +pp.value,
+  let productDetails = {
+    name: pn.value.trim(),
+    price: Number(pp.value),
+    originalPrice: p_original.value ? Number(p_original.value) : null,
     category: pc.value,
-    subcategory: psc.value,
-    subsubcategory: pssc.value,
-    stock: +ps.value,
-    description: pd.value
+    subcategory: psc.value || "",
+    subsubcategory: pssc.value || "",
+    stock: Number(ps.value),
+    badge: p_badge.value || "",
+    flashSaleEnd: p_badge.value === "Sale" && p_flash_end.value ? Date.parse(p_flash_end.value) : null,
+    requiresMeasurements: p_requires_sizing.checked,
+    visible: p_visible.checked,
+    decorTag: p_decor_tag.value.trim(),
+    description: pd.value.trim()
   };
 
   try {
     if (edit === -1) {
-      p.images = imageUrls;
-      p.image = imageUrls[0] || "";
-      await addDoc(collection(db, "products"), p);
-      showToast("📦 Product created successfully!");
+      productDetails.images = galleryUrls;
+      productDetails.image = galleryUrls[0] || "";
+      await addDoc(collection(db, "products"), productDetails);
+      showToast("📦 Product catalogued successfully!");
     } else {
-      const existingProduct = products.find(x => x.id === edit);
-      p.images = imageUrls.length ? imageUrls : (existingProduct.images || []);
-      p.image = p.images[0] || existingProduct.image || "";
-      await updateDoc(doc(db, "products", edit), p);
-      showToast("📝 Product updated successfully!");
+      const old = products.find(x => x.id === edit);
+      productDetails.images = galleryUrls.length ? galleryUrls : (old.images || []);
+      productDetails.image = productDetails.images[0] || old.image || "";
+      await updateDoc(doc(db, "products", edit), productDetails);
+      showToast("📝 Product details updated.");
     }
 
     edit = -1;
-    pn.value = ""; pp.value = ""; ps.value = ""; pd.value = ""; pi.value = "";
+    pn.value = ""; pp.value = ""; p_original.value = ""; ps.value = ""; pd.value = ""; pi.value = ""; p_decor_tag.value = "";
+    p_requires_sizing.checked = false; p_visible.checked = true;
+    p_badge.value = ""; p_flash_end.value = "";
+    document.getElementById("flash-sale-scheduler").style.display = "none";
     pc.selectedIndex = 0;
     psc.innerHTML = '<option value="">Select Subcategory</option>';
     pssc.innerHTML = '<option value="">Select Sub-subcategory</option>';
-    window.show('products');
+    showPage('products');
   } catch (err) {
-    console.error("Error saving product details to Firestore: ", err);
-    showToast("⚠️ Could not update product.");
+    console.error(err);
+    showToast("⚠️ Database sync failed.");
   } finally {
-    saveBtn.innerText = "Save Product";
-    saveBtn.disabled = false;
+    btn.innerText = "Save Product"; btn.disabled = false;
   }
 };
 
 window.editP = (id) => {
-  let p = products.find(x => x.id === id);
-  if(!p) return;
+  const p = products.find(x => x.id === id);
+  if (!p) return;
   edit = id;
   pn.value = p.name;
   pp.value = p.price;
+  p_original.value = p.originalPrice || "";
   ps.value = p.stock;
-  pd.value = p.description;
+  pd.value = p.description || "";
   pc.value = p.category;
   updateSubcategories();
   psc.value = p.subcategory || "";
   updateProductSubSubcategories();
   pssc.value = p.subsubcategory || "";
-  window.show("products");
+  p_badge.value = p.badge || "";
+  p_requires_sizing.checked = !!p.requiresMeasurements;
+  p_visible.checked = p.visible !== false;
+  p_decor_tag.value = p.decorTag || "";
+  
+  if (p.badge === "Sale" && p.flashSaleEnd) {
+    p_flash_end.value = new Date(p.flashSaleEnd).toISOString().substring(0,16);
+    document.getElementById("flash-sale-scheduler").style.display = "block";
+  } else {
+    p_flash_end.value = "";
+    document.getElementById("flash-sale-scheduler").style.display = "none";
+  }
+  
+  showPage("products");
 };
 
 window.delP = async (id) => {
-  if(confirm("Are you sure you want to delete this product?")){
-    try {
-      await deleteDoc(doc(db, "products", id));
-      showToast("🗑️ Product deleted.");
-    } catch (err) {
-      console.error("Error deleting product: ", err);
-      showToast("⚠️ Delete operation failed.");
-    }
+  if (confirm("Delete Product?")) {
+    await deleteDoc(doc(db, "products", id));
+    showToast("🗑️ Product deleted.");
   }
 };
 
-// Update Order status directly inside Firestore
-window.updateOrderStatus = async (id, newStatus) => {
+// Customer manual points adjustment
+window.adjustCustomerPoints = async (id, pointsInputId) => {
+  const pointsVal = document.getElementById(pointsInputId).value;
+  if (pointsVal === "") return showToast("⚠️ Enter point count.");
   try {
-    await updateDoc(doc(db, "orders", id), { status: newStatus });
-    showToast(`🔄 Status updated to '${newStatus}'`);
+    await updateDoc(doc(db, "users", id), { points: Number(pointsVal) });
+    showToast("💎 Points balance adjusted!");
   } catch (err) {
-    console.error("Error updating order status: ", err);
-    showToast("⚠️ Could not update status.");
+    console.error(err);
+    showToast("⚠️ Update failed.");
   }
 };
 
-// Toggle Order Tab Selection & Active Styles
+// Low-stock alerts renderer with inline restock
+function renderLowStockWarnings() {
+  const container = document.getElementById("critical-stock-list");
+  if (!container) return;
+
+  const thresholdItems = products.filter(p => p.stock <= 5);
+  container.innerHTML = thresholdItems.length 
+    ? thresholdItems.map(p => `
+      <div style="display:flex; justify-content:space-between; align-items:center; background:#ff174415; border:1px solid #ff1744; padding:12px; margin-bottom:10px; border-radius:6px;">
+        <div>
+          <b>${p.name}</b><br>
+          <small>Current Stock: <span style="color:#ff1744; font-weight:bold;">${p.stock} units</span></small>
+        </div>
+        <button onclick="window.instantRestock('${p.id}')">⚡ Restock (+20)</button>
+      </div>
+    `).join('')
+    : `<p style="color:#0f8; font-weight:bold;">✅ All inventory fully stocked!</p>`;
+}
+
+window.instantRestock = async (id) => {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  try {
+    await updateDoc(doc(db, "products", id), { stock: p.stock + 20 });
+    showToast(`⚡ Stock increased to ${p.stock + 20}!`);
+  } catch (e) {
+    showToast("⚠️ Restock failed.");
+  }
+};
+
+// Order management
+window.updateOrderStatus = async (id, status) => {
+  await updateDoc(doc(db, "orders", id), { status });
+  showToast(`🔄 Status: ${status}`);
+};
+
 window.toggleOrderTab = (tab) => {
-    currentOrderTab = tab;
-    const activeBtn = document.getElementById("tab-active-btn");
-    const historyBtn = document.getElementById("tab-history-btn");
-    const archivedBtn = document.getElementById("tab-archived-btn");
-    const titleText = document.getElementById("current-tab-title");
+  currentOrderTab = tab;
+  const activeBtn = document.getElementById("tab-active-btn");
+  const historyBtn = document.getElementById("tab-history-btn");
+  const archivedBtn = document.getElementById("tab-archived-btn");
+  const title = document.getElementById("current-tab-title");
 
-    // Reset styles on all tab controls
-    activeBtn.style.background = "#222"; activeBtn.style.color = "#0f8";
-    historyBtn.style.background = "#222"; historyBtn.style.color = "#0f8";
-    archivedBtn.style.background = "#222"; archivedBtn.style.color = "#0f8";
+  activeBtn.style.background = "#222"; activeBtn.style.color = "var(--primary)";
+  historyBtn.style.background = "#222"; historyBtn.style.color = "var(--primary)";
+  archivedBtn.style.background = "#222"; archivedBtn.style.color = "var(--primary)";
 
-    if (tab === "active") {
-        activeBtn.style.background = "#0f8"; activeBtn.style.color = "#000";
-        titleText.innerText = "Active Queue";
-    } else if (tab === "history") {
-        historyBtn.style.background = "#0f8"; historyBtn.style.color = "#000";
-        titleText.innerText = "Completed & Cancelled Orders";
-    } else {
-        archivedBtn.style.background = "#0f8"; archivedBtn.style.color = "#000";
-        titleText.innerText = "Archived Transactions Directory";
-    }
-    refresh();
+  if (tab === "active") {
+    activeBtn.style.background = "var(--primary)"; activeBtn.style.color = "#000";
+    title.innerText = "Active Queue";
+  } else if (tab === "history") {
+    historyBtn.style.background = "var(--primary)"; historyBtn.style.color = "#000";
+    title.innerText = "Completed & Cancelled Queue";
+  } else {
+    archivedBtn.style.background = "var(--primary)"; archivedBtn.style.color = "#000";
+    title.innerText = "Archived Transactions Queue";
+  }
+  refresh();
 };
 
-// soft-archive completed/cancelled orders
-window.archiveOrder = async (id) => {
-    try {
-        await updateDoc(doc(db, "orders", id), { archived: true });
-        showToast("📦 Order moved to Archives successfully!");
-    } catch (err) {
-        console.error("Error archiving order: ", err);
-        showToast("⚠️ Archive failed.");
-    }
-};
+window.archiveOrder = async (id) => { await updateDoc(doc(db, "orders", id), { archived: true }); showToast("📦 Archived."); };
+window.unarchiveOrder = async (id) => { await updateDoc(doc(db, "orders", id), { archived: false }); showToast("📂 Unarchived."); };
+window.deleteOrder = async (id) => { if (confirm("Delete permanently?")) { await deleteDoc(doc(db, "orders", id)); showToast("🗑️ Erased."); } };
 
-// Restore soft-archived orders back to queue lifecycle
-window.unarchiveOrder = async (id) => {
-    try {
-        await updateDoc(doc(db, "orders", id), { archived: false });
-        showToast("📂 Transaction restored back to Active Queue!");
-    } catch (err) {
-        console.error("Error unarchiving order: ", err);
-        showToast("⚠️ Restore failed.");
-    }
-};
-
-// Hard Delete Order Entry completely
-window.deleteOrder = async (id) => {
-    if (!confirm("Are you sure you want to permanently delete this order? This will wipe the transaction from all records and dashboards.")) return;
-    try {
-        await deleteDoc(doc(db, "orders", id));
-        showToast("🗑️ Transaction record permanently deleted.");
-    } catch (err) {
-        console.error("Error deleting order document: ", err);
-        showToast("⚠️ Operation failed.");
-    }
-};
-
-// UI rendering function
+// UI Refresher
 function refresh() {
   pc.innerHTML = cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
   parentCat.innerHTML = cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
@@ -822,133 +789,194 @@ function refresh() {
   updateSSSubcategories();
   updateSubcategories();
 
-  document.getElementById("cats").innerHTML = cats.map(c => `
-    <div class="card">
-        <b>${c.name}</b><br><br>
-        <button onclick="deleteCategory('${c.id}')">Delete</button>
-    </div>
-  `).join("");
+  document.getElementById("cats").innerHTML = cats.map(c => `<div class="card"><b>${c.name}</b><br><br><button onclick="deleteCategory('${c.id}')">Delete</button></div>`).join("");
+  document.getElementById("subcats").innerHTML = subcats.map(s => `<div class="card"><b>${s.category}</b><br>${s.name}<br><br><button onclick="deleteSubCategory('${s.id}')">Delete</button></div>`).join("");
+  document.getElementById("subsubcats").innerHTML = subsubcats.map(s => `<div class="card"><b>${s.category}</b><br>${s.subcategory}<br>${s.name}<br><br><button onclick="deleteSubSubCategory('${s.id}')">Delete</button></div>`).join("");
 
-  document.getElementById("subcats").innerHTML = subcats.map(s => `
-    <div class="card">
-        <b>${s.category}</b><br>${s.name}<br><br>
-        <button onclick="deleteSubCategory('${s.id}')">Delete</button>
-    </div>
-  `).join("");
+  plist.innerHTML = products.map(p => {
+    const visibilityText = p.visible !== false ? "👁️ Visible" : "❌ Hidden";
+    return `
+      <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          ${p.image ? `<img src="${p.image}" style="width:60px; height:60px; object-fit:cover; border-radius:4px; margin-bottom:5px;">` : ""}
+          <b style="display:block;">${p.name}</b>
+          <small>R${p.price} (Orig: R${p.originalPrice || p.price}) • Stock: ${p.stock} • <span style="color:var(--primary); font-weight:bold;">${visibilityText}</span></small>
+        </div>
+        <div>
+          <button onclick="editP('${p.id}')">Edit</button>
+          <button onclick="delP('${p.id}')">Delete</button>
+        </div>
+      </div>
+    `;
+  }).join('');
 
-  document.getElementById("subsubcats").innerHTML = subsubcats.map(s => `
-    <div class="card">
-        <b>${s.category}</b><br>${s.subcategory}<br>${s.name}<br><br>
-        <button onclick="deleteSubSubCategory('${s.id}')">Delete</button>
-    </div>
-  `).join("");
-
-  plist.innerHTML = products.map((p) => `
-    <div class="card">
-      ${p.image ? `<img src="${p.image}" style="width:80px; height:80px; object-fit:cover; border-radius:8px; margin-bottom:5px;">` : ""}
-      <b>${p.name}</b><br>R${p.price}<br>${p.category}<br>
-      <button onclick="editP('${p.id}')">Edit</button>
-      <button onclick="delP('${p.id}')">Delete</button>
-    </div>
-  `).join('');
-  
-  // Real-time Pending Order Badging Update
-  const pendingOrdersCount = orders.filter(o => o.status === "Pending").length;
-  const badgeElement = document.getElementById("orders-badge");
-  if (badgeElement) {
-      if (pendingOrdersCount > 0) {
-          badgeElement.innerText = pendingOrdersCount;
-          badgeElement.style.display = "inline-block";
-      } else {
-          badgeElement.style.display = "none";
-      }
+  // Notifications Badges
+  const pendingOrders = orders.filter(o => o.status === "Pending").length;
+  const badge = document.getElementById("orders-badge");
+  if (badge) {
+    if (pendingOrders > 0) {
+      badge.innerText = pendingOrders;
+      badge.style.display = "inline-block";
+    } else {
+      badge.style.display = "none";
+    }
   }
 
-  // Filter Orders based on active status queue selection mapping
+  // Segment Orders
   const activeStatuses = ["Pending", "Processing", "Shipped"];
   const historyStatuses = ["Delivered", "Cancelled"];
 
   const filteredOrders = orders.filter(o => {
-      const currentStatus = o.status || "Pending";
-      if (currentOrderTab === 'archived') {
-          return o.archived === true;
-      } else {
-          // Normal active/history tabs exclude archived items entirely
-          if (o.archived === true) return false;
-          return currentOrderTab === 'active'
-              ? activeStatuses.includes(currentStatus)
-              : historyStatuses.includes(currentStatus);
-      }
+    if (currentOrderTab === 'archived') return o.archived === true;
+    if (o.archived === true) return false;
+    return currentOrderTab === 'active' ? activeStatuses.includes(o.status) : historyStatuses.includes(o.status);
   });
 
-  // Render live orders list with dynamic layout button controls
   olist.innerHTML = filteredOrders.map(o => {
-    let orderDate = "Unknown";
-    if (o.timestamp) { orderDate = new Date(o.timestamp).toLocaleString(); }
-
-    // Dynamic contextual order tracking button selection
-    let actionBtn = "";
-    if (currentOrderTab === 'history') {
-        actionBtn = `<button onclick="archiveOrder('${o.id}')" style="background:#0f8; color:#000; display:block; width:100%; margin-top:10px; border-radius:4px; font-weight:bold;">📦 Archive Transaction</button>`;
-    } else if (currentOrderTab === 'archived') {
-        actionBtn = `<button onclick="unarchiveOrder('${o.id}')" style="background:#29b6f6; color:#000; display:block; width:100%; margin-top:10px; border-radius:4px; font-weight:bold;">📂 Unarchive Transaction</button>`;
-    }
-
-    // Interactive colored payment status tracking badge
     const payStatus = o.payment?.status || "Pending Verification";
-    const payStatusColor = payStatus === "Paid" ? "#00ff66" : (payStatus === "Pending Online Payment" ? "#ffaa00" : "#ff1744");
+    const payColor = payStatus === "Paid" ? "#00ff66" : (payStatus === "Pending Online Payment" ? "#ffaa00" : "#ff1744");
+    const reorderBtn = o.items ? `<button onclick="window.sendReorderToStorefront(${JSON.stringify(o.items).replace(/"/g, '&quot;')})" style="background:#222; color:var(--primary); border:1px solid var(--primary); margin-top:10px; width:100%;">🔁 Reorder Order Items</button>` : "";
+    
+    let actionBtn = "";
+    if (currentOrderTab === 'history') actionBtn = `<button onclick="archiveOrder('${o.id}')" style="background:var(--primary); color:#000; width:100%; margin-top:10px;">📦 Archive Order</button>`;
+    if (currentOrderTab === 'archived') actionBtn = `<button onclick="unarchiveOrder('${o.id}')" style="background:#29b6f6; color:#000; width:100%; margin-top:10px;">📂 Restore Order</button>`;
 
     return `
       <div class="card">
-          <b>Order ID:</b> ${o.id}<br>
-          <b>Date:</b> ${orderDate}<br>
-          <b>Customer:</b> ${o.customer?.name || "Unknown"}<br>
-          <b>Phone:</b> ${o.customer?.phone || "-"}<br>
-          <b>Address:</b> ${o.customer?.address || "-"}<br>
-          <b>Payment:</b> ${o.payment?.method || "N/A"} (<span style="color:${payStatusColor}; font-weight:bold;">${payStatus}</span>)<br>
-          <b>Total:</b> R${o.total} (Inc. R${o.delivery?.fee || 0} delivery)<br>
-          <b>Items:</b><br>
-          ${o.items ? o.items.map(item => `• ${item.name} (x${item.quantity}) - R${item.price}`).join("<br>") : "No items"}<br><br>
-          <label>Status</label>
-          <select onchange="updateOrderStatus('${o.id}',this.value)">
-              <option ${o.status=="Pending"?"selected":""}>Pending</option>
-              <option ${o.status=="Processing"?"selected":""}>Processing</option>
-              <option ${o.status=="Shipped"?"selected":""}>Shipped</option>
-              <option ${o.status=="Delivered"?"selected":""}>Delivered</option>
-              <option ${o.status=="Cancelled"?"selected":""}>Cancelled</option>
-          </select>
-          ${actionBtn}
-          <button onclick="deleteOrder('${o.id}')" style="background:#ff1744; color:#fff; display:block; width:100%; margin-top:15px; border-radius:4px; font-weight:bold;">🗑️ Delete Record</button>
+        <b>Order ID:</b> ${o.id}<br>
+        <b>Customer:</b> ${o.customer?.name || "Unknown"}<br>
+        <b>Phone:</b> ${o.customer?.phone || "-"}<br>
+        <b>Address:</b> ${o.customer?.address || "-"}<br>
+        <b>Payment:</b> ${o.payment?.method || "N/A"} (<span style="color:${payColor}; font-weight:bold;">${payStatus}</span>)<br>
+        <b>Total Value:</b> R${o.total} (Applied Points Discount: R${o.discountApplied || 0})<br>
+        <b>Cargo items:</b><br>
+        ${o.items ? o.items.map(i => `• ${i.name} (x${i.quantity}) - R${i.price}`).join("<br>") : "No items"}<br><br>
+        <label>Status Lifecycle:</label>
+        <select onchange="updateOrderStatus('${o.id}',this.value)">
+          <option ${o.status=="Pending"?"selected":""}>Pending</option>
+          <option ${o.status=="Processing"?"selected":""}>Processing</option>
+          <option ${o.status=="Shipped"?"selected":""}>Shipped</option>
+          <option ${o.status=="Delivered"?"selected":""}>Delivered</option>
+          <option ${o.status=="Cancelled"?"selected":""}>Cancelled</option>
+        </select>
+        ${actionBtn}
+        ${reorderBtn}
+        <button onclick="deleteOrder('${o.id}')" style="background:#ff1744; color:#fff; width:100%; margin-top:10px;">🗑️ Permanently Delete</button>
       </div>
     `;
   }).join("");
 
-  const u = JSON.parse(localStorage.users || "{}");
-  const revenue = orders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
-  const pending = orders.filter(o => o.status === "Pending").length;
+  // Customers Directory
+  ulist.innerHTML = customers.map(u => {
+    const pointsInputId = `pts-${u.id}`;
+    return `
+      <div class="card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <b>User ID:</b> ${u.id.substring(0,8)}...<br>
+          <b>Loyalty Balance:</b> <span style="color:var(--primary); font-weight:bold;">${u.points || 0} Points</span> (R${Math.floor((u.points || 0)/10)} credit value)<br>
+          <b>Delivery Default:</b> ${u.address || "None specified"}<br>
+          <b>Phone No:</b> ${u.savedPhone || "N/A"}<br>
+          <b>Wishlisted Items:</b> ${u.wishlist?.length || 0} saved
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="number" id="${pointsInputId}" placeholder="Points Balance" style="width:120px; margin:0;" value="${u.points || 0}">
+          <button onclick="adjustCustomerPoints('${u.id}', '${pointsInputId}')">Apply</button>
+        </div>
+      </div>
+    `;
+  }).join('');
 
+  // Dashboard Stats Updates
+  const revenue = orders.filter(o => o.status === "Delivered").reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+  const pendingCount = orders.filter(o => o.status === "Pending").length;
   stats.innerHTML = `
-    <h2>Dashboard</h2>
-    Products: ${products.length}<br>
-    Categories: ${cats.length}<br>
-    Orders: ${orders.length}<br>
-    Users: ${Object.keys(u).length}<br>
-    Revenue: R${revenue}<br>
-    Pending Orders: ${pending}
+    <h2>Real-time Analytics Overview</h2>
+    <div style="display:flex; justify-content:space-around; flex-wrap:wrap; gap:10px; text-align:center;">
+      <div class="card" style="flex:1; min-width:140px; margin:0;"><b>Products</b><br><span style="font-size:24px; font-weight:bold;">${products.length}</span></div>
+      <div class="card" style="flex:1; min-width:140px; margin:0;"><b>Total Completed Revenue</b><br><span style="font-size:24px; font-weight:bold; color:var(--primary);">R${revenue}</span></div>
+      <div class="card" style="flex:1; min-width:140px; margin:0;"><b>Active Pending Orders</b><br><span style="font-size:24px; font-weight:bold; color:#ff1744;">${pendingCount}</span></div>
+      <div class="card" style="flex:1; min-width:140px; margin:0;"><b>Customers</b><br><span style="font-size:24px; font-weight:bold;">${customers.length}</span></div>
+    </div>
   `;
+
+  renderSalesCharts();
+  renderLowStockWarnings();
+}
+
+window.sendReorderToStorefront = (items) => {
+  localStorage.setItem("cart", JSON.stringify(items.map(i => ({ ...i, id: i.id || "" }))));
+  showToast("📋 Loaded order items to active browser cart cookie!");
+};
+
+// Sales & Stock Level Chart renders (Canvas)
+function renderSalesCharts() {
+  const revCtx = document.getElementById("revenueChart")?.getContext("2d");
+  const stockCtx = document.getElementById("stockChart")?.getContext("2d");
+  if (!revCtx || !stockCtx) return;
+
+  // Revenue Stream (Daily Timeline Compilation)
+  const salesByDay = {};
+  orders.filter(o => o.status === "Delivered").forEach(o => {
+    if (o.timestamp) {
+      const date = new Date(o.timestamp).toLocaleDateString();
+      salesByDay[date] = (salesByDay[date] || 0) + Number(o.total);
+    }
+  });
+
+  const dates = Object.keys(salesByDay).slice(-7);
+  const dailyRevenues = dates.map(d => salesByDay[d]);
+
+  if (revChartInstance) revChartInstance.destroy();
+  revChartInstance = new Chart(revCtx, {
+    type: 'line',
+    data: {
+      labels: dates,
+      datasets: [{
+        label: 'Revenue (ZAR)',
+        data: dailyRevenues,
+        borderColor: '#0f8',
+        backgroundColor: '#0f825',
+        borderWidth: 2,
+        tension: 0.3
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+
+  // Stock distributions
+  const inStock = products.filter(p => p.stock > 5).length;
+  const lowStock = products.filter(p => p.stock > 0 && p.stock <= 5).length;
+  const outOfStock = products.filter(p => p.stock <= 0).length;
+
+  if (stockChartInstance) stockChartInstance.destroy();
+  stockChartInstance = new Chart(stockCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['In Stock (>5)', 'Low Stock (1-5)', 'Out of Stock (0)'],
+      datasets: [{
+        data: [inStock, lowStock, outOfStock],
+        backgroundColor: ['#00e676', '#ffd600', '#ff1744'],
+        borderWidth: 1,
+        borderColor: '#000'
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#0f8' } } } }
+  });
 }
 
 onAuthStateChanged(auth, (user) => {
-    if (user) {
-        document.getElementById("login-screen").style.display = "none";
-        document.getElementById("admin-wrapper").style.display = "block";
-        refresh();
-        if (typeof google === 'object' && typeof google.maps === 'object') {
-          initAdminMap();
-        }
-    } else {
-        document.getElementById("login-screen").style.display = "block";
-        document.getElementById("admin-wrapper").style.display = "none";
+  if (user) {
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("admin-wrapper").style.display = "block";
+    refresh();
+    if (typeof google === 'object' && typeof google.maps === 'object') {
+      initAdminMap();
     }
+  } else {
+    document.getElementById("login-screen").style.display = "block";
+    document.getElementById("admin-wrapper").style.display = "none";
+  }
 });
-</script></body></html>
+</script>
+</body>
+</html>
