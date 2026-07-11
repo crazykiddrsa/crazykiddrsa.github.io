@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SbheneCart Admin Pro</title>
 
-<!-- Google Maps JavaScript API with matching callback 'initAdminMap' -->
+<!-- Google Maps JavaScript API with places library -->
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCBR2xh-Ks61EEMq7cjKDTVhmuAKGlQcAQ&libraries=places&callback=initAdminMap" async defer></script>
-<!-- Chart.js for real-time visualization -->
+<!-- Chart.js for real-time sales analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
@@ -20,7 +20,7 @@
 body { margin:0; font-family:Arial, sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
 header { background:#000; padding:15px; border-bottom:2px solid var(--primary); display: flex; justify-content: space-between; align-items: center; }
 nav { display:flex; gap:8px; flex-wrap:wrap; padding:10px; background:#181818; }
-nav button { padding:10px 15px; background: #222; color: var(--text); border: 1px solid var(--primary); border-radius: 4px; cursor: pointer; transition: 0.2s; }
+nav button { padding:10px 15px; background: #222; color: var(--text); border: 1px solid var(--primary); border-radius: 4px; cursor: pointer; transition: 0.2s; font-size: 13px; font-weight: bold; }
 nav button:hover, nav button.active { background: var(--primary); color: #000; font-weight: bold; }
 .page { display:none; padding:20px; }
 .page.active { display:block; }
@@ -35,14 +35,14 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
 #admin-map { width: 100%; height: 350px; border: 1px solid var(--primary); border-radius: 8px; margin-bottom: 20px; background: #000; }
 .pulsing-badge { display: inline-block; animation: pulse-glow 1.8s infinite; }
 @keyframes pulse-glow {
-  0 { box-shadow: 0 0 0 0 rgba(255, 17, 68, 0.7); }
+  0% { box-shadow: 0 0 0 0 rgba(255, 17, 68, 0.7); }
   70% { box-shadow: 0 0 0 8px rgba(255, 17, 68, 0); }
   100% { box-shadow: 0 0 0 0 rgba(255, 17, 68, 0); }
 }
 .screen-alert-flash { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 99999; pointer-events: none; animation: flash-screen 0.8s ease-out; }
 @keyframes flash-screen {
-  0% { background: rgba(0, 255, 136, 0.2); }
-  50% { background: rgba(0, 255, 136, 0.4); }
+  0% { background: rgba(0, 255, 136, 0); }
+  50% { background: rgba(0, 255, 136, 0.2); }
   100% { background: rgba(0, 255, 136, 0); }
 }
 .chart-container { width: 100%; max-width: 500px; height: 260px; margin: auto; }
@@ -73,18 +73,21 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
   
   <nav id="admin-nav">
     <button onclick="showPage('dash')" class="active">Dashboard</button>
-    <button onclick="showPage('products')">Standard Products (Sewings)</button>
-    <button onclick="showPage('deco-uploads')">🖼️ Deco Uploads</button>
+    <button onclick="showPage('products')">Products</button>
+    <button onclick="showPage('decor-upload')">🏺 Upload Decor</button>
     <button onclick="showPage('categories')">Categories</button>
     <button onclick="showPage('subcategories')">Subcategories</button>
-    <button onclick="showPage('subsubcategories')">Sub-subcategories</button>
+    <button onclick="showPage('subsubcategories')">Subsubcategories</button>
     <button onclick="showPage('orders')">Orders & Map <span id="orders-badge" class="pulsing-badge" style="background:#ff1744; color:#fff; border-radius:50%; padding:2px 6px; font-size:11px; font-weight:bold; display:none;">0</span></button>
     <button onclick="showPage('users')">Customers & Loyalty</button>
     <button onclick="showPage('alerts')">Low Stock Alerts</button>
     <button onclick="showPage('custom-requests')">🎙️ Sewing Requests</button>
+    <button onclick="showPage('coupons-mgr')">🎟️ Coupons</button>
+    <button onclick="showPage('banners-mgr')">🖼️ Banners</button>
+    <button onclick="showPage('push-mgr')">📢 Broadcasts</button>
   </nav>
 
-  <!-- Dashboard Page -->
+  <!-- DASHBOARD: Analytics Charts -->
   <section id="dash" class="page active">
     <div class="card">
       <div id="stats" style="margin-bottom: 20px; line-height: 1.6;"></div>
@@ -101,17 +104,21 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
     </div>
   </section>
 
-  <!-- OPTION 1: Standard Products & Sewings Upload Form -->
+  <!-- PRODUCTS: Catalog Editor with AI Description & Sizing Switches -->
   <section id="products" class="page">
     <div class="card">
-      <h3>Add / Edit Standard Product & Garments</h3>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0;">Add / Edit Catalog Product</h3>
+        <button onclick="generateAIDescription()" style="background:transparent; color:var(--primary); border:1px solid var(--primary); font-size:12px; padding:6px 12px;">✨ AI Auto Generator</button>
+      </div>
+      
       <input id="pn" placeholder="Product Name">
       <div class="grid-2">
         <input id="pp" type="number" placeholder="Sale Price (ZAR)">
         <input id="p_original" type="number" placeholder="Original Price (Before Discount)">
       </div>
       
-      <label style="display:block; margin: 10px 0 5px 0; font-size:12px;">Product Image Gallery (Select Multiple):</label>
+      <label style="display:block; margin: 10px 0 5px 0; font-size:12px;">Product Image Gallery (Select Multiple Files):</label>
       <input id="pi" type="file" accept="image/*" multiple>
       
       <div class="grid-2">
@@ -124,10 +131,15 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
         <input id="ps" type="number" placeholder="Stock Quantity">
         <select id="p_badge" onchange="toggleFlashSaleInput()">
           <option value="">No Badge / Standard Item</option>
+          <option value="New">🆕 New</option>
           <option value="Hot Deal">🔥 Hot Deal</option>
-          <option value="New">🆕 New Arrival</option>
-          <option value="Featured">⭐ Featured Product</option>
-          <option value="Sale">💥 Sale</option>
+          <option value="Featured">⭐ Featured</option>
+          <option value="Best Seller">📈 Best Seller</option>
+          <option value="Limited Edition">💎 Limited Edition</option>
+          <option value="Staff Pick">👤 Staff Pick</option>
+          <option value="Clearance">🏷️ Clearance</option>
+          <option value="Eco Friendly">🌱 Eco Friendly</option>
+          <option value="Sale">💥 Sale / Flash Sale</option>
         </select>
       </div>
 
@@ -137,56 +149,65 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
         <input id="p_flash_end" type="datetime-local">
       </div>
 
-      <!-- Tailoring & Visibility toggles -->
+      <!-- Sizing Model Switches -->
       <div class="grid-2" style="margin-top: 10px; border-top: 1px dashed #333; padding-top:10px;">
         <div style="display:flex; align-items:center; gap:8px;">
           <input type="checkbox" id="p_requires_sizing" style="width:auto; margin:0;">
-          <label for="p_requires_sizing">📐 Requires Sewing Measurements (Sizing Modal)</label>
+          <label for="p_requires_sizing">📐 Requires Sewing Sizing (Bust/Waist/Hips)</label>
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
           <input type="checkbox" id="p_visible" style="width:auto; margin:0;" checked>
-          <label for="p_visible">👁️ Visible on Storefront (Show/Hide)</label>
+          <label for="p_visible">👁️ Visible on Storefront</label>
         </div>
       </div>
-      <textarea id="pd" placeholder="Detailed Product Description"></textarea>
+      <div style="display:flex; align-items:center; gap:8px; margin-top: 10px;">
+        <input type="checkbox" id="p_is_booking" style="width:auto; margin:0;">
+        <label for="p_is_booking">📅 Enable 'Book Now!' button (Decoration Bypasses Cart)</label>
+      </div>
       
-      <button id="save-prod-btn" onclick="saveStandardProduct()" style="width:100%; margin-top:15px;">Save Product</button>
+      <input id="p_decor_tag" placeholder="Inspiration / Decor Room Tag (e.g. Minimalist Living Room, Rustic Cozy)">
+      <textarea id="pd" placeholder="Detailed Product Description" style="height:100px;"></textarea>
+      
+      <button id="save-prod-btn" onclick="saveProduct()" style="width:100%; margin-top:15px;">Save Product</button>
     </div>
     <div id="plist"></div>
   </section>
 
-  <!-- OPTION 2: Specialized Decoration Only Upload Form -->
-  <section id="deco-uploads" class="page">
+  <!-- DECOR UPLOADER: Isolated Form specifically for Decorations -->
+  <section id="decor-upload" class="page">
     <div class="card">
-      <h3>🖼️ Dedicated Decoration Piece Uploader</h3>
-      <p style="color:#888; font-size:13px; margin:0 0 15px 0;">All items loaded from this panel are automatically assigned as "Decoration" products.</p>
+      <h3>🏺 Streamlined Decor Upload</h3>
+      <p style="color:#888; font-size:12px; margin:0 0 15px 0;">This portal is pre-configured and optimized exclusively for Home Decorations.</p>
       
-      <input id="deco_pn" placeholder="Decoration Name">
-      <input id="deco_pp" type="number" placeholder="Booking / Sales Price (ZAR)">
+      <input id="dec_name" placeholder="Decoration Name">
+      <div class="grid-2">
+        <input id="dec_price" type="number" placeholder="Sale Price (ZAR)">
+        <input id="dec_orig" type="number" placeholder="Original Price (ZAR)">
+      </div>
       
-      <label style="display:block; margin: 10px 0 5px 0; font-size:12px;">Decoration Images (Select Multiple):</label>
-      <input id="deco_pi" type="file" accept="image/*" multiple>
-
-      <input id="deco_tag" placeholder="Inspiration / Decor Room Tag (e.g. Minimalist Living Room, Rustic Cozy Bedroom)">
+      <label style="display:block; font-size:12px; margin-top:10px;">Select Decor Images:</label>
+      <input id="dec_images_file" type="file" accept="image/*" multiple style="margin-bottom:10px;">
       
-      <div class="grid-2" style="margin-top: 15px; border-top: 1px dashed #333; padding-top:15px; margin-bottom: 15px;">
+      <select id="dec_subcategory">
+        <option value="">Select Decor Subcategory</option>
+      </select>
+      
+      <div class="grid-2" style="margin-top:10px;">
+        <input id="dec_stock" type="number" placeholder="Stock Quantity">
         <div style="display:flex; align-items:center; gap:8px;">
-          <input type="checkbox" id="deco_is_booking" style="width:auto; margin:0;" checked>
-          <label for="deco_is_booking">📅 Enable 'Book Now!' (Bypasses Cart Checkout for WhatsApp Bookings)</label>
-        </div>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <input type="checkbox" id="deco_visible" style="width:auto; margin:0;" checked>
-          <label for="deco_visible">👁️ Visible on Decor Storefront (Show/Hide)</label>
+          <input type="checkbox" id="dec_is_booking" style="width:auto; margin:0;">
+          <label for="dec_is_booking">📅 Enable 'Book Now!' button</label>
         </div>
       </div>
-
-      <textarea id="deco_pd" placeholder="Describe the decoration aesthetics..."></textarea>
-      <button id="save-deco-btn" onclick="saveDecoProduct()" style="width:100%; margin-top:10px; background:#29b6f6; color:#000;">📤 Upload Decoration Item</button>
+      
+      <input id="dec_room_tag" placeholder="Inspiration Room Tag (e.g. Minimalist Living Room, Rustic Cozy)">
+      <textarea id="dec_description" placeholder="Description of Decor Item" style="height:100px;"></textarea>
+      
+      <button id="save-decor-btn" onclick="window.saveDecorProduct()" style="width:100%; margin-top:20px;">🏺 Save Decor Item</button>
     </div>
-    <div id="deco-list"></div>
   </section>
 
-  <!-- Categories -->
+  <!-- CATEGORIES -->
   <section id="categories" class="page">
     <div class="card">
       <input id="newCat" placeholder="Category Name">
@@ -195,6 +216,7 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
     </div>
   </section>
 
+  <!-- SUBCATEGORIES -->
   <section id="subcategories" class="page">
     <div class="card">
       <select id="parentCat"></select>
@@ -204,6 +226,7 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
     </div>
   </section>
 
+  <!-- SUBSUBCATEGORIES -->
   <section id="subsubcategories" class="page">
     <div class="card">
       <select id="parentCategorySS"></select>
@@ -214,7 +237,7 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
     </div>
   </section>
 
-  <!-- Order Queue and Maps -->
+  <!-- ORDERS & FULFILLMENT -->
   <section id="orders" class="page">
     <div class="card">
       <h3>Live Order Fulfillment Map</h3>
@@ -231,7 +254,7 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
     </div>
   </section>
 
-  <!-- Customers and Loyalty Management Table -->
+  <!-- CUSTOMERS & LOYALTY -->
   <section id="users" class="page">
     <div class="card">
       <h3>Customer Profiles & Loyalty Center</h3>
@@ -239,7 +262,7 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
     </div>
   </section>
 
-  <!-- Low Stock Alerts Center -->
+  <!-- LOW STOCK WARNINGS -->
   <section id="alerts" class="page">
     <div class="card">
       <h3>Critical Inventory Warnings Center</h3>
@@ -248,12 +271,49 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
     </div>
   </section>
 
-  <!-- Tailoring Inquiries and Voice Note Player -->
+  <!-- SEWING REQUESTS -->
   <section id="custom-requests" class="page">
     <div class="card">
       <h3>Custom Sewing & Tailoring Inquiries</h3>
       <p style="color:#888;">Listen to voice recordings or read custom request logs submitted by customers.</p>
       <div id="requests-list"></div>
+    </div>
+  </section>
+
+  <!-- COUPON MANAGER -->
+  <section id="coupons-mgr" class="page">
+    <div class="card">
+      <h3>🎟️ Coupons & Promotions Manager</h3>
+      <input id="cp_code" placeholder="Coupon Code (e.g. WELCOME50)">
+      <div class="grid-2">
+        <input id="cp_discount" type="number" placeholder="Discount Amount (ZAR)">
+        <input id="cp_min" type="number" placeholder="Minimum Purchase Requirement (ZAR)">
+      </div>
+      <input id="cp_expiry" type="date" placeholder="Expiration Date">
+      <button id="save-coupon-btn" onclick="window.saveCoupon()" style="width:100%; margin-top:15px;">💾 Create Promo Coupon</button>
+      <div id="coupons-list" style="margin-top:20px;"></div>
+    </div>
+  </section>
+
+  <!-- BANNER MANAGER -->
+  <section id="banners-mgr" class="page">
+    <div class="card">
+      <h3>🖼️ Homepage Promo Banner Manager</h3>
+      <input id="bn_title" placeholder="Banner Heading (e.g. Winter Sale)">
+      <input id="bn_file" type="file" accept="image/*">
+      <button id="save-banner-btn" onclick="window.saveBanner()" style="width:100%; margin-top:15px;">💾 Upload and Publish Banner</button>
+      <div id="banners-list" style="margin-top:20px;"></div>
+    </div>
+  </section>
+
+  <!-- BROADCAST PUSH MESSENGER -->
+  <section id="push-mgr" class="page">
+    <div class="card">
+      <h3>📢 Push Broadcast Notifications</h3>
+      <p style="color:#888;">Broadcasting pushes a live, glowing ticker alert onto all connected customer screens instantly.</p>
+      <textarea id="push_msg" placeholder="Enter broadcast message (e.g. 🎉 Weekend Sale is Live! 20% off all sewn items!)" style="height:100px;"></textarea>
+      <button id="send-push-btn" onclick="window.sendBroadcast()" style="width:100%; margin-top:15px;">📢 Dispatch Broadcast Ticker</button>
+      <div id="broadcasts-list" style="margin-top:20px;"></div>
     </div>
   </section>
 </div>
@@ -298,7 +358,7 @@ if (typeof Notification !== "undefined" && Notification.permission !== "granted"
   Notification.requestPermission();
 }
 
-// Bind Standard Inputs
+// Bind Inputs
 const pn = document.getElementById('pn');
 const pp = document.getElementById('pp');
 const p_original = document.getElementById('p_original');
@@ -310,6 +370,8 @@ const p_badge = document.getElementById("p_badge");
 const p_flash_end = document.getElementById("p_flash_end");
 const p_requires_sizing = document.getElementById("p_requires_sizing");
 const p_visible = document.getElementById("p_visible");
+const p_is_booking = document.getElementById("p_is_booking");
+const p_decor_tag = document.getElementById("p_decor_tag");
 const parentCat = document.getElementById('parentCat');
 const newSubCat = document.getElementById('newSubCat');
 const ps = document.getElementById('ps');
@@ -322,15 +384,6 @@ const stats = document.getElementById('stats');
 const parentCategorySS = document.getElementById("parentCategorySS");
 const parentSubcategorySS = document.getElementById("parentSubcategorySS");
 const newSubSubCat = document.getElementById("newSubSubCat");
-
-// Bind Deco Form Inputs
-const deco_pn = document.getElementById("deco_pn");
-const deco_pp = document.getElementById("deco_pp");
-const deco_pi = document.getElementById("deco_pi");
-const deco_tag = document.getElementById("deco_tag");
-const deco_is_booking = document.getElementById("deco_is_booking");
-const deco_visible = document.getElementById("deco_visible");
-const deco_pd = document.getElementById("deco_pd");
 
 parentCategorySS.onchange = updateSSSubcategories;
 pc.onchange = updateSubcategories;
@@ -446,9 +499,12 @@ window.contactRequestClient = (phone, name) => {
   window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
 };
 
+// =========================================================================
 // Notifications chime & visual flashers
+// =========================================================================
 window.showToast = (msg, duration = 3000) => {
   const toast = document.getElementById("toast-notif");
+  if (!toast) return;
   toast.innerText = msg;
   toast.style.display = "block";
   setTimeout(() => toast.style.opacity = "1", 50);
@@ -491,6 +547,7 @@ function playOrderChime() {
 window.toggleAudioAlerts = () => {
   audioAlertsEnabled = !audioAlertsEnabled;
   const btn = document.getElementById("audio-toggle-btn");
+  if (!btn) return;
   if (audioAlertsEnabled) {
     btn.innerText = "🔊 Alerts: ON"; btn.style.color = "var(--primary)"; btn.style.borderColor = "var(--primary)";
     playOrderChime();
@@ -566,7 +623,11 @@ window.showPage = (id) => {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   document.querySelectorAll('#admin-nav button').forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
+  
+  // Highlight currently active tab button visually
+  const activeNavBtn = Array.from(document.querySelectorAll('#admin-nav button')).find(b => b.getAttribute("onclick")?.includes(id));
+  if (activeNavBtn) activeNavBtn.classList.add('active');
+  
   refresh();
   
   if (id === 'orders' && adminMap) {
@@ -680,8 +741,8 @@ window.deleteCategory = async (id) => { if (confirm("Delete?")) { await deleteDo
 window.deleteSubCategory = async (id) => { if (confirm("Delete?")) { await deleteDoc(doc(db, "subcategories", id)); showToast("🗑️ Deleted."); } };
 window.deleteSubSubCategory = async (id) => { if (confirm("Delete?")) { await deleteDoc(doc(db, "subsubcategories", id)); showToast("🗑️ Deleted."); } };
 
-// Option 1: Standard & Sewings Product Operations
-window.saveStandardProduct = async () => {
+// Product Operations
+window.saveProduct = async () => {
   const btn = document.getElementById('save-prod-btn');
   btn.innerText = "Uploading Gallery...";
   btn.disabled = true;
@@ -722,8 +783,8 @@ window.saveStandardProduct = async () => {
     flashSaleEnd: p_badge.value === "Sale" && p_flash_end.value ? Date.parse(p_flash_end.value) : null,
     requiresMeasurements: p_requires_sizing.checked,
     visible: p_visible.checked,
-    isBooking: false,
-    decorTag: "",
+    isBooking: p_is_booking.checked,
+    decorTag: p_decor_tag.value.trim(),
     description: pd.value.trim()
   };
 
@@ -732,18 +793,18 @@ window.saveStandardProduct = async () => {
       productDetails.images = galleryUrls;
       productDetails.image = galleryUrls[0] || "";
       await addDoc(collection(db, "products"), productDetails);
-      showToast("📦 Standard product catalogued successfully!");
+      showToast("📦 Product catalogued successfully!");
     } else {
       const old = products.find(x => x.id === edit);
       productDetails.images = galleryUrls.length ? galleryUrls : (old.images || []);
       productDetails.image = productDetails.images[0] || old.image || "";
       await updateDoc(doc(db, "products", edit), productDetails);
-      showToast("📝 Standard product details updated.");
+      showToast("📝 Product details updated.");
     }
 
     edit = -1;
-    pn.value = ""; pp.value = ""; p_original.value = ""; ps.value = ""; pd.value = ""; pi.value = "";
-    p_requires_sizing.checked = false; p_visible.checked = true;
+    pn.value = ""; pp.value = ""; p_original.value = ""; ps.value = ""; pd.value = ""; pi.value = ""; p_decor_tag.value = "";
+    p_requires_sizing.checked = false; p_visible.checked = true; p_is_booking.checked = false;
     p_badge.value = ""; p_flash_end.value = "";
     document.getElementById("flash-sale-scheduler").style.display = "none";
     pc.selectedIndex = 0;
@@ -758,118 +819,35 @@ window.saveStandardProduct = async () => {
   }
 };
 
-// Option 2: Specialized Decoration Product Operations
-window.saveDecoProduct = async () => {
-  const btn = document.getElementById("save-deco-btn");
-  btn.innerText = "Uploading Deco Pictures...";
-  btn.disabled = true;
-
-  if (!deco_pn.value.trim() || !deco_pp.value) {
-    showToast("⚠️ Missing Name or Booking Price.");
-    btn.innerText = "Upload Decoration Item"; btn.disabled = false;
-    return;
-  }
-
-  const files = [...deco_pi.files];
-  let galleryUrls = [];
-
-  for (const f of files) {
-    const form = new FormData();
-    form.append("file", f);
-    form.append("upload_preset", "SbheneCart");
-    try {
-      const resp = await fetch("https://api.cloudinary.com/v1_1/qocn8gjn/image/upload", { method: "POST", body: form });
-      const data = await resp.json();
-      if (resp.ok && data.secure_url) galleryUrls.push(data.secure_url);
-    } catch {
-      showToast("⚠️ Cloudinary upload failed.");
-      btn.innerText = "Upload Decoration Item"; btn.disabled = false;
-      return;
-    }
-  }
-
-  let decoDetails = {
-    name: deco_pn.value.trim(),
-    price: Number(deco_pp.value),
-    originalPrice: null,
-    category: "Decoration", // Auto-assigned category tag!
-    subcategory: "",
-    subsubcategory: "",
-    stock: 9999, // Infinite virtual capacity for bookings
-    badge: "",
-    flashSaleEnd: null,
-    requiresMeasurements: false,
-    visible: deco_visible.checked,
-    isBooking: deco_is_booking.checked,
-    decorTag: deco_tag.value.trim(),
-    description: deco_pd.value.trim()
-  };
-
-  try {
-    if (edit === -1) {
-      decoDetails.images = galleryUrls;
-      decoDetails.image = galleryUrls[0] || "";
-      await addDoc(collection(db, "products"), decoDetails);
-      showToast("📦 Decoration item uploaded successfully!");
-    } else {
-      const old = products.find(x => x.id === edit);
-      decoDetails.images = galleryUrls.length ? galleryUrls : (old.images || []);
-      decoDetails.image = decoDetails.images[0] || old.image || "";
-      await updateDoc(doc(db, "products", edit), decoDetails);
-      showToast("📝 Decoration item details updated.");
-    }
-
-    edit = -1;
-    deco_pn.value = ""; deco_pp.value = ""; deco_pd.value = ""; deco_tag.value = ""; deco_pi.value = "";
-    deco_is_booking.checked = true; deco_visible.checked = true;
-    showPage('deco-uploads');
-  } catch (err) {
-    console.error(err);
-    showToast("⚠️ Database upload failed.");
-  } finally {
-    btn.innerText = "Upload Decoration Item"; btn.disabled = false;
-  }
-};
-
 window.editP = (id) => {
   const p = products.find(x => x.id === id);
   if (!p) return;
   edit = id;
-
-  if (p.category === "Decoration") {
-    // Open the Deco uploader tab for Deco items
-    deco_pn.value = p.name;
-    deco_pp.value = p.price;
-    deco_pd.value = p.description || "";
-    deco_visible.checked = p.visible !== false;
-    deco_is_booking.checked = !!p.isBooking;
-    deco_tag.value = p.decorTag || "";
-    showPage("deco-uploads");
+  pn.value = p.name;
+  pp.value = p.price;
+  p_original.value = p.originalPrice || "";
+  ps.value = p.stock;
+  pd.value = p.description || "";
+  pc.value = p.category;
+  updateSubcategories();
+  psc.value = p.subcategory || "";
+  updateProductSubSubcategories();
+  pssc.value = p.subsubcategory || "";
+  p_badge.value = p.badge || "";
+  p_requires_sizing.checked = !!p.requiresMeasurements;
+  p_visible.checked = p.visible !== false;
+  p_is_booking.checked = !!p.isBooking;
+  p_decor_tag.value = p.decorTag || "";
+  
+  if (p.badge === "Sale" && p.flashSaleEnd) {
+    p_flash_end.value = new Date(p.flashSaleEnd).toISOString().substring(0,16);
+    document.getElementById("flash-sale-scheduler").style.display = "block";
   } else {
-    // Open the Standard products tab for other items
-    pn.value = p.name;
-    pp.value = p.price;
-    p_original.value = p.originalPrice || "";
-    ps.value = p.stock;
-    pd.value = p.description || "";
-    pc.value = p.category;
-    updateSubcategories();
-    psc.value = p.subcategory || "";
-    updateProductSubSubcategories();
-    pssc.value = p.subsubcategory || "";
-    p_badge.value = p.badge || "";
-    p_requires_sizing.checked = !!p.requiresMeasurements;
-    p_visible.checked = p.visible !== false;
-    
-    if (p.badge === "Sale" && p.flashSaleEnd) {
-      p_flash_end.value = new Date(p.flashSaleEnd).toISOString().substring(0,16);
-      document.getElementById("flash-sale-scheduler").style.display = "block";
-    } else {
-      p_flash_end.value = "";
-      document.getElementById("flash-sale-scheduler").style.display = "none";
-    }
-    showPage("products");
+    p_flash_end.value = "";
+    document.getElementById("flash-sale-scheduler").style.display = "none";
   }
+  
+  showPage("products");
 };
 
 window.delP = async (id) => {
@@ -979,10 +957,7 @@ function refresh() {
   document.getElementById("subcats").innerHTML = subcats.map(s => `<div class="card"><b>${s.category}</b><br>${s.name}<br><br><button onclick="deleteSubCategory('${s.id}')">Delete</button></div>`).join("");
   document.getElementById("subsubcats").innerHTML = subsubcats.map(s => `<div class="card"><b>${s.category}</b><br>${s.subcategory}<br>${s.name}<br><br><button onclick="deleteSubSubCategory('${s.id}')">Delete</button></div>`).join("");
 
-  const standardProds = products.filter(p => p.category !== "Decoration");
-  const decoProds = products.filter(p => p.category === "Decoration");
-
-  plist.innerHTML = standardProds.map(p => {
+  plist.innerHTML = products.map(p => {
     const visibilityText = p.visible !== false ? "👁️ Visible" : "❌ Hidden";
     return `
       <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
@@ -990,24 +965,6 @@ function refresh() {
           ${p.image ? `<img src="${p.image}" style="width:60px; height:60px; object-fit:cover; border-radius:4px; margin-bottom:5px;">` : ""}
           <b style="display:block;">${p.name}</b>
           <small>R${p.price} (Orig: R${p.originalPrice || p.price}) • Stock: ${p.stock} • <span style="color:var(--primary); font-weight:bold;">${visibilityText}</span></small>
-        </div>
-        <div>
-          <button onclick="editP('${p.id}')">Edit</button>
-          <button onclick="delP('${p.id}')">Delete</button>
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  document.getElementById("deco-list").innerHTML = decoProds.map(p => {
-    const visibilityText = p.visible !== false ? "👁️ Visible" : "❌ Hidden";
-    const bookingText = p.isBooking ? "📅 Booking Enabled" : "🛒 Standard Purchase";
-    return `
-      <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          ${p.image ? `<img src="${p.image}" style="width:60px; height:60px; object-fit:cover; border-radius:4px; margin-bottom:5px;">` : ""}
-          <b style="display:block;">${p.name}</b>
-          <small>R${p.price} • Room: ${p.decorTag || "General"} • <span style="color:var(--primary); font-weight:bold;">${visibilityText} | ${bookingText}</span></small>
         </div>
         <div>
           <button onclick="editP('${p.id}')">Edit</button>
@@ -1073,7 +1030,7 @@ function refresh() {
     `;
   }).join("");
 
-    // Customers Directory with Google Profiles Integration
+  // Customers Directory with Google Profiles Integration
   ulist.innerHTML = customers.map(u => {
     const pointsInputId = `pts-${u.id}`;
     const avatar = u.photoURL 
@@ -1282,7 +1239,6 @@ window.saveDecorProduct = async () => {
     }
   }
 
-  // Pre-configured payload exclusively for Decoration Products
   const decorPayload = {
     name,
     price: Number(price),
@@ -1326,13 +1282,289 @@ window.saveDecorProduct = async () => {
   }
 };
 
+// =========================================================================
+// AI Product Description Generator (Gemini Integration)
+// =========================================================================
+window.generateAIDescription = async () => {
+  const pName = document.getElementById("pn").value.trim();
+  const pCat = document.getElementById("pc").value;
+  const pKey = prompt("Please enter your Gemini API Key (get your key at zero cost from Google AI Studio):");
+
+  if (!pName) return alert("Please enter the Product Name first so the AI has context.");
+  if (!pKey) return alert("Gemini API Key is required to run description generation.");
+
+  showToast("✨ AI is generating description, highlights & keywords...");
+
+  try {
+    const geminiModule = await import("https://cdn.jsdelivr.net/npm/@google/generative-ai/+esm");
+    const { GoogleGenerativeAI } = geminiModule;
+
+    const genAI = new GoogleGenerativeAI(pKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const promptText = `
+      Write an engaging e-commerce description, three SEO keywords, and three short highlights for a product named "${pName}" in the category of "${pCat}".
+      Format the response strictly as a JSON object with keys "description", "keywords" (array), and "highlights" (array).
+    `;
+
+    const result = await model.generateContent(promptText);
+    const textResponse = result.response.text();
+
+    const cleanedJson = textResponse.replace(/```json/g, "").replace(/```/g, "").trim();
+    const data = JSON.parse(cleanedJson);
+
+    document.getElementById("pd").value = data.description || "";
+    document.getElementById("p_decor_tag").value = (data.keywords || []).join(", ");
+    showToast("✨ AI Generation completed successfully!");
+
+  } catch (err) {
+    console.error("AI Generation error: ", err);
+    alert("AI Generator failed. Verify your API Key and try again.");
+  }
+};
+
+// =========================================================================
+// Dynamic Firestore Coupon, Banner & Broadcast Managers
+// =========================================================================
+function injectExtendedAdminManagers() {
+  const nav = document.getElementById("admin-nav");
+  const wrapper = document.getElementById("admin-wrapper");
+
+  // 1. Inject Coupons Management Tab Button
+  if (nav && !document.getElementById("nav-coupons-btn")) {
+    const btn = document.createElement("button");
+    btn.id = "nav-coupons-btn";
+    btn.innerText = "🎟️ Coupons";
+    btn.onclick = (e) => {
+      window.showPage("coupons-mgr");
+      document.querySelectorAll('#admin-nav button').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+    };
+    nav.appendChild(btn);
+  }
+
+  // 2. Inject Homepage Banner Manager Tab Button
+  if (nav && !document.getElementById("nav-banners-btn")) {
+    const btn = document.createElement("button");
+    btn.id = "nav-banners-btn";
+    btn.innerText = "🖼️ Banners";
+    btn.onclick = (e) => {
+      window.showPage("banners-mgr");
+      document.querySelectorAll('#admin-nav button').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+    };
+    nav.appendChild(btn);
+  }
+
+  // 3. Inject Push Notifications Tab Button
+  if (nav && !document.getElementById("nav-push-btn")) {
+    const btn = document.createElement("button");
+    btn.id = "nav-push-btn";
+    btn.innerText = "📢 Broadcasts";
+    btn.onclick = (e) => {
+      window.showPage("push-mgr");
+      document.querySelectorAll('#admin-nav button').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+    };
+    nav.appendChild(btn);
+  }
+
+  // 4. Inject Coupons Manager Form Section
+  if (wrapper && !document.getElementById("coupons-mgr")) {
+    const sec = document.createElement("section");
+    sec.id = "coupons-mgr";
+    sec.className = "page";
+    sec.innerHTML = `
+      <div class="card">
+        <h3>🎟️ Coupons & Promotions Manager</h3>
+        <input id="cp_code" placeholder="Coupon Code (e.g. WELCOME50)">
+        <div class="grid-2">
+          <input id="cp_discount" type="number" placeholder="Discount Amount (ZAR)">
+          <input id="cp_min" type="number" placeholder="Minimum Purchase Requirement (ZAR)">
+        </div>
+        <input id="cp_expiry" type="date" placeholder="Expiration Date">
+        <button id="save-coupon-btn" onclick="window.saveCoupon()" style="width:100%; margin-top:15px;">💾 Create Promo Coupon</button>
+        <div id="coupons-list" style="margin-top:20px;"></div>
+      </div>
+    `;
+    wrapper.appendChild(sec);
+  }
+
+  // 5. Inject Banner Manager Section
+  if (wrapper && !document.getElementById("banners-mgr")) {
+    const sec = document.createElement("section");
+    sec.id = "banners-mgr";
+    sec.className = "page";
+    sec.innerHTML = `
+      <div class="card">
+        <h3>🖼️ Homepage Promo Banner Manager</h3>
+        <input id="bn_title" placeholder="Banner Heading (e.g. Winter Sale)">
+        <input id="bn_file" type="file" accept="image/*">
+        <button id="save-banner-btn" onclick="window.saveBanner()" style="width:100%; margin-top:15px;">💾 Upload and Publish Banner</button>
+        <div id="banners-list" style="margin-top:20px;"></div>
+      </div>
+    `;
+    wrapper.appendChild(sec);
+  }
+
+  // 6. Inject Push Notifications / Broadcast Section
+  if (wrapper && !document.getElementById("push-mgr")) {
+    const sec = document.createElement("section");
+    sec.id = "push-mgr";
+    sec.className = "page";
+    sec.innerHTML = `
+      <div class="card">
+        <h3>📢 Push Broadcast Notifications</h3>
+        <p style="color:#888;">Broadcasting pushes a live, glowing ticker alert onto all connected customer screens instantly.</p>
+        <textarea id="push_msg" placeholder="Enter broadcast message (e.g. 🎉 Weekend Sale is Live! 20% off all sewn items!)" style="height:100px;"></textarea>
+        <button id="send-push-btn" onclick="window.sendBroadcast()" style="width:100%; margin-top:15px;">📢 Dispatch Broadcast Ticker</button>
+        <div id="broadcasts-list" style="margin-top:20px;"></div>
+      </div>
+    `;
+    wrapper.appendChild(sec);
+  }
+}
+
+// Coupon Database Controllers - Fully addable (bring them new ones) and deletable
+window.saveCoupon = async () => {
+  const code = document.getElementById("cp_code").value.trim().toUpperCase();
+  const discount = Number(document.getElementById("cp_discount").value);
+  const min = Number(document.getElementById("cp_min").value);
+  const expiry = document.getElementById("cp_expiry").value;
+
+  if (!code || !discount) return alert("Coupon Code and Discount amount are required fields.");
+
+  try {
+    await addDoc(collection(db, "coupons"), {
+      code, discount, min, expiry: expiry ? Date.parse(expiry) : null, timestamp: Date.now()
+    });
+    showToast("🎟️ Promotion coupon successfully registered!");
+    document.getElementById("cp_code").value = "";
+    document.getElementById("cp_discount").value = "";
+    document.getElementById("cp_min").value = "";
+    document.getElementById("cp_expiry").value = "";
+  } catch (err) {
+    showToast("⚠️ Coupon registry failed.");
+  }
+};
+
+onSnapshot(collection(db, "coupons"), (snap) => {
+  const container = document.getElementById("coupons-list");
+  if (!container) return;
+  const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  container.innerHTML = list.length
+    ? list.map(c => `
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <b>Code:</b> ${c.code}<br>
+            <small>Discount: R${c.discount} | Min Spend: R${c.min || 0} | Expiry: ${c.expiry ? new Date(c.expiry).toLocaleDateString() : "Never"}</small>
+          </div>
+          <button onclick="window.deleteDocRef('coupons', '${c.id}')" style="background:#ff1744; color:#fff; cursor:pointer;">Delete</button>
+        </div>
+      `).join('')
+    : `<p style="color:#666;">No promotional coupons registered.</p>`;
+});
+
+// Banner Upload Controllers
+window.saveBanner = async () => {
+  const btn = document.getElementById("save-banner-btn");
+  const title = document.getElementById("bn_title").value.trim();
+  const file = document.getElementById("bn_file").files[0];
+
+  if (!title || !file) return alert("Heading title and Banner file are required.");
+
+  btn.innerText = "Processing Banner...";
+  btn.disabled = true;
+
+  const form = new FormData();
+  form.append("file", file);
+  form.append("upload_preset", "SbheneCart");
+
+  try {
+    const resp = await fetch("https://api.cloudinary.com/v1_1/qocn8gjn/image/upload", { method: "POST", body: form });
+    const data = await resp.json();
+
+    if (resp.ok && data.secure_url) {
+      await addDoc(collection(db, "banners"), { title, imageUrl: data.secure_url, timestamp: Date.now() });
+      showToast("🖼️ Homepage banner published!");
+      document.getElementById("bn_title").value = "";
+      document.getElementById("bn_file").value = "";
+    }
+  } catch {
+    showToast("⚠️ Banner upload failed.");
+  } finally {
+    btn.innerText = "Upload and Publish Banner";
+    btn.disabled = false;
+  }
+};
+
+onSnapshot(collection(db, "banners"), (snap) => {
+  const container = document.getElementById("banners-list");
+  if (!container) return;
+  const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  container.innerHTML = list.length
+    ? list.map(b => `
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div style="display:flex; align-items:center;">
+            <img src="${b.imageUrl}" style="width:120px; height:60px; object-fit:cover; border-radius:6px; margin-right:15px; border:1px solid #333;">
+            <b>${b.title}</b>
+          </div>
+          <button onclick="window.deleteDocRef('banners', '${b.id}')" style="background:#ff1744; color:#fff;">Remove</button>
+        </div>
+      `).join('')
+    : `<p style="color:#666;">No promotional sliders active.</p>`;
+});
+
+// Real-Time Push / Live Ticker Broadcasts Controllers
+window.sendBroadcast = async () => {
+  const msg = document.getElementById("push_msg").value.trim();
+  if (!msg) return alert("Broadcast message text cannot be empty.");
+
+  try {
+    await addDoc(collection(db, "broadcasts"), { message: msg, timestamp: Date.now() });
+    showToast("📢 Broadcast dispatched dynamically!");
+    document.getElementById("push_msg").value = "";
+  } catch {
+    showToast("⚠️ Dispatch failed.");
+  }
+};
+
+onSnapshot(collection(db, "broadcasts"), (snap) => {
+  const container = document.getElementById("broadcasts-list");
+  if (!container) return;
+  const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  list.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+  container.innerHTML = list.length
+    ? list.slice(0, 5).map(b => `
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="flex:1;">
+            <b>Broadcasted alert:</b><br>
+            <small style="color:#aaa;">"${b.message}"</small>
+          </div>
+          <button onclick="window.deleteDocRef('broadcasts', '${b.id}')" style="background:#ff1744; color:#fff; font-size:12px; padding:6px 12px;">Wipe</button>
+        </div>
+      `).join('')
+    : `<p style="color:#666;">No recent ticker transmissions.</p>`;
+});
+
+window.deleteDocRef = async (colName, id) => {
+  if (confirm("Permanently delete this entry?")) {
+    await deleteDoc(doc(db, colName, id));
+    showToast("🗑️ Resource deleted successfully.");
+  }
+};
+
+// =========================================================================
+// Dynamic Injector Hooks and Observers
+// =========================================================================
 onAuthStateChanged(auth, (user) => {
   if (user) {
     document.getElementById("login-screen").style.display = "none";
     document.getElementById("admin-wrapper").style.display = "block";
     
-    // Auto-inject our isolated Decor upload tab on auth success
+    // Inject and initiate advanced promotion, layout and category upload tabs
     injectStreamlinedDecorUI();
+    injectExtendedAdminManagers();
     
     refresh();
     if (typeof google === 'object' && typeof google.maps === 'object') {
