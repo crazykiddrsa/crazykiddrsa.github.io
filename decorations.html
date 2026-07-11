@@ -14,7 +14,7 @@
   --card: #111;
 }
 * { box-sizing: border-box; }
-body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; overflow-x: hidden; }
+body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; overflow-x: hidden; transition: background 0.3s, color 0.3s; }
 
 header {
   padding: 15px;
@@ -53,8 +53,6 @@ header {
   padding: 10px;
   transition: 0.2s;
   font-size: 13px;
-  background-size: cover;
-  background-position: center;
   position: relative;
   overflow: hidden;
 }
@@ -90,9 +88,9 @@ select, input[type="text"] {
 .slider-arrow.prev { left: 8px; }
 .slider-arrow.next { right: 8px; }
 
-/* Buttons & Navigation Panels */
+/* Buttons */
 button { background: var(--primary); color: #000; font-weight: bold; border: 0; padding: 12px 16px; cursor: pointer; border-radius: 4px; transition: 0.2s; font-size: 15px; }
-button:hover { background: #0a6; color: #fff; }
+button:hover { opacity: 0.85; }
 button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1px solid #555; }
 #cart-btn { background: transparent; color: var(--primary); border: 1px solid var(--primary); font-size: 16px; display: flex; align-items: center; gap: 8px; }
 #cart-count { background: var(--primary); color: #000; border-radius: 50%; padding: 2px 8px; font-size: 12px; font-weight: bold; }
@@ -100,6 +98,24 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
 /* Sidebar Drawers */
 .sidebar { position: fixed; top: 0; right: -350px; width: 320px; height: 100%; background: #111; border-left: 2px solid var(--primary); z-index: 1000; padding: 20px; transition: 0.3s; box-shadow: -5px 0 15px rgba(0,255,136,0.1); color: var(--text); box-sizing: border-box; }
 .sidebar.open { right: 0; }
+.left-sidebar {
+  position: fixed;
+  top: 0;
+  left: -320px;
+  width: 320px;
+  height: 100%;
+  background: var(--card);
+  border-right: 2px solid var(--primary);
+  z-index: 2500;
+  padding: 20px;
+  transition: 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+  box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+  color: var(--text);
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+.left-sidebar.open { left: 0; }
+
 .cart-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--primary); padding-bottom: 10px; }
 #cart-items { max-height: 55vh; overflow-y: auto; margin: 15px 0; }
 .cart-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding: 12px 0; }
@@ -118,34 +134,38 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
 
 <header>
   <div class="header-left">
-    <button id="menu-btn" onclick="toggleMenu()" style="background: transparent; color: var(--primary); border: none; font-size: 26px; cursor: pointer;">☰</button>
+    <button id="menu-btn" onclick="toggleMenu()" style="background: transparent; color: var(--primary); border: none; font-size: 26px; cursor: pointer; display: flex; align-items: center;">☰</button>
     <h2>SbheneCart / Decor</h2>
   </div>
-  <div class="header-right">
-    <button id="cart-btn" onclick="toggleCart()">🛒 Cart <span id="cart-count">0</span></button>
+  <div class="header-right" style="display: flex; gap: 10px; align-items: center;">
     <button onclick="location.href='track.html'" style="background:transparent; color:var(--primary); border:1px solid var(--primary); padding:10px 15px;">📦 Track</button>
+    <button id="cart-btn" onclick="toggleCart()">🛒 Cart <span id="cart-count">0</span></button>
   </div>
 </header>
 
-<!-- Slide-out Menu (Only Admin and Profile) -->
-<div id="left-menu" style="position: fixed; top: 0; left: -320px; width: 300px; height: 100%; background: var(--card); border-right: 2px solid var(--primary); z-index: 2500; padding: 20px; transition: 0.3s cubic-bezier(0.19, 1, 0.22, 1); box-shadow: 5px 0 15px rgba(0,0,0,0.5); color: var(--text); box-sizing: border-box; display: flex; flex-direction: column; gap: 20px;">
+<!-- Slide-out Menu (Streamlined Mode) -->
+<div id="left-menu" class="left-sidebar">
   <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--primary); padding-bottom: 10px;">
-    <h3 style="margin: 0;">🧭 Navigation</h3>
-    <button onclick="toggleMenu()" style="background: #222; color: var(--primary); border: 1px solid var(--primary); padding: 6px 12px; border-radius: 4px;">◀ Back</button>
+    <h3 style="margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 1px;">Main Menu</h3>
+    <button onclick="toggleMenu()" style="background: #222; color: var(--primary); border: 1px solid var(--primary); padding: 5px 10px; border-radius: 4px; font-size: 13px;">◀ Back</button>
   </div>
-  <div style="display: flex; flex-direction: column; gap: 12px;">
-    <button onclick="location.href='index.html'" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px;">🏠 Storefront</button>
-    <button onclick="location.href='admin.html'" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px;">🔑 Admin Console</button>
-    <button id="auth-status-btn" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px;">🔑 Sign In / Register</button>
+
+  <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
+    <button onclick="location.href='admin.html'" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer;">🔑 Admin Dashboard</button>
+    <button id="auth-status-btn" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer;">👤 Account & Loyalty</button>
   </div>
-  <div style="border-top: 1px dashed #333; padding-top: 15px;">
-    <h4 style="margin: 0 0 12px 0;">🎨 Switch Theme</h4>
+
+  <!-- Dynamic Points Balance Banner -->
+  <div id="loyalty-points-display" style="font-size: 13px; color: var(--primary); background: rgba(0,255,136,0.05); border: 1px dashed var(--primary); padding: 15px; border-radius: 8px; font-weight: bold; text-align: center; margin-top: 15px;">
+    💎 Points Balance: 0 (R0 Discount value)
+  </div>
+
+  <!-- Theme Selector Section -->
+  <div style="border-top: 1px dashed #333; padding-top: 15px; margin-top: 15px;">
+    <h4 style="margin: 0 0 12px 0; font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px;">🎨 Switch Theme</h4>
     <div style="display: flex; flex-direction: column; gap: 8px;">
-      <button onclick="changeTheme('neon')" style="background: #000; color: #0f8; border: 1px solid #0f8; padding: 10px; border-radius: 4px; text-align: left;">🟩 Cyber Neon</button>
-      <button onclick="changeTheme('dark')" style="background: #0a0a0a; color: #fff; border: 1px solid #fff; padding: 10px; border-radius: 4px; text-align: left;">⬛ Obsidian Dark</button>
-      <button onclick="changeTheme('light')" style="background: #fff; color: #000; border: 1px solid #000; padding: 10px; border-radius: 4px; text-align: left;">⬜ Classic Light</button>
-      <button onclick="changeTheme('blue')" style="background: #0a0f1d; color: #0cf; border: 1px solid #0cf; padding: 10px; border-radius: 4px; text-align: left;">🟦 Matrix Blue</button>
-      <button onclick="changeTheme('purple')" style="background: #0d0a1a; color: #d8f; border: 1px solid #d8f; padding: 10px; border-radius: 4px; text-align: left;">🟪 Synthwave Purple</button>
+      <button onclick="changeTheme('neon')" style="background: #000; color: #0f8; border: 1px solid #0f8; padding: 12px; border-radius: 6px; font-size: 13px; text-align: left; font-weight: bold; cursor: pointer;">🟩 Cyber Neon</button>
+      <button onclick="changeTheme('dark')" style="background: #0a0a0a; color: #fff; border: 1px solid #fff; padding: 12px; border-radius: 6px; font-size: 13px; text-align: left; font-weight: bold; cursor: pointer;">⬛ Obsidian Dark</button>
     </div>
   </div>
 </div>
@@ -233,10 +253,12 @@ const auth = getAuth(app);
 const analytics = getAnalytics(app);
 const box = document.getElementById('products');
 
+// Declaring strict-mode variables to prevent early load script crashes
+let currentUser = null;
+let userProfile = { points: 0, wishlist: [], address: "", savedPhone: "" };
 let dbProducts = [];
 let dbSubcategories = [];
 let cart = [];
-let userProfile = { wishlist: [] };
 let selectedMoodTag = "";
 
 try {
@@ -266,18 +288,35 @@ onSnapshot(collection(db, "subcategories"), (snap) => {
 });
 
 // Profile & Account Management
-let currentUser = null;
 onAuthStateChanged(auth, (user) => {
   currentUser = user;
   const authBtn = document.getElementById("auth-status-btn");
+  const pointsBadge = document.getElementById("loyalty-points-display");
+
+  if (authBtn) {
+    authBtn.innerText = "👤 Account & Loyalty";
+    authBtn.onclick = (e) => {
+      e.preventDefault();
+      window.location.href = "profile.html";
+    };
+  }
+
   if (user) {
-    if (authBtn) authBtn.innerText = "👤 My Profile";
     onSnapshot(doc(db, "users", user.uid), (snap) => {
-      if (snap.exists()) userProfile = { ...userProfile, ...snap.data() };
+      if (snap.exists()) {
+        userProfile = { ...userProfile, ...snap.data() };
+        const pts = userProfile.points || 0;
+        const discountCash = Math.floor(pts / 10);
+        if (pointsBadge) {
+          pointsBadge.innerHTML = `💎 Points Balance: <b>${pts}</b> (R${discountCash} Discount value)`;
+        }
+      }
     });
   } else {
-    if (authBtn) authBtn.innerText = "🔑 Sign In / Register";
     userProfile = { wishlist: [] };
+    if (pointsBadge) {
+      pointsBadge.innerHTML = `💎 Points Balance: 0 (R0 Discount value)`;
+    }
   }
 });
 
@@ -324,6 +363,18 @@ function renderGrid(list) {
           stockAlert = `<span style="color:#ffaa00; font-size:11px; font-weight:bold; display:block; margin-top:4px;">🔥 High Demand</span>`;
         }
 
+        // Bypasses standard cart for Booking items if configured
+        let actionBtn = "";
+        if (p.isBooking) {
+          actionBtn = `<button onclick="event.stopPropagation(); window.bookDecorNow('${p.name}', '${p.price}')" style="width:100%;">📅 Book Now!</button>`;
+        } else {
+          actionBtn = `
+            <button ${isOutOfStock ? 'disabled' : ''} onclick="event.stopPropagation(); addToCart('${p.id}', this)">
+              ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+            </button>
+          `;
+        }
+
         return `
           <div class="card" onclick="openDetailsModal('${p.id}')">
             ${badgeHtml}
@@ -340,9 +391,7 @@ function renderGrid(list) {
               <small>${p.subcategory || "Home Decor"} • Stock: ${p.stock}</small>
               ${stockAlert}
             </div>
-            <button ${isOutOfStock ? 'disabled' : ''} onclick="event.stopPropagation(); addToCart('${p.id}', this)">
-              ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
-            </button>
+            ${actionBtn}
           </div>
         `;
       }).join("")
@@ -438,7 +487,8 @@ function updateCartUI() {
 window.toggleCart = () => document.getElementById("cart-sidebar").classList.toggle("open");
 window.toggleMenu = () => {
   const menu = document.getElementById("left-menu");
-  menu.style.left = menu.style.left === "0px" ? "-320px" : "0px";
+  if (!menu) return;
+  menu.classList.toggle("open");
 };
 
 // Details Modal Viewer
@@ -450,6 +500,22 @@ window.openDetailsModal = (id) => {
 
   const inWishlist = userProfile.wishlist?.includes(p.id);
   const wishlistText = inWishlist ? "❤️ Saved" : "🤍 Save to Wishlist";
+
+  // Check if item is designated as Booking-only or Standard Purchase
+  let actionHtml = "";
+  if (p.isBooking) {
+    actionHtml = `
+      <button onclick="window.bookDecorNow('${p.name}', '${p.price}'); closeDetailsModal();" style="width:100%; margin-top:10px;">
+        📅 Book Now!
+      </button>
+    `;
+  } else {
+    actionHtml = `
+      <button ${isOutOfStock ? 'disabled' : ''} onclick="addToCart('${p.id}', null); closeDetailsModal();" style="width:100%; margin-top:10px;">
+        ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+      </button>
+    `;
+  }
 
   document.getElementById('modal-details-content').innerHTML = `
     <div class="slider-wrapper" id="modal-slider-${p.id}" style="height: 280px;">
@@ -467,8 +533,11 @@ window.openDetailsModal = (id) => {
     <p style="margin: 15px 0; line-height:1.4;">${p.description || "No decorative description provided."}</p>
     <p><b>Design Spec Tag:</b> <span style="color:var(--primary); font-weight:bold;">${p.decorTag || "General Decor"}</span></p>
     <p><b>In Stock:</b> ${p.stock}</p>
-    <button ${isOutOfStock ? 'disabled' : ''} onclick="addToCart('${p.id}', null); closeDetailsModal();" style="width:100%; margin-top:10px;">
-      ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+    ${actionHtml}
+    
+    <!-- Custom Design Modification Request Trigger -->
+    <button onclick="window.submitCustomRequest('${p.name}')" style="width:100%; margin-top:10px; background:#222; color:var(--primary); border:1px solid var(--primary); font-weight:bold; padding:12px;">
+      📝 Request Custom Sizing / Modifications
     </button>
   `;
   document.getElementById('details-modal').style.display = "flex";
@@ -494,6 +563,22 @@ window.toggleWishlist = async (productId) => {
     updated.splice(index, 1);
   }
   await updateDoc(doc(db, "users", currentUser.uid), { wishlist: updated });
+};
+
+// WhatsApp Decor Booking Direct coordinator
+window.bookDecorNow = (name, price) => {
+  const line = "27653584906";
+  const msg = encodeURIComponent(`Hi! I would like to book the decorative piece "${name}" (Price: R${price}) on SbheneCart. Please let me know how we can coordinate the details.`);
+  window.open(`https://wa.me/${line}?text=${msg}`, "_blank");
+};
+
+// Sizing & custom request handler
+window.submitCustomRequest = (itemName = null) => {
+  const line = "27653584906";
+  const query = itemName 
+    ? `Hi! I would like to submit a custom design/sizing request/specification for the decorative item: "${itemName}" on SbheneCart.`
+    : "Hi! I would like to submit a custom order specification to SbheneCart.";
+  window.open(`https://wa.me/${line}?text=${encodeURIComponent(query)}`, "_blank");
 };
 
 window.openStorefrontCheckout = () => {
@@ -545,7 +630,7 @@ function flyToCartAnimation(buttonEl) {
 // Initial Bootstrapping
 const theme = localStorage.getItem("selectedTheme") || "neon";
 window.changeTheme(theme);
-window.toggleMenu(); // Closes menu opened by changeTheme initialization
+window.toggleMenu();
 updateCartUI();
 </script>
 </body>
