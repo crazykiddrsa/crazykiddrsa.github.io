@@ -14,7 +14,7 @@
   --card: #111;
 }
 * { box-sizing: border-box; }
-body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; overflow-x: hidden; }
+body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; overflow-x: hidden; transition: background 0.3s, color 0.3s; }
 
 header {
   padding: 15px;
@@ -33,7 +33,7 @@ header {
 
 /* Filter System */
 .filter-container { padding: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
-select, input[type="text"] {
+select, input[type="text"], textarea {
   width: 100%; padding: 12px; border: 1px solid var(--primary); background: #111; color: var(--text); border-radius: 4px; font-size: 16px;
 }
 
@@ -80,7 +80,7 @@ select, input[type="text"] {
 
 /* Buttons */
 button { background: var(--primary); color: #000; font-weight: bold; border: 0; padding: 12px 16px; cursor: pointer; border-radius: 4px; transition: 0.2s; font-size: 15px; }
-button:hover { background: #0a6; color: #fff; }
+button:hover { opacity: 0.85; }
 button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1px solid #555; }
 #cart-btn { background: transparent; color: var(--primary); border: 1px solid var(--primary); font-size: 16px; display: flex; align-items: center; gap: 8px; }
 #cart-count { background: var(--primary); color: #000; border-radius: 50%; padding: 2px 8px; font-size: 12px; font-weight: bold; }
@@ -88,6 +88,24 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
 /* Slide-out Drawers */
 .sidebar { position: fixed; top: 0; right: -350px; width: 320px; height: 100%; background: #111; border-left: 2px solid var(--primary); z-index: 1000; padding: 20px; transition: 0.3s; box-shadow: -5px 0 15px rgba(0,255,136,0.1); color: var(--text); box-sizing: border-box; }
 .sidebar.open { right: 0; }
+.left-sidebar {
+  position: fixed;
+  top: 0;
+  left: -320px;
+  width: 320px;
+  height: 100%;
+  background: var(--card);
+  border-right: 2px solid var(--primary);
+  z-index: 2500;
+  padding: 20px;
+  transition: 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+  box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+  color: var(--text);
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+.left-sidebar.open { left: 0; }
+
 .cart-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--primary); padding-bottom: 10px; }
 #cart-items { max-height: 55vh; overflow-y: auto; margin: 15px 0; }
 .cart-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding: 12px 0; }
@@ -106,36 +124,47 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
 
 <header>
   <div class="header-left">
-    <button id="menu-btn" onclick="toggleMenu()" style="background: transparent; color: var(--primary); border: none; font-size: 26px; cursor: pointer;">☰</button>
+    <button id="menu-btn" onclick="toggleMenu()" style="background: transparent; color: var(--primary); border: none; font-size: 26px; cursor: pointer; display: flex; align-items: center;">☰</button>
     <h2>SbheneCart / Sewings</h2>
   </div>
-  <div class="header-right">
-    <button id="cart-btn" onclick="toggleCart()">🛒 Cart <span id="cart-count">0</span></button>
+  <div class="header-right" style="display: flex; gap: 10px; align-items: center;">
     <button onclick="location.href='track.html'" style="background:transparent; color:var(--primary); border:1px solid var(--primary); padding:10px 15px;">📦 Track</button>
+    <button id="cart-btn" onclick="toggleCart()">🛒 Cart <span id="cart-count">0</span></button>
   </div>
 </header>
 
-<!-- Slide-out Menu (Dashboard, Admin & Theme Adjustments) -->
-<div id="left-menu" style="position: fixed; top: 0; left: -320px; width: 300px; height: 100%; background: var(--card); border-right: 2px solid var(--primary); z-index: 2500; padding: 20px; transition: 0.3s cubic-bezier(0.19, 1, 0.22, 1); box-shadow: 5px 0 15px rgba(0,0,0,0.5); color: var(--text); box-sizing: border-box; display: flex; flex-direction: column; gap: 20px;">
+<!-- Slide-out Menu (Streamlined Mode) -->
+<div id="left-menu" class="left-sidebar">
   <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--primary); padding-bottom: 10px;">
-    <h3 style="margin: 0;">🧭 Navigation</h3>
-    <button onclick="toggleMenu()" style="background: #222; color: var(--primary); border: 1px solid var(--primary); padding: 6px 12px; border-radius: 4px;">◀ Back</button>
+    <h3 style="margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 1px;">Main Menu</h3>
+    <button onclick="toggleMenu()" style="background: #222; color: var(--primary); border: 1px solid var(--primary); padding: 5px 10px; border-radius: 4px; font-size: 13px;">◀ Back</button>
   </div>
-  <div style="display: flex; flex-direction: column; gap: 12px;">
-    <button onclick="location.href='index.html'" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px;">🏠 Storefront</button>
-    <button onclick="location.href='admin.html'" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px;">🔑 Admin Console</button>
-    <button id="auth-status-btn" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px;">🔑 Sign In / Register</button>
+
+  <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
+    <button onclick="location.href='admin.html'" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer;">🔑 Admin Dashboard</button>
+    <button id="auth-status-btn" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer;">👤 Account & Loyalty</button>
   </div>
-  <div style="border-top: 1px dashed #333; padding-top: 15px;">
-    <h4 style="margin: 0 0 12px 0;">🎨 Switch Theme</h4>
+
+  <!-- Dynamic Points Balance Banner -->
+  <div id="loyalty-points-display" style="font-size: 13px; color: var(--primary); background: rgba(0,255,136,0.05); border: 1px dashed var(--primary); padding: 15px; border-radius: 8px; font-weight: bold; text-align: center; margin-top: 15px;">
+    💎 Points Balance: 0 (R0 Discount value)
+  </div>
+
+  <!-- Theme Selector Section -->
+  <div style="border-top: 1px dashed #333; padding-top: 15px; margin-top: 15px;">
+    <h4 style="margin: 0 0 12px 0; font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px;">🎨 Switch Theme</h4>
     <div style="display: flex; flex-direction: column; gap: 8px;">
-      <button onclick="changeTheme('neon')" style="background: #000; color: #0f8; border: 1px solid #0f8; padding: 10px; border-radius: 4px; text-align: left;">🟩 Cyber Neon</button>
-      <button onclick="changeTheme('dark')" style="background: #0a0a0a; color: #fff; border: 1px solid #fff; padding: 10px; border-radius: 4px; text-align: left;">⬛ Obsidian Dark</button>
-      <button onclick="changeTheme('light')" style="background: #fff; color: #000; border: 1px solid #000; padding: 10px; border-radius: 4px; text-align: left;">⬜ Classic Light</button>
-      <button onclick="changeTheme('blue')" style="background: #0a0f1d; color: #0cf; border: 1px solid #0cf; padding: 10px; border-radius: 4px; text-align: left;">🟦 Matrix Blue</button>
-      <button onclick="changeTheme('purple')" style="background: #0d0a1a; color: #d8f; border: 1px solid #d8f; padding: 10px; border-radius: 4px; text-align: left;">🟪 Synthwave Purple</button>
+      <button onclick="changeTheme('neon')" style="background: #000; color: #0f8; border: 1px solid #0f8; padding: 12px; border-radius: 6px; font-size: 13px; text-align: left; font-weight: bold; cursor: pointer;">🟩 Cyber Neon</button>
+      <button onclick="changeTheme('dark')" style="background: #0a0a0a; color: #fff; border: 1px solid #fff; padding: 12px; border-radius: 6px; font-size: 13px; text-align: left; font-weight: bold; cursor: pointer;">⬛ Obsidian Dark</button>
     </div>
   </div>
+</div>
+
+<!-- Floating Custom Tailoring Inquiries Launcher -->
+<div style="padding: 15px 15px 0 15px; text-align: center;">
+  <button onclick="openCustomSewingModal()" style="width:100%; padding:15px; font-size:18px; border-radius:8px; box-shadow:0 0 15px var(--primary); letter-spacing: 0.5px;">
+    🪡 Ask for something to be sewed for you (Voice / Text)
+  </button>
 </div>
 
 <div class="filter-container">
@@ -169,6 +198,42 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
   </div>
 </div>
 
+<!-- Custom Sewing Request Modal Overlay -->
+<div id="sewing-modal" class="modal">
+  <div class="modal-content" style="max-width:450px;">
+    <span class="close-modal-btn" onclick="closeCustomSewingModal()">&times;</span>
+    <h2 style="margin-top:0; text-align:center;">Request Custom Sewing</h2>
+    <p style="color:#888; font-size:13px; text-align:center; margin-bottom: 15px;">Have a design or specific pattern in mind? Record a voice message or write down specs for our sewer!</p>
+    
+    <label style="font-size:12px; display:block; margin-bottom:4px;">Your Name *</label>
+    <input type="text" id="req-name" required placeholder="Enter your name">
+    
+    <label style="font-size:12px; display:block; margin: 10px 0 4px;">WhatsApp Number *</label>
+    <input type="tel" id="req-phone" required placeholder="e.g. 082 123 4567">
+    
+    <div style="display:flex; gap:10px; margin: 15px 0;">
+      <button onclick="setRecordingType('voice')" id="type-voice-btn" style="flex:1;">🎙️ Voice Note</button>
+      <button onclick="setRecordingType('text')" id="type-text-btn" style="flex:1; background:#222; color:var(--primary); border:1px solid var(--primary);">✍️ Write Request</button>
+    </div>
+
+    <!-- Voice Recording Panel -->
+    <div id="req-voice-panel" style="text-align:center;">
+      <button id="record-btn" onclick="startAudioRecording()" style="background:#ff1744; color:#fff; width:100%; padding:15px;">🎙️ Start Recording</button>
+      <div id="audio-preview-container" style="display:none; margin-top:15px;">
+        <p style="font-size:11px; color:#aaa; margin:5px 0;">🔊 Recording Preview:</p>
+        <audio id="audio-preview" controls style="width:100%;"></audio>
+      </div>
+    </div>
+
+    <!-- Text Specifications Panel -->
+    <div id="req-text-panel" style="display:none;">
+      <textarea id="req-text" placeholder="Write details (garment style, dimensions, fabric preferences, special trims...)" style="height:120px;"></textarea>
+    </div>
+
+    <button id="submit-req-btn" onclick="submitSewingRequest()" style="width:100%; margin-top:20px;">📤 Submit Sizing Request</button>
+  </div>
+</div>
+
 <!-- Lightbox Modal -->
 <div id="lightbox-modal" class="modal" onclick="closeLightbox()" style="z-index: 3000;">
   <span class="close-modal-btn" onclick="closeLightbox()" style="font-size: 35px; top: 20px; right: 25px;">&times;</span>
@@ -177,7 +242,8 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, doc, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-storage.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
 
@@ -193,14 +259,23 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const storage = getStorage(app);
 const auth = getAuth(app);
 const analytics = getAnalytics(app);
 const box = document.getElementById('products');
 
+// Declaring strict-mode variables to prevent early load crashes
+let currentUser = null;
+let userProfile = { points: 0, wishlist: [], address: "", savedPhone: "" };
 let dbProducts = [];
 let dbSubcategories = [];
 let cart = [];
-let userProfile = { wishlist: [] };
+
+// Sizing record states
+let mediaRecorder = null;
+let audioChunks = [];
+let reqType = "voice"; // "voice" or "text"
+let recordedBlob = null;
 
 try {
   cart = JSON.parse(localStorage.getItem("cart")) || [];
@@ -228,19 +303,36 @@ onSnapshot(collection(db, "subcategories"), (snap) => {
     dbSubcategories.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
 });
 
-// Profile status listening
-let currentUser = null;
-onAuthStateChanged(auth, (user) => {
+// Profile status listening & dynamic menu binders
+onAuthStateChanged(auth, async (user) => {
   currentUser = user;
   const authBtn = document.getElementById("auth-status-btn");
+  const pointsBadge = document.getElementById("loyalty-points-display");
+
+  if (authBtn) {
+    authBtn.innerText = "👤 Account & Loyalty";
+    authBtn.onclick = (e) => {
+      e.preventDefault();
+      window.location.href = "profile.html";
+    };
+  }
+
   if (user) {
-    if (authBtn) authBtn.innerText = "👤 My Profile";
     onSnapshot(doc(db, "users", user.uid), (snap) => {
-      if (snap.exists()) userProfile = { ...userProfile, ...snap.data() };
+      if (snap.exists()) {
+        userProfile = { ...userProfile, ...snap.data() };
+        const pts = userProfile.points || 0;
+        const discountCash = Math.floor(pts / 10);
+        if (pointsBadge) {
+          pointsBadge.innerHTML = `💎 Points Balance: <b>${pts}</b> (R${discountCash} Discount value)`;
+        }
+      }
     });
   } else {
-    if (authBtn) authBtn.innerText = "🔑 Sign In / Register";
     userProfile = { wishlist: [] };
+    if (pointsBadge) {
+      pointsBadge.innerHTML = `💎 Points Balance: 0 (R0 Discount value)`;
+    }
   }
 });
 
@@ -410,7 +502,8 @@ function updateCartUI() {
 window.toggleCart = () => document.getElementById("cart-sidebar").classList.toggle("open");
 window.toggleMenu = () => {
   const menu = document.getElementById("left-menu");
-  menu.style.left = menu.style.left === "0px" ? "-320px" : "0px";
+  if (!menu) return;
+  menu.classList.toggle("open");
 };
 
 // Details Modal Viewer with custom garment measurements form
@@ -427,7 +520,7 @@ window.openDetailsModal = (id) => {
   if (p.requiresMeasurements) {
     measurementForm = `
       <div class="measurement-box">
-        <h4 style="margin:0 0 5px 0; font-size:14px; color:var(--primary);">📏 Custom Garment Sizing Dimensions</h4>
+        <h4 style="margin:0 0 5px 0; font-size:14px; color:var(--primary);">📐 Custom Garment Sizing Dimensions</h4>
         <small style="color:#aaa;">Tailoring is processed to your custom fitting specifications.</small>
         <div class="measurement-grid">
           <div>
@@ -512,6 +605,128 @@ window.talkToSewer = (productName) => {
   window.open(`https://wa.me/${line}?text=${msg}`, "_blank");
 };
 
+// =========================================================================
+// Custom Tailor Requests Panel Controllers
+// =========================================================================
+window.openCustomSewingModal = () => document.getElementById("sewing-modal").style.display = "flex";
+window.closeCustomSewingModal = () => {
+  document.getElementById("sewing-modal").style.display = "none";
+  recordedBlob = null;
+  document.getElementById("audio-preview-container").style.display = "none";
+};
+
+window.setRecordingType = (type) => {
+  reqType = type;
+  const voiceBtn = document.getElementById("type-voice-btn");
+  const textBtn = document.getElementById("type-text-btn");
+  
+  if (type === "voice") {
+    voiceBtn.style.background = "var(--primary)"; voiceBtn.style.color = "#000";
+    textBtn.style.background = "#222"; textBtn.style.color = "var(--primary)";
+    document.getElementById("req-voice-panel").style.display = "block";
+    document.getElementById("req-text-panel").style.display = "none";
+  } else {
+    textBtn.style.background = "var(--primary)"; textBtn.style.color = "#000";
+    voiceBtn.style.background = "#222"; voiceBtn.style.color = "var(--primary)";
+    document.getElementById("req-voice-panel").style.display = "none";
+    document.getElementById("req-text-panel").style.display = "block";
+  }
+};
+
+window.startAudioRecording = async () => {
+  audioChunks = [];
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    
+    mediaRecorder.ondataavailable = e => {
+      audioChunks.push(e.data);
+    };
+    
+    mediaRecorder.onstop = () => {
+      recordedBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+      const audioUrl = URL.createObjectURL(recordedBlob);
+      document.getElementById("audio-preview").src = audioUrl;
+      document.getElementById("audio-preview-container").style.display = "block";
+    };
+    
+    mediaRecorder.start();
+    const btn = document.getElementById("record-btn");
+    btn.innerText = "🛑 Stop Recording";
+    btn.style.background = "#00e676";
+    btn.onclick = stopAudioRecording;
+  } catch (err) {
+    alert("Microphone permission denied or unsupported on this device.");
+  }
+};
+
+window.stopAudioRecording = () => {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+  }
+  const btn = document.getElementById("record-btn");
+  btn.innerText = "🎙️ Start Recording";
+  btn.style.background = "#ff1744";
+  btn.onclick = startAudioRecording;
+};
+
+window.submitSewingRequest = async () => {
+  const name = document.getElementById("req-name").value.trim();
+  const phone = document.getElementById("req-phone").value.trim();
+  const submitBtn = document.getElementById("submit-req-btn");
+
+  if (!name || !phone) return alert("Your Name and WhatsApp number are required fields.");
+  
+  submitBtn.innerText = "Processing & Uploading...";
+  submitBtn.disabled = true;
+
+  let payload = {
+    clientName: name,
+    clientPhone: phone,
+    type: reqType,
+    timestamp: Date.now()
+  };
+
+  try {
+    if (reqType === "voice") {
+      if (!recordedBlob) {
+        alert("Please record a voice note before submitting.");
+        submitBtn.innerText = "Submit Sizing Request"; submitBtn.disabled = false;
+        return;
+      }
+      
+      // Upload voice message Blob directly to Storage
+      const storageRef = ref(storage, `tailoring_notes/${Date.now()}.mp3`);
+      await uploadBytes(storageRef, recordedBlob);
+      const url = await getDownloadURL(storageRef);
+      payload.voiceUrl = url;
+    } else {
+      const msg = document.getElementById("req-text").value.trim();
+      if (!msg) {
+        alert("Please write your tailored details before submitting.");
+        submitBtn.innerText = "Submit Sizing Request"; submitBtn.disabled = false;
+        return;
+      }
+      payload.textMessage = msg;
+    }
+
+    // Write metadata document to Firestore custom collection
+    await addDoc(collection(db, "custom_requests"), payload);
+    alert("✅ Tailoring request successfully dispatched to the sewer!");
+    closeCustomSewingModal();
+    document.getElementById("req-name").value = "";
+    document.getElementById("req-phone").value = "";
+    document.getElementById("req-text").value = "";
+  } catch (err) {
+    console.error(err);
+    alert("Could not process request. Verify connection.");
+  } finally {
+    submitBtn.innerText = "Submit Sizing Request";
+    submitBtn.disabled = false;
+  }
+};
+
 window.changeTheme = (themeName) => {
   const themes = {
     neon: { bg: "#000", text: "#0f8", primary: "#0f8", card: "#111" },
@@ -556,7 +771,7 @@ function flyToCartAnimation(buttonEl) {
 // Initial Bootstrapping
 const theme = localStorage.getItem("selectedTheme") || "neon";
 window.changeTheme(theme);
-window.toggleMenu(); // Closes menu opened by theme bootstrapping initialization
+window.toggleMenu();
 updateCartUI();
 </script>
 </body>
