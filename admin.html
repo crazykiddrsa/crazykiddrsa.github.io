@@ -142,6 +142,12 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
           <option value="Sale">💥 Sale / Flash Sale</option>
         </select>
       </div>
+<label style="display:block; font-size:12px; margin-top:10px;">📐 Product Sizing Scheme *</label>
+<select id="p_sizing_type">
+  <option value="none">No Sizing Options (Standard / Decor)</option>
+  <option value="clothing">Clothing Sizing (XS, S, M, L, XL)</option>
+  <option value="shoes">Shoe Sizing (EU 36 - 46)</option>
+</select>
 
       <!-- Expiration Date for Flash Sales (Conditional Display) -->
       <div id="flash-sale-scheduler" style="display:none;">
@@ -172,6 +178,11 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
     </div>
     <div id="plist"></div>
   </section>
+// 1. Inside saveProduct() - add to productDetails payload:
+sizingType: document.getElementById("p_sizing_type").value,
+
+// 2. Inside editP(id) - load the saved sizing scheme back to the form:
+document.getElementById("p_sizing_type").value = p.sizingType || "none";
 
   <!-- DECOR UPLOADER: Isolated Form specifically for Decorations -->
   <section id="decor-upload" class="page">
