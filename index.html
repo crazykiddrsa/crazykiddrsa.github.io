@@ -806,7 +806,37 @@ window.addToCart = (id, buttonEl) => {
     return;
   }
 
-  if (buttonEl) flyToCartAnimation(buttonEl);
+  // =========================================================================
+// Fly to Cart Particle Animation (Fixed Lexical Scope)
+// =========================================================================
+function flyToCartAnimation(buttonEl) {
+  const cartBtn = document.getElementById('cart-btn');
+  if (!cartBtn || !buttonEl) return;
+
+  const btnRect = buttonEl.getBoundingClientRect();
+  const cartRect = cartBtn.getBoundingClientRect();
+
+  const flyer = document.createElement('div');
+  flyer.className = 'flying-item';
+  flyer.style.left = `${btnRect.left + btnRect.width / 2 - 10}px`;
+  flyer.style.top = `${btnRect.top + btnRect.height / 2 - 10}px`;
+  document.body.appendChild(flyer);
+
+  // Trigger hardware acceleration path
+  requestAnimationFrame(() => {
+    flyer.style.left = `${cartRect.left + cartRect.width / 2 - 10}px`;
+    flyer.style.top = `${cartRect.top + cartRect.height / 2 - 10}px`;
+    flyer.style.transform = 'scale(0.2)';
+    flyer.style.opacity = '0';
+  });
+
+  flyer.addEventListener('transitionend', () => flyer.remove());
+}
+
+// Optionally bind to window if needed by any outside inline HTML,
+// though local code inside this module will now call the local function perfectly.
+window.flyToCartAnimation = flyToCartAnimation;
+
 
   if (cartItem) {
     cartItem.quantity++;
