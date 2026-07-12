@@ -2,7 +2,8 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=1024">
+
 <title>SbheneCart</title>
   
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7447247941010903"
@@ -12,6 +13,7 @@
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCBR2xh-Ks61EEMq7cjKDTVhmuAKGlQcAQ&libraries=places&callback=initGoogleMaps" async defer></script>
 
 <style>
+    
 /* Theme-swappable Custom CSS Variables */
 :root {
   --bg: #000;
@@ -562,9 +564,15 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
     <div style="display: flex; flex-direction: column; gap: 8px;">
       <button onclick="changeTheme('neon')" style="background: #000; color: #0f8; border: 1px solid #0f8; padding: 12px; border-radius: 6px; font-size: 13px; text-align: left; font-weight: bold; cursor: pointer;">🟩 Cyber Neon</button>
       <button onclick="changeTheme('dark')" style="background: #0a0a0a; color: #fff; border: 1px solid #fff; padding: 12px; border-radius: 6px; font-size: 13px; text-align: left; font-weight: bold; cursor: pointer;">⬛ Obsidian Dark</button>
+      <button onclick="changeTheme('redgold')" style="background: #1a0305; color: #ffd700; border: 1px solid #ffd700; padding: 12px; border-radius: 6px; font-size: 13px; text-align: left; font-weight: bold; cursor: pointer;">🟥 Red & Gold</button>
+      <button onclick="changeTheme('matrixblue')" style="background: #050b14; color: #00f0ff; border: 1px solid #00f0ff; padding: 12px; border-radius: 6px; font-size: 13px; text-align: left; font-weight: bold; cursor: pointer;">🟦 Matrix Blue</button>
+      <button onclick="changeTheme('synthwave')" style="background: #120024; color: #ff007f; border: 1px solid #ff007f; padding: 12px; border-radius: 6px; font-size: 13px; text-align: left; font-weight: bold; cursor: pointer;">🟪 Synthwave Purple</button>
+      <button onclick="changeTheme('emerald')" style="background: #04140c; color: #00ff87; border: 1px solid #00ff87; padding: 12px; border-radius: 6px; font-size: 13px; text-align: left; font-weight: bold; cursor: pointer;">🟩 Emerald Forest</button>
+      <button onclick="changeTheme('amber')" style="background: #100c08; color: #ff9900; border: 1px solid #ff9900; padding: 12px; border-radius: 6px; font-size: 13px; text-align: left; font-weight: bold; cursor: pointer;">🟧 Amber Retro</button>
     </div>
   </div>
 </div>
+
 
 <!-- Slide-out Cart Sidebar -->
 <div id="cart-sidebar" class="sidebar">
@@ -1574,48 +1582,74 @@ window.bookDecorNow = (name, price) => {
 // =========================================================================
 // Search & Theme Switcher Helpers
 // =========================================================================
+// =========================================================================
+// AI Conceptual Search & Theme Switching Engine
+// =========================================================================
+
+// Smart Semantic Fallback Search
 window.aiSemanticSearch = () => {
-  renderProducts();
-};
-
-window.changeTheme = (theme) => {
-  setTheme(theme);
-  localStorage.setItem("selectedTheme", theme);
-};
-
-function setTheme(theme) {
-  const root = document.documentElement;
-  if (theme === "neon") {
-    root.style.setProperty("--bg", "#000");
-    root.style.setProperty("--text", "#0f8");
-    root.style.setProperty("--primary", "#0f8");
-    root.style.setProperty("--card", "#111");
-  } else if (theme === "dark") {
-    root.style.setProperty("--bg", "#0a0a0a");
-    root.style.setProperty("--text", "#ffffff");
-    root.style.setProperty("--primary", "#ffffff");
-    root.style.setProperty("--card", "#1e1e1e");
+  const query = document.getElementById("search").value.toLowerCase().trim();
+  if (!query) {
+    renderProducts();
+    return;
   }
-  renderCategoryShortcuts();
-}
-window.setTheme = setTheme;
 
-function showToast(msg) {
-  const toast = document.createElement("div");
-  toast.style.position = "fixed";
-  toast.style.bottom = "20px";
-  toast.style.right = "20px";
-  toast.style.background = "var(--card)";
-  toast.style.color = "var(--primary)";
-  toast.style.border = "1px solid var(--primary)";
-  toast.style.padding = "12px 20px";
-  toast.style.borderRadius = "4px";
-  toast.style.boxShadow = "0 0 10px rgba(0,255,136,0.2)";
-  toast.style.zIndex = "99999";
-  toast.innerText = msg;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 2500);
-}
+  const semanticDictionary = {
+    "dress": ["fashion", "sewings", "clothing", "wear", "skirt", "red", "attire"],
+    "phone": ["electronics", "mobile", "device", "cellphone", "gadget", "charger"],
+    "decoration": ["party", "decor", "home", "balloons", "aesthetic", "candles"],
+    "cheap": ["budget", "sale", "affordable", "discounted"]
+  };
+
+  let relatedTerms = [query];
+  for (const [key, terms] of Object.entries(semanticDictionary)) {
+    if (query.includes(key) || key.includes(query)) {
+      relatedTerms = [...relatedTerms, ...terms];
+    }
+  }
+
+  const filtered = dbProducts.filter(p => {
+    const searchContext = `${p.name} ${p.category} ${p.subcategory} ${p.description || ""}`.toLowerCase();
+    return relatedTerms.some(term => searchContext.includes(term));
+  });
+
+  renderProductsFiltered(filtered);
+};
+
+// Unified Theme Switching Engine supporting all 7 visual styles
+window.setTheme = (themeName) => {
+  const themes = {
+    neon: { bg: "#000", text: "#0f8", primary: "#0f8", card: "#111" },
+    dark: { bg: "#0a0a0a", text: "#aaa", primary: "#fff", card: "#151515" },
+    redgold: { bg: "#1a0305", text: "#ffebcd", primary: "#ffd700", card: "#2c070a" },
+    matrixblue: { bg: "#050b14", text: "#e0f7fc", primary: "#00f0ff", card: "#0b1528" },
+    synthwave: { bg: "#120024", text: "#ffd1dc", primary: "#ff007f", card: "#1e0036" },
+    emerald: { bg: "#04140c", text: "#d2f8e4", primary: "#00ff87", card: "#092419" },
+    amber: { bg: "#100c08", text: "#fdf6e2", primary: "#ff9900", card: "#1b1410" }
+  };
+
+  const theme = themes[themeName] || themes.neon;
+  document.documentElement.style.setProperty('--bg', theme.bg);
+  document.documentElement.style.setProperty('--text', theme.text);
+  document.documentElement.style.setProperty('--primary', theme.primary);
+  document.documentElement.style.setProperty('--card', theme.card);
+
+  document.body.style.background = theme.bg;
+  document.body.style.color = theme.text;
+  
+  localStorage.setItem("selectedTheme", themeName);
+  
+  // Re-renders category shortcuts so they styled-match the active theme
+  if (typeof renderCategoryShortcuts === "function") {
+    renderCategoryShortcuts();
+  }
+};
+
+window.changeTheme = (themeName) => {
+  window.setTheme(themeName);
+  window.toggleMenu(); // Automatically slide the left drawer menu closed on selection
+};
+
 
 // =========================================================================
 // Auto-sliding intervals for Flash Deals
