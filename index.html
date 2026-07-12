@@ -802,6 +802,49 @@ onSnapshot(collection(db, "subsubcategories"), (snap) => {
   snap.forEach(d => dbSubsubcategories.push({ id: d.id, ...d.data() }));
   window.onSubcategoryFilterChange();
 });
+window.addToCart = (id, buttonEl) => {
+  const product = dbProducts.find(p => p.id === id);
+  if (!product || product.stock <= 0) return;
+
+  // Sizing Validator & Bundle Engine
+  let selectedSize = null;
+  if (product.sizingType && product.sizingType !== "none") {
+    // Check card grid dropdown first, fallback to details modal dropdown
+    const selectEl = document.getElementById(`size-select-${id}`) || document.getElementById(`modal-size-select-${id}`);
+    if (selectEl) {
+      selectedSize = selectEl.value;
+      if (!selectedSize) {
+        alert("⚠️ Please select a product size before adding to your cart!");
+        return;
+      }
+    }
+  }
+
+  const cartItem = cart.find(item => item.id === id && item.selectedSize === selectedSize);
+  const currentQty = cartItem ? cartItem.quantity : 0;
+
+  if (currentQty + 1 > product.stock) {
+    alert(`Cannot add more. Only ${product.stock} items left in stock.`);
+    return;
+  }
+
+  if (buttonEl) flyToCartAnimation(buttonEl);
+
+  if (cartItem) {
+    cartItem.quantity++;
+  } else {
+    // Bundle the selected size directly into the cart item object
+    cart.push({ ...product, quantity: 1, selectedSize });
+  }
+
+  logEvent(analytics, 'add_to_cart', {
+    currency: 'ZAR',
+    value: product.price,
+    items: [{ item_id: product.id, item_name: product.name, price: product.price, quantity: 1, item_variant: selectedSize }]
+  });
+
+  updateCartUI();
+};
 
 onSnapshot(collection(db, "products"), (snap) => {
   dbProducts = [];
@@ -1142,6 +1185,24 @@ window.renderProductsShelf = (list, containerId, parentSectionId) => {
       };
       badgeHtml = `<span style="position:absolute; top:20px; left:20px; z-index:10; padding:4px 8px; font-size:10px; font-weight:bold; border-radius:4px; text-transform:uppercase; ${badgeStyles[p.badge] || 'background:#333; color:#fff;'}">${p.badge}</span>`;
     }
+// Paste this logic inside your card string mapper:
+let sizingHtml = "";
+if (p.sizingType && p.sizingType !== "none") {
+  const isClothing = p.sizingType === "clothing";
+  const sizes = isClothing 
+    ? ["XS", "S", "M", "L", "XL"] 
+    : ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"];
+
+  sizingHtml = `
+    <div style="margin-bottom:10px;" onclick="event.stopPropagation()">
+      <label style="font-size:11px; display:block; margin-bottom:4px; color:var(--primary);">📏 Select Size *</label>
+      <select id="size-select-${p.id}" style="padding:6px; font-size:13px; margin:0;">
+        <option value="" disabled selected>Select Size</option>
+        ${sizes.map(s => `<option value="${s}">${isClothing ? s : 'EU ' + s}</option>`).join('')}
+      </select>
+    </div>
+  `;
+}
 
     let countdownHtml = "";
     if (p.flashSaleEnd) {
