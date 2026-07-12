@@ -142,12 +142,13 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
           <option value="Sale">💥 Sale / Flash Sale</option>
         </select>
       </div>
-<label style="display:block; font-size:12px; margin-top:10px;">📐 Product Sizing Scheme *</label>
-<select id="p_sizing_type">
-  <option value="none">No Sizing Options (Standard / Decor)</option>
-  <option value="clothing">Clothing Sizing (XS, S, M, L, XL)</option>
-  <option value="shoes">Shoe Sizing (EU 36 - 46)</option>
-</select>
+
+      <label style="display:block; font-size:12px; margin-top:10px;">📐 Product Sizing Scheme *</label>
+      <select id="p_sizing_type">
+        <option value="none">No Sizing Options (Standard / Decor)</option>
+        <option value="clothing">Clothing Sizing (XS, S, M, L, XL)</option>
+        <option value="shoes">Shoe Sizing (EU 36 - 46)</option>
+      </select>
 
       <!-- Expiration Date for Flash Sales (Conditional Display) -->
       <div id="flash-sale-scheduler" style="display:none;">
@@ -178,11 +179,6 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
     </div>
     <div id="plist"></div>
   </section>
-// 1. Inside saveProduct() - add to productDetails payload:
-sizingType: document.getElementById("p_sizing_type").value,
-
-// 2. Inside editP(id) - load the saved sizing scheme back to the form:
-document.getElementById("p_sizing_type").value = p.sizingType || "none";
 
   <!-- DECOR UPLOADER: Isolated Form specifically for Decorations -->
   <section id="decor-upload" class="page">
@@ -737,6 +733,13 @@ window.addSubCat = async () => {
   showToast("📂 Subcategory added!");
 };
 
+window.addSubCat = async () => {
+  if (parentCat.value === "" || newSubCat.value.trim() === "") return showToast("⚠️ Fill fields.");
+  await addDoc(collection(db, "subcategories"), { category: parentCat.value, name: newSubCat.value.trim() });
+  newSubCat.value = "";
+  showToast("📂 Subcategory added!");
+};
+
 window.addSubSubCat = async () => {
   if (parentCategorySS.value === "" || parentSubcategorySS.value === "" || newSubSubCat.value.trim() === "") return showToast("⚠️ Complete fields.");
   await addDoc(collection(db, "subsubcategories"), {
@@ -796,7 +799,8 @@ window.saveProduct = async () => {
     visible: p_visible.checked,
     isBooking: p_is_booking.checked,
     decorTag: p_decor_tag.value.trim(),
-    description: pd.value.trim()
+    description: pd.value.trim(),
+    sizingType: document.getElementById("p_sizing_type").value
   };
 
   try {
@@ -817,6 +821,7 @@ window.saveProduct = async () => {
     pn.value = ""; pp.value = ""; p_original.value = ""; ps.value = ""; pd.value = ""; pi.value = ""; p_decor_tag.value = "";
     p_requires_sizing.checked = false; p_visible.checked = true; p_is_booking.checked = false;
     p_badge.value = ""; p_flash_end.value = "";
+    document.getElementById("p_sizing_type").value = "none";
     document.getElementById("flash-sale-scheduler").style.display = "none";
     pc.selectedIndex = 0;
     psc.innerHTML = '<option value="">Select Subcategory</option>';
@@ -849,6 +854,7 @@ window.editP = (id) => {
   p_visible.checked = p.visible !== false;
   p_is_booking.checked = !!p.isBooking;
   p_decor_tag.value = p.decorTag || "";
+  document.getElementById("p_sizing_type").value = p.sizingType || "none";
   
   if (p.badge === "Sale" && p.flashSaleEnd) {
     p_flash_end.value = new Date(p.flashSaleEnd).toISOString().substring(0,16);
@@ -996,7 +1002,6 @@ function refresh() {
       badge.style.display = "none";
     }
   }
-
   // Segment Orders
   const activeStatuses = ["Pending", "Processing", "Shipped"];
   const historyStatuses = ["Delivered", "Cancelled"];
@@ -1436,7 +1441,7 @@ function injectExtendedAdminManagers() {
   }
 }
 
-// Coupon Database Controllers - Fully addable (bring them new ones) and deletable
+// Coupon Database Controllers - Fully addable and deletable
 window.saveCoupon = async () => {
   const code = document.getElementById("cp_code").value.trim().toUpperCase();
   const discount = Number(document.getElementById("cp_discount").value);
@@ -1589,3 +1594,5 @@ onAuthStateChanged(auth, (user) => {
 </script>
 </body>
 </html>
+
+  
