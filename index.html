@@ -1580,6 +1580,275 @@ if (urlParams.get("checkout") === "true") {
 }
 
 // =========================================================================
+// Checkout & Transaction Finalizers (Fixed Redirect & Missing OrderId)
+// =========================================================================
+window.processCheckout = async (e) => {
+  e.preventDefault();
+  const name = document.getElementById("cust-name").value.trim();
+  const phone = document.getElementById("cust-phone").value.trim();
+  const address = document.getElementById("cust-address").value.trim();
+  const locationVal = document.getElementById("cust-location").value;
+  const paymentMethod = document.getElementById("payment-method").value;
+  
+  const checkoutBtn = document.getElementById('checkout-btn');
+  if (checkoutBtn) {
+    checkoutBtn.innerText = "Placing Order...";
+    checkoutBtn.disabled = true;
+  }
+
+  const subtotalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const discountPoints = Number(document.getElementById('checkout-form').dataset.discountPoints) || 0;
+  const pointDiscountCash = discountPoints / 10;
+  
+  const finalTotal = Math.max(0, subtotalAmount - pointDiscountCash) + deliveryFee;
+
+  const order = {
+    customer: { name, phone, address, coordinates: selectedCoordinates || null },
+    delivery: { location: locationVal, fee: deliveryFee },
+    payment: {
+      method: paymentMethod,
+      status: paymentMethod === "Online Card / Instant EFT" ? "Pending Online Payment" : "Pending Verification"
+    },
+    status: "Pending",
+    userId: currentUser ? currentUser.uid : null,
+    items: cart.map(item => ({ 
+      id: item.id, 
+      name: item.name, 
+      price: item.price, 
+      quantity: item.quantity, 
+      selectedSize: item.selectedSize || null 
+    })),
+    subtotal: subtotalAmount,
+    discountApplied: pointDiscountCash,
+    total: finalTotal,
+    timestamp: Date.now()
+  };
+
+  let assignedOrderId = "";
+
+  try {
+    // Run an atomic transaction to read stock levels, deduct stock, update points, and save the order
+    await runTransaction(db, async (transaction) => {
+      const updates = [];
+
+      for (const item of cart) {
+        const productRef = doc(db, "products", item.id);
+        const productDoc = await transaction.get(productRef);
+
+        if (!productDoc.exists()) {
+          throw new Error(`Product "${item.name}" no longer exists.`);
+        }
+
+        const dbStock = productDoc.data().stock;
+        if (dbStock < item.quantity) {
+          throw new Error(`Inadequate stock for "${item.name}". Only ${dbStock} items left in stock.`);
+        }
+
+        updates.push({ ref: productRef, newStock: dbStock - item.quantity });
+      }
+
+      // Deduct stock levels safely
+      updates.forEach(up => {
+        transaction.update(up.ref, { stock: up.newStock });
+      });
+
+      // Update user loyalty points - uses set with merge so it never fails if document does not exist yet!
+      if (currentUser) {
+        const userRef = doc(db, "users", currentUser.uid);
+        const pointsEarned = Math.floor(finalTotal / 10);
+        const netPoints = (userProfile.points || 0) - discountPoints + pointsEarned;
+        transaction.set(userRef, { points: Math.max(0, netPoints), email: currentUser.email }, { merge: true });
+      }
+
+      // Generate order ID and save order details
+      const orderRef = doc(collection(db, "orders"));
+      assignedOrderId = orderRef.id;
+      order.orderId = orderRef.id;
+
+      transaction.set(orderRef, order);
+    });
+
+    logEvent(analytics, 'purchase', {
+      transaction_id: assignedOrderId,
+      value: finalTotal,
+      currency: 'ZAR',
+      items: order.items.map(i => ({ 
+        item_id: i.id, 
+        item_name: i.name, 
+        price: i.price, 
+        quantity: i.quantity, 
+        item_variant: i.selectedSize 
+      }))
+    });
+
+    closeCheckoutModal();
+
+    // Direct redirection control flow
+    if (paymentMethod === "Online Card / Instant EFT") {
+      showSuccessArea(assignedOrderId, paymentMethod, finalTotal, name, phone);
+    } else if (paymentMethod === "EFT Bank Transfer") {
+      window.location.href = `checkout.html?orderId=${assignedOrderId}&total=${finalTotal}`;
+    } else {
+      showSuccessArea(assignedOrderId, paymentMethod);
+    }
+
+    document.getElementById("checkout-form").reset();
+    delete document.getElementById('checkout-form').dataset.discountPoints;
+    cart = [];
+    updateCartUI();
+    localStorage.removeItem("cart");
+
+  } catch (error) {
+    console.error("Checkout transaction error: ", error);
+    alert(error.message || "Checkout failed. Please try again.");
+    updateCartUI();
+  } finally {
+    if (checkoutBtn) {
+      checkoutBtn.innerText = "Confirm and Place Order";
+      checkoutBtn.disabled = false;
+    }
+  }
+};
+
+function showSuccessArea(orderId, paymentMethod, finalTotal, name, phone) {
+  const popup = document.getElementById("order-popup");
+  if (!popup) return;
+
+  const orderIdDisplay = document.getElementById("popup-order-id");
+  if (orderIdDisplay) orderIdDisplay.innerText = orderId;
+  
+  pendingPayFastDetails = { orderId, finalTotal, name, phone };
+  
+  const payBtn = document.getElementById("popup-pay-btn");
+  if (payBtn) {
+    if (paymentMethod === "Online Card / Instant EFT") {
+      payBtn.style.display = "block";
+      payBtn.innerText = `💳 Pay Now with PayFast (R${finalTotal})`;
+    } else {
+      payBtn.style.display = "none";
+    }
+  }
+  
+  popup.style.display = "flex";
+}
+
+window.payWithPayFast = () => {
+  if (pendingPayFastDetails) {
+    window.triggerPayFastRedirect(
+      pendingPayFastDetails.orderId,
+      pendingPayFastDetails.finalTotal,
+      pendingPayFastDetails.name,
+      pendingPayFastDetails.phone
+    );
+  } else {
+    alert("No pending checkout found.");
+  }
+};
+
+window.triggerPayFastRedirect = async (orderId, finalTotal, name, phone) => {
+  const payBtn = document.getElementById("popup-pay-btn");
+  if (payBtn) {
+    payBtn.innerText = "Redirecting to PayFast...";
+    payBtn.disabled = true;
+  }
+
+  try {
+    const md5Module = await import("https://cdn.jsdelivr.net/npm/blueimp-md5@2.19.0/+esm");
+    const md5 = md5Module.default;
+
+    const payload = {
+      merchant_id: PAYFAST_MERCHANT_ID,
+      merchant_key: PAYFAST_MERCHANT_KEY,
+      return_url: `${window.location.origin}/track.html?orderId=${orderId}&paid=true`,
+      cancel_url: window.location.href,
+      name_first: name.split(" ")[0],
+      cell_number: phone,
+      m_payment_id: orderId,
+      amount: Number(finalTotal).toFixed(2),
+      item_name: `SbheneCart Order ${orderId}`
+    };
+
+    const pfEncode = (str) => {
+      return encodeURIComponent(str)
+        .replace(/%20/g, "+")
+        .replace(/[!'()*]/g, c => "%" + c.charCodeAt(0).toString(16).toUpperCase())
+        .replace(/%[0-9a-f]{2}/g, match => match.toUpperCase());
+    };
+
+    const fieldsInOrder = [
+      "merchant_id", "merchant_key", "return_url", "cancel_url", "notify_url",
+      "name_first", "name_last", "email_address", "cell_number",
+      "m_payment_id", "amount", "item_name", "item_description"
+    ];
+
+    const signatureParts = [];
+    fieldsInOrder.forEach(key => {
+      if (payload[key] !== undefined && payload[key] !== "") {
+        signatureParts.push(`${key}=${pfEncode(payload[key])}`);
+      }
+    });
+
+    if (PAYFAST_PASSPHRASE) {
+      signatureParts.push(`passphrase=${pfEncode(PAYFAST_PASSPHRASE)}`);
+    }
+
+    const signature = md5(signatureParts.join("&"));
+
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = IS_SANDBOX 
+      ? "https://sandbox.payfast.co.za/eng/process" 
+      : "https://www.payfast.co.za/eng/process";
+
+    for (const [key, val] of Object.entries(payload)) {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = key;
+      input.value = val;
+      form.appendChild(input);
+    }
+
+    const sigInput = document.createElement("input");
+    sigInput.type = "hidden";
+    sigInput.name = "signature";
+    sigInput.value = signature;
+    form.appendChild(sigInput);
+
+    document.body.appendChild(form);
+    form.submit();
+
+  } catch (err) {
+    console.error("PayFast initialization failed:", err);
+    alert("Could not load checkout engine. Please try again.");
+    if (payBtn) {
+      payBtn.innerText = `💳 Pay Now with PayFast (R${finalTotal})`;
+      payBtn.disabled = false;
+    }
+  }
+};
+
+window.copyOrderId = async () => {
+  const id = document.getElementById("popup-order-id").innerText;
+  try {
+    await navigator.clipboard.writeText(id);
+    alert("Order ID copied!");
+  } catch {
+    prompt("Copy this Order ID:", id);
+  }
+};
+
+window.closeOrderPopup = () => {
+  const popup = document.getElementById("order-popup");
+  if (popup) popup.style.display = "none";
+};
+
+window.trackOrderPopup = () => {
+  const id = document.getElementById("popup-order-id").innerText;
+  localStorage.setItem("trackOrderId", id);
+  window.location.href = "track.html";
+};
+
+// =========================================================================
 // Real-Time Database Snapshot Streams
 // =========================================================================
 onSnapshot(collection(db, "categories"), (snap) => {
