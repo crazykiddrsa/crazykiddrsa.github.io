@@ -550,6 +550,17 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
       👤 Account & Loyalty
     </button>
   </div>
+      <!-- Contact Us Button and Info Panel -->
+      <button onclick="toggleContactUs()" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.2s;">
+        <span>📞 Contact Us</span>
+        <span id="contact-arrow" style="font-size: 10px; color: var(--primary);">▼</span>
+      </button>
+      
+      <div id="contact-info-panel" style="display: none; background: rgba(0, 255, 136, 0.03); border: 1px dashed var(--primary); padding: 15px; border-radius: 8px; margin-top: 5px; font-size: 13px; line-height: 1.8; animation: slide-in-top 0.2s ease-out;">
+        <span style="color: var(--primary); font-weight: bold; display: block; margin-bottom: 8px; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">📍 Direct Contact Info</span>
+        📧 Email: <a href="mailto:SbheneCart@gmail.com" style="color: #fff; text-decoration: underline; font-weight: bold;">SbheneCart@gmail.com</a><br>
+        💬 WhatsApp: <a href="https://wa.me/27653584906" target="_blank" style="color: #25d366; text-decoration: none; font-weight: bold;">+27 65 358 4906</a>
+      </div>
 
   <!-- Loyalty Points Balance -->
   <div id="loyalty-points-display" style="font-size: 13px; color: var(--primary); background: rgba(0,255,136,0.05); border: 1px dashed var(--primary); padding: 15px; border-radius: 8px; font-weight: bold; text-align: center; margin-top: 15px;">
@@ -1914,6 +1925,24 @@ onSnapshot(collection(db, "broadcasts"), (snap) => {
     document.body.appendChild(ticker);
   }
 });
+
+// =========================================================================
+// Contact Us Accordion Toggle Controller
+// =========================================================================
+window.toggleContactUs = () => {
+  const panel = document.getElementById("contact-info-panel");
+  const arrow = document.getElementById("contact-arrow");
+  if (!panel || !arrow) return;
+
+  if (panel.style.display === "none" || panel.style.display === "") {
+    panel.style.display = "block";
+    arrow.innerText = "▲";
+  } else {
+    panel.style.display = "none";
+    arrow.innerText = "▼";
+  }
+};
+
 </script>
 
 <!-- Floating WhatsApp Chat Trigger -->
