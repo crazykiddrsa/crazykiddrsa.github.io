@@ -932,6 +932,18 @@ window.updateOrderStatus = async (id, status) => {
   await updateDoc(doc(db, "orders", id), { status });
   showToast(`🔄 Status: ${status}`);
 };
+window.updatePaymentStatus = async (id, status) => {
+  try {
+    const orderRef = doc(db, "orders", id);
+    await updateDoc(orderRef, {
+      "payment.status": status
+    });
+    showToast(`🔄 Payment Status: ${status}`);
+  } catch (e) {
+    console.error("Payment status update failed: ", e);
+    showToast("⚠️ Failed to update payment status.");
+  }
+};
 
 window.toggleOrderTab = (tab) => {
   currentOrderTab = tab;
@@ -1002,7 +1014,7 @@ function refresh() {
       badge.style.display = "none";
     }
   }
-  // Segment Orders
+    // Segment Orders
   const activeStatuses = ["Pending", "Processing", "Shipped"];
   const historyStatuses = ["Delivered", "Cancelled"];
 
@@ -1021,6 +1033,29 @@ function refresh() {
     if (currentOrderTab === 'history') actionBtn = `<button onclick="archiveOrder('${o.id}')" style="background:var(--primary); color:#000; width:100%; margin-top:10px;">📦 Archive Order</button>`;
     if (currentOrderTab === 'archived') actionBtn = `<button onclick="unarchiveOrder('${o.id}')" style="background:#29b6f6; color:#000; width:100%; margin-top:10px;">📂 Restore Order</button>`;
 
+    // =========================================================================
+    // 1. DEFINE POP HTML LOGIC HERE (OUTSIDE THE RETURN TEMPLATE LITERAL)
+    // =========================================================================
+    let popHtml = "";
+    if (o.payment?.proofOfPaymentUrl) {
+      popHtml = `
+        <div style="margin-top: 12px; padding: 12px; border: 1px dashed var(--primary); border-radius: 6px; background: rgba(0, 255, 136, 0.02);">
+          <span style="color: var(--primary); font-weight: bold; font-size: 13px;">📄 PROOF OF PAYMENT ATTACHED</span><br>
+          <a href="${o.payment.proofOfPaymentUrl}" target="_blank" style="color: #fff; text-decoration: underline; font-size: 13px; font-weight: bold; display: inline-block; margin-top: 6px;">
+            🔍 View/Download Proof of Payment File
+          </a>
+          ${o.payment.proofOfPaymentUrl.match(/\.(jpeg|jpg|gif|png)$/i) ? `
+            <div style="margin-top: 8px;">
+              <img src="${o.payment.proofOfPaymentUrl}" style="max-width: 100%; max-height: 120px; object-fit: contain; border-radius: 4px; border: 1px solid #333; cursor: zoom-in;" onclick="window.open('${o.payment.proofOfPaymentUrl}', '_blank')">
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // 2. NOW RETURN THE HTML STRING SAFELY Referencing the variable ${popHtml}
+    // =========================================================================
     return `
       <div class="card">
         <b>Order ID:</b> ${o.id}<br>
@@ -1030,8 +1065,25 @@ function refresh() {
         <b>Payment:</b> ${o.payment?.method || "N/A"} (<span style="color:${payColor}; font-weight:bold;">${payStatus}</span>)<br>
         <b>Total Value:</b> R${o.total} (Applied Points Discount: R${o.discountApplied || 0})<br>
         <b>Cargo items:</b><br>
+        
+        <!-- Output the compiled PoP block if it exists -->
+        ${popHtml}
+
+        <!-- Payment status selector -->
+        <div style="margin-top: 12px; margin-bottom: 8px;">
+          <label style="font-size: 12px; display: block; margin-bottom: 4px; color: #aaa;">Payment Status:</label>
+          <select onchange="updatePaymentStatus('${o.id}', this.value)" style="width: 100%; padding: 8px; font-size: 13px; background: #1a1a1a; color: #fff; border: 1px solid var(--primary); border-radius: 4px;">
+            <option value="Pending Verification" ${payStatus === "Pending Verification" ? "selected" : ""}>Pending Verification</option>
+            <option value="PoP Uploaded, Pending Verification" ${payStatus === "PoP Uploaded, Pending Verification" ? "selected" : ""}>PoP Uploaded, Pending Verification</option>
+            <option value="PoP Pending via WhatsApp" ${payStatus === "PoP Pending via WhatsApp" ? "selected" : ""}>PoP Pending via WhatsApp</option>
+            <option value="Paid" ${payStatus === "Paid" ? "selected" : ""}>Paid / Verified</option>
+            <option value="Unverified / Rejected" ${payStatus === "Unverified / Rejected" ? "selected" : ""}>Unverified / Rejected</option>
+          </select>
+        </div>
+
         ${o.items ? o.items.map(i => `• ${i.name} (x${i.quantity}) - R${i.price}`).join("<br>") : "Cargo null"}<br><br>
         <label>Status Lifecycle:</label>
+      
         <select onchange="updateOrderStatus('${o.id}',this.value)">
           <option ${o.status=="Pending"?"selected":""}>Pending</option>
           <option ${o.status=="Processing"?"selected":""}>Processing</option>
@@ -1045,6 +1097,7 @@ function refresh() {
       </div>
     `;
   }).join("");
+
 
   // Customers Directory with Google Profiles Integration
   ulist.innerHTML = customers.map(u => {
