@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Support SbheneCart</title>
+<style>
+/* Variable Placeholders—Will be dynamically overridden on load! */
+:root {
+  --bg: #000;
+  --text: #0f8;
+  --primary: #0f8;
+  --card: #111;
+}
+
+body { 
+  font-family: Arial, sans-serif; 
+  background: var(--bg); 
+  color: var(--text); 
+  margin: 0; 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.support-container {
+  background: var(--card);
+  border: 2px solid var(--primary);
+  border-radius: 12px;
+  padding: 25px;
+  max-width: 450px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+  transition: background 0.3s, border-color 0.3s;
+}
+
+h2 {
+  color: var(--primary);
+  text-transform: uppercase;
+  margin-top: 0;
+  letter-spacing: 1px;
+}
+
+p {
+  color: #ccc;
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 15px 0;
+}
+
+/* Theme-Compatible Video Player styling */
+video {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--primary);
+  margin-bottom: 20px;
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.1);
+  background: #000;
+}
+
+.support-btn {
+  display: block;
+  width: 100%;
+  background: #222;
+  color: #555;
+  font-weight: bold;
+  font-size: 16px;
+  text-transform: uppercase;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #333;
+  cursor: not-allowed;
+  transition: all 0.3s ease;
+  margin-bottom: 15px;
+}
+
+.support-btn.active {
+  background: var(--primary);
+  color: var(--bg);
+  border-color: var(--primary);
+  cursor: pointer;
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+}
+
+.back-btn {
+  display: inline-block;
+  background: transparent;
+  color: #888;
+  border: 1px solid #333;
+  padding: 10px 20px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.back-btn:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+</style>
+</head>
+<body>
+
+<div class="support-container">
+  <h2>Support SbheneCart ❤️</h2>
+  <p>
+    We run a no-cost storefront! Support our work at absolutely <b>no-cost</b> to you by playing the video below, then clicking the ad button to help us keep running!
+  </p>
+  
+  <!-- Video Player (Replace with your copied Firebase Storage URL) -->
+  <video id="promo-video" controls onplay="startSupportTimer()">
+    <source src="PASTE_YOUR_COPIED_LINK_HERE" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+  
+  <button id="support-btn" class="support-btn" onclick="redirectToAd()" disabled>
+    🔒 Play video to unlock ad
+  </button>
+  
+  <br>
+  <a href="index.html" class="back-btn">◀ Back to Store</a>
+</div>
+
+<script>
+// =========================================================================
+// Real-Time Theme Synchronization Engine
+// =========================================================================
+const savedTheme = localStorage.getItem("selectedTheme") || "neon";
+const themes = {
+  neon: { bg: "#000", text: "#0f8", primary: "#0f8", card: "#111" },
+  dark: { bg: "#0a0a0a", text: "#aaa", primary: "#fff", card: "#151515" },
+  redgold: { bg: "#1a0305", text: "#ffebcd", primary: "#ffd700", card: "#2c070a" },
+  matrixblue: { bg: "#050b14", text: "#e0f7fc", primary: "#00f0ff", card: "#0b1528" },
+  synthwave: { bg: "#120024", text: "#ffd1dc", primary: "#ff007f", card: "#1e0036" },
+  emerald: { bg: "#04140c", text: "#d2f8e4", primary: "#00ff87", card: "#092419" },
+  amber: { bg: "#100c08", text: "#fdf6e2", primary: "#ff9900", card: "#1b1410" }
+};
+
+const theme = themes[savedTheme] || themes.neon;
+document.documentElement.style.setProperty('--bg', theme.bg);
+document.documentElement.style.setProperty('--text', theme.text);
+document.documentElement.style.setProperty('--primary', theme.primary);
+document.documentElement.style.setProperty('--card', theme.card);
+document.body.style.background = theme.bg;
+document.body.style.color = theme.text;
+
+// =========================================================================
+// Reward Countdown Timer
+// =========================================================================
+let timer = null;
+let secondsLeft = 5; 
+let isUnlocked = false;
+
+function startSupportTimer() {
+  if (timer || isUnlocked) return;
+
+  const btn = document.getElementById("support-btn");
+  btn.innerText = `Watching... (${secondsLeft}s)`;
+
+  timer = setInterval(() => {
+    secondsLeft--;
+    if (secondsLeft > 0) {
+      btn.innerText = `Watching... (${secondsLeft}s)`;
+    } else {
+      clearInterval(timer);
+      isUnlocked = true;
+      btn.disabled = false;
+      btn.classList.add("active");
+      btn.innerText = "📺 Click to Watch Ad & Support!";
+    }
+  }, 1000);
+}
+
+function redirectToAd() {
+  if (isUnlocked) {
+    window.open("https://omg10.com/4/11347806", "_blank");
+  }
+}
+</script>
+
+</body>
+</html>
