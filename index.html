@@ -621,7 +621,13 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
     <button id="auth-status-btn" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer;">
       👤 Account & Loyalty
     </button>
+    
+    <!-- NEW: Seamless Support Integration Button -->
+    <button onclick="location.href='support.html'" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+      ❤️ Support Us (Watch Sponsor Ad)
+    </button>
   </div>
+
       <!-- Contact Us Button and Info Panel -->
       <button onclick="toggleContactUs()" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.2s;">
         <span>📞 Contact Us</span>
@@ -690,11 +696,13 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
 <div id="lightbox-modal" class="lightbox-modal" onclick="closeLightbox()">
   <span class="close-lightbox" onclick="closeLightbox()">&times;</span>
   
-  <!-- Wrapped the zoomed image in your Monetag SmartLink path -->
-  <a href="https://omg10.com/4/11347806" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();">
-    <img id="lightbox-img" class="lightbox-content" src="">
+  <!-- The <a> tag now holds the lightbox styling and flex centering layout to prevent collapsing -->
+  <a href="https://omg10.com/4/11347806" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="lightbox-content" style="display: flex; justify-content: center; align-items: center; overflow: hidden;">
+    <!-- The <img> tag retains the ID so Javascript can dynamically load the product photo -->
+    <img id="lightbox-img" src="" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: inherit;">
   </a>
 </div>
+
 
 
 <!-- Checkout Modal -->
