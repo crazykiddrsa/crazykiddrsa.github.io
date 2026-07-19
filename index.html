@@ -433,6 +433,68 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
   margin: 10px 0;
 }
 
+  .store-promo-banner {
+    width: 94%;
+    max-width: 1200px;
+    margin: 25px auto;
+    box-sizing: border-box;
+}
+
+.store-promo-banner a {
+    text-decoration: none;
+    display: block;
+}
+
+.banner-content {
+    background: linear-gradient(135deg, #1f1a02 0%, #111111 100%);
+    border: 2px dashed #ffcc00; /* Matching your store's gold accent */
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.banner-content:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(255, 204, 0, 0.15);
+    background: linear-gradient(135deg, #2c2503 0%, #161616 100%);
+}
+
+.banner-content .badge {
+    background-color: #ff3333;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+.banner-content h3 {
+    color: #ffcc00; /* Matching storefront gold colors */
+    margin: 12px 0 6px 0;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.banner-content p {
+    color: #cccccc;
+    font-size: 14px;
+    margin: 0 0 15px 0;
+}
+
+.banner-content .action-btn {
+    display: inline-block;
+    background-color: #ffcc00;
+    color: #111111;
+    font-weight: bold;
+    padding: 8px 24px;
+    border-radius: 5px;
+    font-size: 14px;
+    text-transform: uppercase;
+}
+
 /* Map Div */
 #checkout-map {
   width: 100%;
@@ -530,6 +592,18 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
   <div class="shelf-scroll" id="shelf-best-scroll"></div>
 </div>
 
+  <!-- Monetag SmartLink Banner Placement -->
+<div class="store-promo-banner">
+    <a href="https://omg10.com/4/11347806" target="_blank" rel="noopener noreferrer">
+        <div class="banner-content">
+            <span class="badge">🔥 FLASH DEAL BONUS</span>
+            <h3>Get a chance Unlock 50% Off Premium Smart Gadgets</h3>
+            <p>Click here to claim your limited-time shopping voucher before checkout</p>
+            <div class="action-btn">Claim Offer Now</div>
+        </div>
+    </a>
+</div>
+  
 <!-- Standard Dynamic Grid Catalog -->
 <div id="standard-catalog-section">
   <h3 class="category-section-title" id="catalog-title">🛒 Catalog</h3>
