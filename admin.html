@@ -52,13 +52,31 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
 
 <div id="alert-overlay"></div>
 
-<!-- Login Lock Screen -->
-<div id="login-screen" style="max-width: 400px; margin: 100px auto; padding: 25px; border: 1px solid var(--primary); background: #000; border-radius: 8px; text-align: center;">
-  <h2>SbheneCart Gatekeeper</h2>
-  <p style="color:#888;">Enter your administrator password to unlock the console.</p>
-  <input id="login-email" type="email" placeholder="Admin Email">
-  <input id="login-pw" type="password" placeholder="Password">
-  <button id="login-btn" onclick="loginAdmin()" style="width:100%;">Unlock Console</button>
+<!-- Full-Screen Creator and Admin Security Verification Modal -->
+<div id="admin-security-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; z-index: 99999;">
+  <div style="background: #111; border: 2px solid var(--primary); border-radius: 12px; padding: 30px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 0 25px rgba(0, 255, 136, 0.15);">
+    
+    <!-- STEP 1: Creator Passkey Panel -->
+    <div id="step-passkey">
+      <h2 style="color: var(--primary); text-transform: uppercase; margin-bottom: 10px;">Creator Security</h2>
+      <p style="color: #ccc; font-size: 14px; margin-bottom: 20px;">Enter the Admin Passkey provided by the Creator:</p>
+      <input type="password" id="creator-passkey-input" placeholder="Enter Passkey..." style="width: 100%; padding: 12px; border: 1px solid var(--primary); background: #000; color: var(--primary); text-align: center; border-radius: 4px; font-size: 16px;">
+      <button onclick="verifyCreatorPasskey()" style="width: 100%; margin-top: 15px; background: var(--primary); color: var(--bg); font-weight: bold; padding: 12px; border: none; border-radius: 4px;">Verify Passkey</button>
+      <button onclick="window.location.href='index.html'" style="width: 100%; margin-top: 10px; background: transparent; color: #888; border: 1px solid #333; padding: 10px; border-radius: 4px; cursor: pointer;">Cancel</button>
+    </div>
+
+    <!-- STEP 2: Admin Login Panel (Hidden initially) -->
+    <div id="step-login" style="display: none;">
+      <h2 style="color: var(--primary); text-transform: uppercase; margin-bottom: 10px;">Admin Credentials</h2>
+      <p style="color: #ccc; font-size: 14px; margin-bottom: 20px;">Enter your admin details to access the dashboard:</p>
+      <form onsubmit="handleAdminLogin(event)">
+        <input type="email" id="admin-email-input" required placeholder="Admin Email" style="width: 100%; padding: 12px; border: 1px solid var(--primary); background: #000; color: var(--primary); border-radius: 4px; font-size: 16px; margin-bottom: 10px; box-sizing: border-box;">
+        <input type="password" id="admin-password-input" required placeholder="Admin Password" style="width: 100%; padding: 12px; border: 1px solid var(--primary); background: #000; color: var(--primary); border-radius: 4px; font-size: 16px; margin-bottom: 15px; box-sizing: border-box;">
+        <button type="submit" style="width: 100%; background: var(--primary); color: var(--bg); font-weight: bold; padding: 12px; border: none; border-radius: 4px; cursor: pointer;">Log In to Dashboard</button>
+      </form>
+    </div>
+
+  </div>
 </div>
 
 <!-- Main Admin Panel Wrapper -->
@@ -85,9 +103,10 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
     <button onclick="showPage('coupons-mgr')">🎟️ Coupons</button>
     <button onclick="showPage('banners-mgr')">🖼️ Banners</button>
     <button onclick="showPage('push-mgr')">📢 Broadcasts</button>
+    <button onclick="showPage('security-settings')">🔒 Security Settings</button>
   </nav>
 
-  <!-- DASHBOARD: Analytics Charts -->
+  <!-- DASHBOARD: Analytics Charts & Audit Logs -->
   <section id="dash" class="page active">
     <div class="card">
       <div id="stats" style="margin-bottom: 20px; line-height: 1.6;"></div>
@@ -99,6 +118,14 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
         <div class="card" style="margin: 0; padding:10px;">
           <h3 style="text-align: center; margin: 5px 0;">Product Stock Status</h3>
           <div class="chart-container"><canvas id="stockChart"></canvas></div>
+        </div>
+      </div>
+      
+      <!-- Real-Time Activity Log Dashboard Extension -->
+      <div class="card" style="margin-top:20px;">
+        <h3 style="color:var(--primary); text-transform:uppercase;">📝 Admin Activity Logs</h3>
+        <div id="admin-activity-logs" style="max-height:200px; overflow-y:auto; font-family:monospace; line-height:1.8;">
+          <p style="color:#666;">Loading live administrative logs...</p>
         </div>
       </div>
     </div>
@@ -233,7 +260,7 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
     </div>
   </section>
 
-  <!-- SUBSUBCATEGORIES -->
+  <!-- SUBSUBCATEGORIES (HTML Page ID Typo Fixed to avoid page breaks!) -->
   <section id="subsubcategories" class="page">
     <div class="card">
       <select id="parentCategorySS"></select>
@@ -323,10 +350,23 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
       <div id="broadcasts-list" style="margin-top:20px;"></div>
     </div>
   </section>
+
+  <!-- NEW: CREATOR SECURITY & SETTINGS MANAGER -->
+  <section id="settings-mgr" class="page">
+    <div class="card" style="border-color: #ffd700; background: #110e00;">
+      <h3 style="color: #ffd700; margin-top: 0;">⚙️ Creator Security Settings</h3>
+      <p style="color:#888; font-size:12px;">View, edit, or reset the master Creator Passkey dynamically. This updates your database instantly.</p>
+      
+      <label style="display:block; font-size:13px; margin-bottom:5px; color:#ffd700;">🔑 Active Creator Passkey</label>
+      <input type="text" id="new-passkey-input" placeholder="Fetching current passkey from database...">
+      <button onclick="window.updatePasskeyInDatabase()" style="background:#ffd700; color:#000; width:100%; margin-top:15px;">💾 Save New Creator Passkey</button>
+    </div>
+  </section>
 </div>
 
 <div id="toast-notif" style="position:fixed; bottom:20px; right:20px; background:var(--primary); color:#000; padding:15px 25px; border-radius:4px; font-weight:bold; box-shadow:0 4px 15px rgba(0,255,136,0.3); display:none; z-index:10000; transition: opacity 0.3s ease; opacity:0;"></div>
 
+<!-- CONSOLIDATED, EXTREMELY SECURE ADMIN SCRIPT BLOCK -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import {
@@ -336,7 +376,8 @@ import {
   updateDoc,
   deleteDoc,
   doc,
-  onSnapshot
+  onSnapshot,
+  setDoc
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 import {
   getAuth,
@@ -364,6 +405,96 @@ const auth = getAuth(app);
 if (typeof Notification !== "undefined" && Notification.permission !== "granted") {
   Notification.requestPermission();
 }
+
+// =========================================================================
+// Real-time Passkey Database Lookups
+// =========================================================================
+let activePasskey = "SbheneCartAdmin2026!"; // Fallback default
+const AUTHORIZED_ADMINS = [
+  "sbhenecart@gmail.com",
+  "nhlakanipho.ndawonde80@gmail.com"
+];
+
+// Read/Listen to dynamic passkey changes in the database
+onSnapshot(doc(db, "settings", "security"), (docSnap) => {
+  if (docSnap.exists()) {
+    activePasskey = docSnap.data().creatorPasskey || "SbheneCartAdmin2026!";
+    const passkeyInput = document.getElementById("new-passkey-input");
+    if (passkeyInput) passkeyInput.value = activePasskey;
+  }
+});
+
+// Verify Creator Passkey
+window.verifyCreatorPasskey = () => {
+  const input = document.getElementById("creator-passkey-input").value;
+  if (input === activePasskey) {
+    document.getElementById("step-passkey").style.display = "none";
+    document.getElementById("step-login").style.display = "block";
+  } else {
+    alert("❌ Incorrect Creator Passkey! Access Denied.");
+    window.location.href = "index.html";
+  }
+};
+
+// Update Passkey dynamically in Firestore
+window.updatePasskeyInDatabase = async () => {
+  const newKey = document.getElementById("new-passkey-input").value.trim();
+  if (!newKey) return alert("Passkey cannot be empty!");
+  
+  try {
+    await setDoc(doc(db, "settings", "security"), { creatorPasskey: newKey }, { merge: true });
+    showToast("🔑 Passkey updated in database successfully!");
+  } catch (err) {
+    showToast("⚠️ Failed to update passkey.");
+  }
+};
+
+// Handle Authentication Submission
+window.handleAdminLogin = async (e) => {
+  e.preventDefault();
+  const email = document.getElementById("admin-email-input").value.trim();
+  const password = document.getElementById("admin-password-input").value;
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    showToast("🔑 Access Granted!");
+  } catch (err) {
+    alert("❌ Login Failed: " + err.message);
+  }
+};
+
+window.logoutAdmin = async () => {
+  await signOut(auth);
+  showToast("🔒 Locked out.");
+};
+
+// Monitor Auth States securely
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    const userEmail = user.email ? user.email.toLowerCase() : "";
+    
+    if (AUTHORIZED_ADMINS.includes(userEmail)) {
+      document.getElementById("admin-security-modal").style.display = "none";
+      document.getElementById("admin-wrapper").style.display = "block";
+      
+      injectStreamlinedDecorUI();
+      injectExtendedAdminManagers();
+      
+      refresh();
+      if (typeof google === 'object' && typeof google.maps === 'object') {
+        initAdminMap();
+      }
+    } else {
+      signOut(auth).then(() => {
+        alert("⚠️ Access Denied! This account is not an authorized Admin.");
+        window.location.reload();
+      });
+    }
+  } else {
+    document.getElementById("admin-security-modal").style.display = "flex";
+    document.getElementById("admin-wrapper").style.display = "none";
+  }
+});
 
 // Bind Inputs
 const pn = document.getElementById('pn');
@@ -608,19 +739,6 @@ onSnapshot(collection(db, "orders"), (snap) => {
 });
 
 // Authentication Handlers
-window.loginAdmin = async () => {
-  const email = document.getElementById("login-email").value.trim();
-  const pw = document.getElementById("login-pw").value;
-  try {
-    await signInWithEmailAndPassword(auth, email, pw);
-    document.getElementById("login-email").value = "";
-    document.getElementById("login-pw").value = "";
-    showToast("🔑 Access Granted!");
-  } catch (err) {
-    alert(err.message);
-  }
-};
-
 window.logoutAdmin = async () => {
   await signOut(auth);
   showToast("🔒 Locked out.");
@@ -630,13 +748,13 @@ window.showPage = (id) => {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   document.querySelectorAll('#admin-nav button').forEach(b => b.classList.remove('active'));
-  
+
   // Highlight currently active tab button visually
   const activeNavBtn = Array.from(document.querySelectorAll('#admin-nav button')).find(b => b.getAttribute("onclick")?.includes(id));
   if (activeNavBtn) activeNavBtn.classList.add('active');
-  
+
   refresh();
-  
+
   if (id === 'orders' && adminMap) {
     google.maps.event.trigger(adminMap, "resize");
     updateAdminMapPins();
@@ -724,13 +842,6 @@ window.addCat = async () => {
   await addDoc(collection(db, "categories"), { name });
   newCat.value = "";
   showToast("📁 Category added!");
-};
-
-window.addSubCat = async () => {
-  if (parentCat.value === "" || newSubCat.value.trim() === "") return showToast("⚠️ Fill fields.");
-  await addDoc(collection(db, "subcategories"), { category: parentCat.value, name: newSubCat.value.trim() });
-  newSubCat.value = "";
-  showToast("📂 Subcategory added!");
 };
 
 window.addSubCat = async () => {
@@ -1014,7 +1125,8 @@ function refresh() {
       badge.style.display = "none";
     }
   }
-    // Segment Orders
+
+  // Segment Orders
   const activeStatuses = ["Pending", "Processing", "Shipped"];
   const historyStatuses = ["Delivered", "Cancelled"];
 
@@ -1033,9 +1145,6 @@ function refresh() {
     if (currentOrderTab === 'history') actionBtn = `<button onclick="archiveOrder('${o.id}')" style="background:var(--primary); color:#000; width:100%; margin-top:10px;">📦 Archive Order</button>`;
     if (currentOrderTab === 'archived') actionBtn = `<button onclick="unarchiveOrder('${o.id}')" style="background:#29b6f6; color:#000; width:100%; margin-top:10px;">📂 Restore Order</button>`;
 
-    // =========================================================================
-    // 1. DEFINE POP HTML LOGIC HERE (OUTSIDE THE RETURN TEMPLATE LITERAL)
-    // =========================================================================
     let popHtml = "";
     if (o.payment?.proofOfPaymentUrl) {
       popHtml = `
@@ -1053,9 +1162,6 @@ function refresh() {
       `;
     }
 
-    // =========================================================================
-    // 2. NOW RETURN THE HTML STRING SAFELY Referencing the variable ${popHtml}
-    // =========================================================================
     return `
       <div class="card">
         <b>Order ID:</b> ${o.id}<br>
@@ -1066,10 +1172,8 @@ function refresh() {
         <b>Total Value:</b> R${o.total} (Applied Points Discount: R${o.discountApplied || 0})<br>
         <b>Cargo items:</b><br>
         
-        <!-- Output the compiled PoP block if it exists -->
         ${popHtml}
 
-        <!-- Payment status selector -->
         <div style="margin-top: 12px; margin-bottom: 8px;">
           <label style="font-size: 12px; display: block; margin-bottom: 4px; color: #aaa;">Payment Status:</label>
           <select onchange="updatePaymentStatus('${o.id}', this.value)" style="width: 100%; padding: 8px; font-size: 13px; background: #1a1a1a; color: #fff; border: 1px solid var(--primary); border-radius: 4px;">
@@ -1097,7 +1201,6 @@ function refresh() {
       </div>
     `;
   }).join("");
-
 
   // Customers Directory with Google Profiles Integration
   ulist.innerHTML = customers.map(u => {
@@ -1217,7 +1320,6 @@ function injectStreamlinedDecorUI() {
   const nav = document.getElementById("admin-nav");
   const wrapper = document.getElementById("admin-wrapper");
 
-  // 1. Inject Nav Button
   if (nav && !document.getElementById("nav-decor-btn")) {
     const btn = document.createElement("button");
     btn.id = "nav-decor-btn";
@@ -1230,7 +1332,6 @@ function injectStreamlinedDecorUI() {
     nav.appendChild(btn);
   }
 
-  // 2. Inject Form Page
   if (wrapper && !document.getElementById("decor-upload")) {
     const sec = document.createElement("section");
     sec.id = "decor-upload";
@@ -1331,7 +1432,6 @@ window.saveDecorProduct = async () => {
     await addDoc(collection(db, "products"), decorPayload);
     showToast("🏺 Decoration item saved and storefront synced!");
     
-    // Clear and reset form fields
     document.getElementById("dec_name").value = "";
     document.getElementById("dec_price").value = "";
     document.getElementById("dec_orig").value = "";
@@ -1368,307 +1468,305 @@ window.generateAIDescription = async () => {
     const geminiModule = await import("https://cdn.jsdelivr.net/npm/@google/generative-ai/+esm");
     const { GoogleGenerativeAI } = geminiModule;
 
-    const genAI = new GoogleGenerativeAI(pKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const genAI = new GoogleGenerativeAI(pKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const promptText = `
-      Write an engaging e-commerce description, three SEO keywords, and three short highlights for a product named "${pName}" in the category of "${pCat}".
-      Format the response strictly as a JSON object with keys "description", "keywords" (array), and "highlights" (array).
-    `;
+        const promptText = `
+          Write an engaging e-commerce description, three SEO keywords, and three short highlights for a product named "${pName}" in the category of "${pCat}".
+          Format the response strictly as a JSON object with keys "description", "keywords" (array), and "highlights" (array).
+        `;
 
-    const result = await model.generateContent(promptText);
-    const textResponse = result.response.text();
+        const result = await model.generateContent(promptText);
+        const textResponse = result.response.text();
 
-    const cleanedJson = textResponse.replace(/```json/g, "").replace(/```/g, "").trim();
-    const data = JSON.parse(cleanedJson);
+        const cleanedJson = textResponse.replace(/```json/g, "").replace(/```/g, "").trim();
+        const data = JSON.parse(cleanedJson);
 
-    document.getElementById("pd").value = data.description || "";
-    document.getElementById("p_decor_tag").value = (data.keywords || []).join(", ");
-    showToast("✨ AI Generation completed successfully!");
+        document.getElementById("pd").value = data.description || "";
+        document.getElementById("p_decor_tag").value = (data.keywords || []).join(", ");
+        showToast("✨ AI Generation completed successfully!");
 
-  } catch (err) {
-    console.error("AI Generation error: ", err);
-    alert("AI Generator failed. Verify your API Key and try again.");
-  }
-};
-
-// =========================================================================
-// Dynamic Firestore Coupon, Banner & Broadcast Managers
-// =========================================================================
-function injectExtendedAdminManagers() {
-  const nav = document.getElementById("admin-nav");
-  const wrapper = document.getElementById("admin-wrapper");
-
-  // 1. Inject Coupons Management Tab Button
-  if (nav && !document.getElementById("nav-coupons-btn")) {
-    const btn = document.createElement("button");
-    btn.id = "nav-coupons-btn";
-    btn.innerText = "🎟️ Coupons";
-    btn.onclick = (e) => {
-      window.showPage("coupons-mgr");
-      document.querySelectorAll('#admin-nav button').forEach(b => b.classList.remove('active'));
-      e.target.classList.add('active');
+      } catch (err) {
+        console.error("AI Generation error: ", err);
+        alert("AI Generator failed. Verify your API Key and try again.");
+      }
     };
-    nav.appendChild(btn);
-  }
 
-  // 2. Inject Homepage Banner Manager Tab Button
-  if (nav && !document.getElementById("nav-banners-btn")) {
-    const btn = document.createElement("button");
-    btn.id = "nav-banners-btn";
-    btn.innerText = "🖼️ Banners";
-    btn.onclick = (e) => {
-      window.showPage("banners-mgr");
-      document.querySelectorAll('#admin-nav button').forEach(b => b.classList.remove('active'));
-      e.target.classList.add('active');
+    // =========================================================================
+    // Dynamic Firestore Coupon, Banner & Broadcast Managers
+    // =========================================================================
+    function injectExtendedAdminManagers() {
+      const nav = document.getElementById("admin-nav");
+      const wrapper = document.getElementById("admin-wrapper");
+
+      if (nav && !document.getElementById("nav-coupons-btn")) {
+        const btn = document.createElement("button");
+        btn.id = "nav-coupons-btn";
+        btn.innerText = "🎟️ Coupons";
+        btn.onclick = (e) => {
+          window.showPage("coupons-mgr");
+          document.querySelectorAll('#admin-nav button').forEach(b => b.classList.remove('active'));
+          e.target.classList.add('active');
+        };
+        nav.appendChild(btn);
+      }
+
+      if (nav && !document.getElementById("nav-banners-btn")) {
+        const btn = document.createElement("button");
+        btn.id = "nav-banners-btn";
+        btn.innerText = "🖼️ Banners";
+        btn.onclick = (e) => {
+          window.showPage("banners-mgr");
+          document.querySelectorAll('#admin-nav button').forEach(b => b.classList.remove('active'));
+          e.target.classList.add('active');
+        };
+        nav.appendChild(btn);
+      }
+
+      if (nav && !document.getElementById("nav-push-btn")) {
+        const btn = document.createElement("button");
+        btn.id = "nav-push-btn";
+        btn.innerText = "📢 Broadcasts";
+        btn.onclick = (e) => {
+          window.showPage("push-mgr");
+          document.querySelectorAll('#admin-nav button').forEach(b => b.classList.remove('active'));
+          e.target.classList.add('active');
+        };
+        nav.appendChild(btn);
+      }
+
+      if (wrapper && !document.getElementById("coupons-mgr")) {
+        const sec = document.createElement("section");
+        sec.id = "coupons-mgr";
+        sec.className = "page";
+        sec.innerHTML = `
+          <div class="card">
+            <h3>🎟️ Coupons & Promotions Manager</h3>
+            <input id="cp_code" placeholder="Coupon Code (e.g. WELCOME50)">
+            <div class="grid-2">
+              <input id="cp_discount" type="number" placeholder="Discount Amount (ZAR)">
+              <input id="cp_min" type="number" placeholder="Minimum Purchase Requirement (ZAR)">
+            </div>
+            <input id="cp_expiry" type="date" placeholder="Expiration Date">
+            <button id="save-coupon-btn" onclick="window.saveCoupon()" style="width:100%; margin-top:15px;">💾 Create Promo Coupon</button>
+            <div id="coupons-list" style="margin-top:20px;"></div>
+          </div>
+        `;
+        wrapper.appendChild(sec);
+      }
+
+      if (wrapper && !document.getElementById("banners-mgr")) {
+        const sec = document.createElement("section");
+        sec.id = "banners-mgr";
+        sec.className = "page";
+        sec.innerHTML = `
+          <div class="card">
+            <h3>🖼️ Homepage Promo Banner Manager</h3>
+            <input id="bn_title" placeholder="Banner Heading (e.g. Winter Sale)">
+            <input id="bn_file" type="file" accept="image/*">
+            <button id="save-banner-btn" onclick="window.saveBanner()" style="width:100%; margin-top:15px;">💾 Upload and Publish Banner</button>
+            <div id="banners-list" style="margin-top:20px;"></div>
+          </div>
+        `;
+        wrapper.appendChild(sec);
+      }
+
+      // 6. Inject Push Notifications / Broadcast Section
+      if (wrapper && !document.getElementById("push-mgr")) {
+        const sec = document.createElement("section");
+        sec.id = "push-mgr";
+        sec.className = "page";
+        sec.innerHTML = `
+          <div class="card">
+            <h3>📢 Push Broadcast Notifications</h3>
+            <p style="color:#888;">Broadcasting pushes a live, glowing ticker alert onto all connected customer screens instantly.</p>
+            <textarea id="push_msg" placeholder="Enter broadcast message (e.g. 🎉 Weekend Sale is Live! 20% off all sewn items!)" style="height:100px;"></textarea>
+            <button id="send-push-btn" onclick="window.sendBroadcast()" style="width:100%; margin-top:15px;">📢 Dispatch Broadcast Ticker</button>
+            <div id="broadcasts-list" style="margin-top:20px;"></div>
+          </div>
+        `;
+        wrapper.appendChild(sec);
+      }
+    }
+
+    // Coupon Database Controllers - Fully addable and deletable
+    window.saveCoupon = async () => {
+      const code = document.getElementById("cp_code").value.trim().toUpperCase();
+      const discount = Number(document.getElementById("cp_discount").value);
+      const min = Number(document.getElementById("cp_min").value);
+      const expiry = document.getElementById("cp_expiry").value;
+
+      if (!code || !discount) return alert("Coupon Code and Discount amount are required fields.");
+
+      try {
+        await addDoc(collection(db, "coupons"), {
+          code, discount, min, expiry: expiry ? Date.parse(expiry) : null, timestamp: Date.now()
+        });
+        showToast("🎟️ Promotion coupon successfully registered!");
+        document.getElementById("cp_code").value = "";
+        document.getElementById("cp_discount").value = "";
+        document.getElementById("cp_min").value = "";
+        document.getElementById("cp_expiry").value = "";
+      } catch (err) {
+        showToast("⚠️ Coupon registry failed.");
+      }
     };
-    nav.appendChild(btn);
-  }
 
-  // 3. Inject Push Notifications Tab Button
-  if (nav && !document.getElementById("nav-push-btn")) {
-    const btn = document.createElement("button");
-    btn.id = "nav-push-btn";
-    btn.innerText = "📢 Broadcasts";
-    btn.onclick = (e) => {
-      window.showPage("push-mgr");
-      document.querySelectorAll('#admin-nav button').forEach(b => b.classList.remove('active'));
-      e.target.classList.add('active');
-    };
-    nav.appendChild(btn);
-  }
-
-  // 4. Inject Coupons Manager Form Section
-  if (wrapper && !document.getElementById("coupons-mgr")) {
-    const sec = document.createElement("section");
-    sec.id = "coupons-mgr";
-    sec.className = "page";
-    sec.innerHTML = `
-      <div class="card">
-        <h3>🎟️ Coupons & Promotions Manager</h3>
-        <input id="cp_code" placeholder="Coupon Code (e.g. WELCOME50)">
-        <div class="grid-2">
-          <input id="cp_discount" type="number" placeholder="Discount Amount (ZAR)">
-          <input id="cp_min" type="number" placeholder="Minimum Purchase Requirement (ZAR)">
-        </div>
-        <input id="cp_expiry" type="date" placeholder="Expiration Date">
-        <button id="save-coupon-btn" onclick="window.saveCoupon()" style="width:100%; margin-top:15px;">💾 Create Promo Coupon</button>
-        <div id="coupons-list" style="margin-top:20px;"></div>
-      </div>
-    `;
-    wrapper.appendChild(sec);
-  }
-
-  // 5. Inject Banner Manager Section
-  if (wrapper && !document.getElementById("banners-mgr")) {
-    const sec = document.createElement("section");
-    sec.id = "banners-mgr";
-    sec.className = "page";
-    sec.innerHTML = `
-      <div class="card">
-        <h3>🖼️ Homepage Promo Banner Manager</h3>
-        <input id="bn_title" placeholder="Banner Heading (e.g. Winter Sale)">
-        <input id="bn_file" type="file" accept="image/*">
-        <button id="save-banner-btn" onclick="window.saveBanner()" style="width:100%; margin-top:15px;">💾 Upload and Publish Banner</button>
-        <div id="banners-list" style="margin-top:20px;"></div>
-      </div>
-    `;
-    wrapper.appendChild(sec);
-  }
-
-  // 6. Inject Push Notifications / Broadcast Section
-  if (wrapper && !document.getElementById("push-mgr")) {
-    const sec = document.createElement("section");
-    sec.id = "push-mgr";
-    sec.className = "page";
-    sec.innerHTML = `
-      <div class="card">
-        <h3>📢 Push Broadcast Notifications</h3>
-        <p style="color:#888;">Broadcasting pushes a live, glowing ticker alert onto all connected customer screens instantly.</p>
-        <textarea id="push_msg" placeholder="Enter broadcast message (e.g. 🎉 Weekend Sale is Live! 20% off all sewn items!)" style="height:100px;"></textarea>
-        <button id="send-push-btn" onclick="window.sendBroadcast()" style="width:100%; margin-top:15px;">📢 Dispatch Broadcast Ticker</button>
-        <div id="broadcasts-list" style="margin-top:20px;"></div>
-      </div>
-    `;
-    wrapper.appendChild(sec);
-  }
-}
-
-// Coupon Database Controllers - Fully addable and deletable
-window.saveCoupon = async () => {
-  const code = document.getElementById("cp_code").value.trim().toUpperCase();
-  const discount = Number(document.getElementById("cp_discount").value);
-  const min = Number(document.getElementById("cp_min").value);
-  const expiry = document.getElementById("cp_expiry").value;
-
-  if (!code || !discount) return alert("Coupon Code and Discount amount are required fields.");
-
-  try {
-    await addDoc(collection(db, "coupons"), {
-      code, discount, min, expiry: expiry ? Date.parse(expiry) : null, timestamp: Date.now()
+    onSnapshot(collection(db, "coupons"), (snap) => {
+      const container = document.getElementById("coupons-list");
+      if (!container) return;
+      const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      container.innerHTML = list.length
+        ? list.map(c => `
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <b>Code:</b> ${c.code}<br>
+                <small>Discount: R${c.discount} | Min Spend: R${c.min || 0} | Expiry: ${c.expiry ? new Date(c.expiry).toLocaleDateString() : "Never"}</small>
+              </div>
+              <button onclick="window.deleteDocRef('coupons', '${c.id}')" style="background:#ff1744; color:#fff; cursor:pointer;">Delete</button>
+            </div>
+          `).join('')
+        : `<p style="color:#666;">No promotional coupons registered.</p>`;
     });
-    showToast("🎟️ Promotion coupon successfully registered!");
-    document.getElementById("cp_code").value = "";
-    document.getElementById("cp_discount").value = "";
-    document.getElementById("cp_min").value = "";
-    document.getElementById("cp_expiry").value = "";
-  } catch (err) {
-    showToast("⚠️ Coupon registry failed.");
-  }
-};
 
-onSnapshot(collection(db, "coupons"), (snap) => {
-  const container = document.getElementById("coupons-list");
-  if (!container) return;
-  const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  container.innerHTML = list.length
-    ? list.map(c => `
-        <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <b>Code:</b> ${c.code}<br>
-            <small>Discount: R${c.discount} | Min Spend: R${c.min || 0} | Expiry: ${c.expiry ? new Date(c.expiry).toLocaleDateString() : "Never"}</small>
-          </div>
-          <button onclick="window.deleteDocRef('coupons', '${c.id}')" style="background:#ff1744; color:#fff; cursor:pointer;">Delete</button>
-        </div>
-      `).join('')
-    : `<p style="color:#666;">No promotional coupons registered.</p>`;
-});
+    // Banner Upload Controllers
+    window.saveBanner = async () => {
+      const btn = document.getElementById("save-banner-btn");
+      const title = document.getElementById("bn_title").value.trim();
+      const file = document.getElementById("bn_file").files[0];
 
-// Banner Upload Controllers
-window.saveBanner = async () => {
-  const btn = document.getElementById("save-banner-btn");
-  const title = document.getElementById("bn_title").value.trim();
-  const file = document.getElementById("bn_file").files[0];
+      if (!title || !file) return alert("Heading title and Banner file are required.");
 
-  if (!title || !file) return alert("Heading title and Banner file are required.");
+      btn.innerText = "Processing Banner...";
+      btn.disabled = true;
 
-  btn.innerText = "Processing Banner...";
-  btn.disabled = true;
+      const form = new FormData();
+      form.append("file", file);
+      form.append("upload_preset", "SbheneCart");
 
-  const form = new FormData();
-  form.append("file", file);
-  form.append("upload_preset", "SbheneCart");
+      try {
+        const resp = await fetch("https://api.cloudinary.com/v1_1/qocn8gjn/image/upload", { method: "POST", body: form });
+        const data = await resp.json();
 
-  try {
-    const resp = await fetch("https://api.cloudinary.com/v1_1/qocn8gjn/image/upload", { method: "POST", body: form });
-    const data = await resp.json();
+        if (resp.ok && data.secure_url) {
+          await addDoc(collection(db, "banners"), { title, imageUrl: data.secure_url, timestamp: Date.now() });
+          showToast("🖼️ Homepage banner published!");
+          document.getElementById("bn_title").value = "";
+          document.getElementById("bn_file").value = "";
+        }
+      } catch {
+        showToast("⚠️ Banner upload failed.");
+      } finally {
+        btn.innerText = "Upload and Publish Banner";
+        btn.disabled = false;
+      }
+    };
 
-    if (resp.ok && data.secure_url) {
-      await addDoc(collection(db, "banners"), { title, imageUrl: data.secure_url, timestamp: Date.now() });
-      showToast("🖼️ Homepage banner published!");
-      document.getElementById("bn_title").value = "";
-      document.getElementById("bn_file").value = "";
-    }
-  } catch {
-    showToast("⚠️ Banner upload failed.");
-  } finally {
-    btn.innerText = "Upload and Publish Banner";
-    btn.disabled = false;
-  }
-};
+    onSnapshot(collection(db, "banners"), (snap) => {
+      const container = document.getElementById("banners-list");
+      if (!container) return;
+      const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      container.innerHTML = list.length
+        ? list.map(b => `
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+              <div style="display:flex; align-items:center;">
+                <img src="${b.imageUrl}" style="width:120px; height:60px; object-fit:cover; border-radius:6px; margin-right:15px; border:1px solid #333;">
+                <b>${b.title}</b>
+              </div>
+              <button onclick="window.deleteDocRef('banners', '${b.id}')" style="background:#ff1744; color:#fff;">Remove</button>
+            </div>
+          `).join('')
+        : `<p style="color:#666;">No promotional sliders active.</p>`;
+    });
 
-onSnapshot(collection(db, "banners"), (snap) => {
-  const container = document.getElementById("banners-list");
-  if (!container) return;
-  const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  container.innerHTML = list.length
-    ? list.map(b => `
-        <div class="card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-          <div style="display:flex; align-items:center;">
-            <img src="${b.imageUrl}" style="width:120px; height:60px; object-fit:cover; border-radius:6px; margin-right:15px; border:1px solid #333;">
-            <b>${b.title}</b>
-          </div>
-          <button onclick="window.deleteDocRef('banners', '${b.id}')" style="background:#ff1744; color:#fff;">Remove</button>
-        </div>
-      `).join('')
-    : `<p style="color:#666;">No promotional sliders active.</p>`;
-});
+    // Real-Time Push / Live Ticker Broadcasts Controllers
+    window.sendBroadcast = async () => {
+      const msg = document.getElementById("push_msg").value.trim();
+      if (!msg) return alert("Broadcast message text cannot be empty.");
 
-// Real-Time Push / Live Ticker Broadcasts Controllers
-window.sendBroadcast = async () => {
-  const msg = document.getElementById("push_msg").value.trim();
-  if (!msg) return alert("Broadcast message text cannot be empty.");
+      try {
+        await addDoc(collection(db, "broadcasts"), { message: msg, timestamp: Date.now() });
+        showToast("📢 Broadcast dispatched dynamically!");
+        document.getElementById("push_msg").value = "";
+      } catch {
+        showToast("⚠️ Dispatch failed.");
+      }
+    };
 
-  try {
-    await addDoc(collection(db, "broadcasts"), { message: msg, timestamp: Date.now() });
-    showToast("📢 Broadcast dispatched dynamically!");
-    document.getElementById("push_msg").value = "";
-  } catch {
-    showToast("⚠️ Dispatch failed.");
-  }
-};
+    onSnapshot(collection(db, "broadcasts"), (snap) => {
+      const container = document.getElementById("broadcasts-list");
+      if (!container) return;
+      const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      list.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+      container.innerHTML = list.length
+        ? list.slice(0, 5).map(b => `
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="flex:1;">
+                <b>Broadcasted alert:</b><br>
+                <small style="color:#aaa;">"${b.message}"</small>
+              </div>
+              <button onclick="window.deleteDocRef('broadcasts', '${b.id}')" style="background:#ff1744; color:#fff; font-size:12px; padding:6px 12px;">Wipe</button>
+            </div>
+          `).join('')
+        : `<p style="color:#666;">No recent ticker transmissions.</p>`;
+    });
 
-onSnapshot(collection(db, "broadcasts"), (snap) => {
-  const container = document.getElementById("broadcasts-list");
-  if (!container) return;
-  const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  list.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
-  container.innerHTML = list.length
-    ? list.slice(0, 5).map(b => `
-        <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-          <div style="flex:1;">
-            <b>Broadcasted alert:</b><br>
-            <small style="color:#aaa;">"${b.message}"</small>
-          </div>
-          <button onclick="window.deleteDocRef('broadcasts', '${b.id}')" style="background:#ff1744; color:#fff; font-size:12px; padding:6px 12px;">Wipe</button>
-        </div>
-      `).join('')
-    : `<p style="color:#666;">No recent ticker transmissions.</p>`;
-});
+    window.deleteDocRef = async (colName, id) => {
+      if (confirm("Permanently delete this entry?")) {
+        await deleteDoc(doc(db, colName, id));
+        showToast("🗑️ Resource deleted successfully.");
+      }
+    };
 
-window.deleteDocRef = async (colName, id) => {
-  if (confirm("Permanently delete this entry?")) {
-    await deleteDoc(doc(db, colName, id));
-    showToast("🗑️ Resource deleted successfully.");
-  }
-};
+    // =========================================================================
+    // Two-Step Security Integration & Roles check
+    // =========================================================================
+ 
 
-// =========================================================================
-// Dynamic Injector Hooks and Observers
-// =========================================================================
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    document.getElementById("login-screen").style.display = "none";
-    document.getElementById("admin-wrapper").style.display = "block";
-    
-    // Inject and initiate advanced promotion, layout and category upload tabs
-    injectStreamlinedDecorUI();
-    injectExtendedAdminManagers();
-    
-    refresh();
-    if (typeof google === 'object' && typeof google.maps === 'object') {
-      initAdminMap();
-    }
-  } else {
-    document.getElementById("login-screen").style.display = "block";
-    document.getElementById("admin-wrapper").style.display = "none";
-  }
-});
-</script>
-  <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+    window.handleAdminLogin = async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("admin-email-input").value.trim();
+      const password = document.getElementById("admin-password-input").value;
 
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyC4BCz9GeNTgQYa8ydIJreTREVdPklganA",
-    authDomain: "sbhenecart.firebaseapp.com",
-    projectId: "sbhenecart",
-    storageBucket: "sbhenecart.firebasestorage.app",
-    messagingSenderId: "1074011270711",
-    appId: "1:1074011270711:web:72dffe0237f7eea4edd9b2",
-    measurementId: "G-RWRGNK00BY"
-  };
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        alert("❌ Login Failed: " + err.message);
+      }
+    };
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-  </script>
-</body>
-</html>
+    window.logoutAdmin = async () => {
+      await signOut(auth);
+      showToast("🔒 Locked out.");
+    };
 
-  
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const userEmail = user.email ? user.email.toLowerCase() : "";
+        
+        if (AUTHORIZED_ADMINS.includes(userEmail)) {
+          document.getElementById("admin-security-modal").style.display = "none";
+          document.getElementById("admin-wrapper").style.display = "block";
+          
+          injectStreamlinedDecorUI();
+          injectExtendedAdminManagers();
+          
+          refresh();
+          if (typeof google === 'object' && typeof google.maps === 'object') {
+            initAdminMap();
+          }
+        } else {
+          signOut(auth).then(() => {
+            alert("⚠️ Access Denied! This account is not an authorized Admin.");
+            window.location.reload();
+          });
+        }
+      } else {
+        document.getElementById("admin-security-modal").style.display = "flex";
+        document.getElementById("admin-wrapper").style.display = "none";
+      }
+    });
+    </script>
+    </body>
+    </html>
+
