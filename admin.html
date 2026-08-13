@@ -90,6 +90,8 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
   </header>
   
   <nav id="admin-nav">
+    <button onclick="showPage('approvals')">Sellers Approvals</button>
+<button onclick="showPage('sellers-mgr')">Manage Sellers</button>
     <button onclick="showPage('dash')" class="active">Dashboard</button>
     <button onclick="showPage('products')">Products</button>
     <button onclick="showPage('decor-upload')">🏺 Upload Decor</button>
@@ -106,7 +108,26 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
     <button onclick="showPage('security-settings')">🔒 Security Settings</button>
   </nav>
 
+<!-- idk -->
+<section id="approvals" class="page">
+  <div class="card">
+    <h3>Sellers Products Review Queue</h3>
+    <div id="approvals-list"></div>
+  </div>
+</section>
+
+<section id="sellers-mgr" class="page">
+  <div class="card" style="border-color: #ffd700;">
+    <h3>Authorized Seller Listings</h3>
+    <input id="sel_uid" placeholder="Seller UID (from Firebase Auth list)">
+    <input id="sel_name" placeholder="Seller Studio Name">
+    <button onclick="addSeller()">Register Seller Profile</button>
+    <div id="sellers-list" style="margin-top:15px;"></div>
+  </div>
+</section>
+
   <!-- DASHBOARD: Analytics Charts & Audit Logs -->
+  
   <section id="dash" class="page active">
     <div class="card">
       <div id="stats" style="margin-bottom: 20px; line-height: 1.6;"></div>
@@ -415,6 +436,32 @@ const AUTHORIZED_ADMINS = [
   "nhlakanipho.ndawonde80@gmail.com"
 ];
 
+// Stream unapproved items to review queue
+onSnapshot(collection(db, "products"), (snap) => {
+  const prods = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const unapproved = prods.filter(p => !p.approved);
+  document.getElementById("approvals-list").innerHTML = unapproved.length
+    ? unapproved.map(p => `
+      <div class="card">
+        <b>${p.name}</b> (Price: R${p.price})<br>
+        <button onclick="approveProduct('${p.id}', true)">Approve (Go Live)</button>
+        <button onclick="approveProduct('${p.id}', false)" style="background:#ff1744; color:#fff;">Reject</button>
+      </div>
+    `).join('')
+    : "<p>All products approved!</p>";
+});
+
+// Stream registered sellers
+onSnapshot(collection(db, "sellers"), (snap) => {
+  const sellers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  document.getElementById("sellers-list").innerHTML = sellers.map(s => `
+    <div style="padding:10px; border-bottom:1px solid #333; display:flex; justify-content:space-between; align-items:center;">
+      <span><b>${s.name}</b> (UID: ${s.id})</span>
+      <button onclick="deleteSeller('${s.id}')" style="background:#ff1744; padding:5px 10px;">Remove</button>
+    </div>
+  `).join('');
+});
+
 // Read/Listen to dynamic passkey changes in the database
 onSnapshot(doc(db, "settings", "security"), (docSnap) => {
   if (docSnap.exists()) {
@@ -423,6 +470,27 @@ onSnapshot(doc(db, "settings", "security"), (docSnap) => {
     if (passkeyInput) passkeyInput.value = activePasskey;
   }
 });
+
+// approve sellers
+window.approveProduct = async (id, state) => {
+  await updateDoc(doc(db, "products", id), { approved: state });
+  showToast(state ? "Product approved and live!" : "Product denied.");
+};
+
+window.addSeller = async () => {
+  const uid = document.getElementById("sel_uid").value.trim();
+  const name = document.getElementById("sel_name").value.trim();
+  if (!uid || !name) return alert("Fill in details.");
+  await setDoc(doc(db, "sellers", uid), { name, active: true }, { merge: true });
+  showToast("Seller successfully authorized!");
+};
+
+window.deleteSeller = async (id) => {
+  if (confirm("Revoke seller access?")) {
+    await deleteDoc(doc(db, "sellers", id));
+    showToast("Access revoked.");
+  }
+};
 
 // Verify Creator Passkey
 window.verifyCreatorPasskey = () => {
