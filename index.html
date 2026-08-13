@@ -7,8 +7,6 @@
 <title>SbheneCart</title>
 
   
-<!-- Google Maps JavaScript API with matching callback 'initGoogleMaps' -->
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCBR2xh-Ks61EEMq7cjKDTVhmuAKGlQcAQ&libraries=places&callback=initGoogleMaps" async defer></script>
 
 <style>
 /* Theme-swappable Custom CSS Variables */
@@ -618,6 +616,7 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
 
   <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
     <button onclick="location.href='admin.html'" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer;">🔑 Admin Dashboard</button>
+    <button onclick="location.href='sellers.html'" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer;">🔑 Sellers Dashboard</button>
     <button id="auth-status-btn" style="text-align: left; width: 100%; background: transparent; color: #fff; border: 1px solid #222; padding: 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer;">
       👤 Account & Loyalty
     </button>
@@ -745,9 +744,9 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
       <label style="display:block; margin: 10px 0 5px;">Payment Method *</label>
       <select id="payment-method" onchange="handlePaymentMethodChange()" required>
         <option value="" disabled selected>Select Payment Method</option>
-        <option value="Cash on Delivery">Cash on Delivery (COD)</option>
+     
         <option value="EFT Bank Transfer">EFT Bank Transfer (Manual)</option>
-        <option value="Online Card / Instant EFT">Online Card / Instant EFT (Secure Checkout)</option>
+        
       </select>
 
       <div id="eft-instructions" class="eft-details" style="display:none;">
