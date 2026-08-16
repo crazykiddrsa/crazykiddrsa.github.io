@@ -732,12 +732,12 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
       <select id="cust-location" onchange="calculateDeliveryFee()" required>
         <option value="" disabled selected>Select Your Location</option>
         <option value="Local Pickup" data-fee="0">Local Pickup (R0)</option>
-        <option value="Durban Metro" data-fee="45">Durban Metro (R45)</option>
-        <option value="Gauteng (JHB/PTA)" data-fee="85">Gauteng (JHB/PTA) (R85)</option>
-        <option value="Western Cape (CT)" data-fee="95">Western Cape (CT) (R95)</option>
-        <option value="Eastern Cape" data-fee="90">Eastern Cape (R90)</option>
-        <option value="Free State" data-fee="85">Free State (R85)</option>
-        <option value="KZN Outlying" data-fee="70">KZN Outlying (R70)</option>
+        <option value="Durban Metro" data-fee="45">Durban Metro (R70)</option>
+        <option value="Gauteng (JHB/PTA)" data-fee="85">Gauteng (JHB/PTA) (R100)</option>
+        <option value="Western Cape (CT)" data-fee="95">Western Cape (CT) (R97)</option>
+        <option value="Eastern Cape" data-fee="90">Eastern Cape (R95)</option>
+        <option value="Free State" data-fee="85">Free State (R95)</option>
+        <option value="KZN Outlying" data-fee="70">KZN Outlying (R80)</option>
         <option value="Other Regional SA" data-fee="110">Other Regional SA (R110)</option>
       </select>
       
@@ -1109,7 +1109,7 @@ function updateCartUI() {
   const bar = document.getElementById("shipping-progress-bar");
   const label = document.getElementById("shipping-tracker-label");
   if (bar && label) {
-    const limit = 1500;
+    const limit = 5999;
     const progress = Math.min((subtotal / limit) * 100, 100);
     bar.style.width = `${progress}%`;
     if (subtotal >= limit) {
