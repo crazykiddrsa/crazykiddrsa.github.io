@@ -389,25 +389,9 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
 
 <!-- CONSOLIDATED, EXTREMELY SECURE ADMIN SCRIPT BLOCK -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  onSnapshot,
-  setDoc
-} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  sendPasswordResetEmail,
-  createUserWithEmailAndPassword // <-- ADDED HERE
-} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, inMemoryPersistence, setPersistence } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 
 
 const firebaseConfig = {
@@ -454,6 +438,15 @@ onSnapshot(collection(db, "products"), (snap) => {
     : "<p>All products approved!</p>";
 });
 
+// Check if SecondaryApp exists before initializing
+const secondaryApp = getApps().find(app => app.name === "SecondaryApp") 
+  || initializeApp(firebaseConfig, "SecondaryApp");
+const secondaryAuth = getAuth(secondaryApp);
+
+// Force in-memory persistence so it never interferes with Admin local storage!
+setPersistence(secondaryAuth, inMemoryPersistence);
+
+
 // Stream registered sellers
 onSnapshot(collection(db, "sellers"), (snap) => {
   const sellers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -475,6 +468,40 @@ onSnapshot(doc(db, "settings", "security"), (docSnap) => {
 });
 
 // create sellers
+window.generateSellerAccount = async () => {
+  const email = document.getElementById("sel_email").value.trim();
+  const password = document.getElementById("sel_password").value.trim();
+  const name = document.getElementById("sel_name").value.trim();
+  const btn = document.getElementById("create-sel-btn");
+
+  if (!email || !password || !name) return alert("Please fill in all fields.");
+  if (password.length < 6) return alert("Password must be at least 6 characters.");
+
+  btn.innerText = "Generating Account..."; btn.disabled = true;
+
+  try {
+    // 1. Create seller credentials on the secondary isolated instance
+    const userCred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+    const newUid = userCred.user.uid;
+
+    // 2. Whitelist the newly generated UID in Firestore sellers database
+    await setDoc(doc(db, "sellers", newUid), { name, active: true }, { merge: true });
+
+    // 3. Immediately log out the secondary instance to clean up local state
+    await signOut(secondaryAuth);
+
+    alert(`🎉 Account Successfully Created!\n\nEmail: ${email}\nPassword: ${password}\nUID: ${newUid}\n\nHand these login details to your seller!`);
+    
+    document.getElementById("sel_email").value = "";
+    document.getElementById("sel_password").value = "";
+    document.getElementById("sel_name").value = "";
+  } catch (err) {
+    alert("Generation failed: " + err.message);
+  } finally {
+    btn.innerText = "Generate & Whitelist Seller"; btn.disabled = false;
+  }
+};
+
 // approve sellers
 window.approveProduct = async (id, state) => {
   await updateDoc(doc(db, "products", id), { approved: state });
