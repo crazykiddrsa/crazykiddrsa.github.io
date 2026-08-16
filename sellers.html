@@ -2,25 +2,23 @@
 <html>
 <head>
   <meta charset="UTF-8"><title>SbheneCart Seller Console Pro</title>
-  <!-- Chart.js CDN for Visual Analytics -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root { --bg:#000; --text:#0f8; --primary:#0f8; --card:#111; }
-    body { background:var(--bg); color:var(--text); font-family:Arial, sans-serif; padding:15px; margin:0; animation: fadeIn 0.5s ease-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .card { border:1px solid var(--primary); padding:15px; margin:10px 0; background:var(--card); border-radius:8px; box-shadow: 0 0 10px #0f82; transition: transform 0.3s, box-shadow 0.3s; }
-    .card:hover { transform: translateY(-3px); box-shadow: 0 0 20px rgba(0, 255, 136, 0.4); }
-    input, select, textarea { width:100%; margin:5px 0; padding:10px; background:#1e1e1e; color:var(--text); border:1px solid var(--primary); border-radius:4px; box-sizing:border-box; transition: 0.2s; }
-    input:focus, select:focus, textarea:focus { outline:none; box-shadow: 0 0 8px var(--primary); }
+    body { background:var(--bg); color:var(--text); font-family:Arial, sans-serif; padding:15px; margin:0; animation: fadeIn 0.5s; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .card { border:1px solid var(--primary); padding:15px; margin:10px 0; background:var(--card); border-radius:8px; box-shadow: 0 0 10px #0f82; transition: 0.3s; }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 0 15px rgba(0, 255, 136, 0.4); }
+    input, select, textarea { width:100%; margin:5px 0; padding:10px; background:#1e1e1e; color:var(--text); border:1px solid var(--primary); border-radius:4px; box-sizing:border-box; }
     button { background:var(--primary); color:#000; font-weight:bold; border:0; padding:10px 15px; cursor:pointer; border-radius:4px; transition: 0.3s; }
-    button:hover { opacity:0.8; box-shadow: 0 0 12px var(--primary); }
+    button:hover { opacity:0.8; box-shadow: 0 0 10px var(--primary); }
     .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:15px; }
     #preview { max-width:120px; display:none; border-radius:4px; margin:8px 0; border: 1px solid var(--primary); }
     .chart-container { position: relative; height: 180px; width: 100%; }
   </style>
 </head>
 <body>
-  <h2>🌌 SbheneCart Seller Console Pro</h2>
+  <h2>🌌 SbheneCart Seller</h2>
 
   <!-- LOGIN PANEL -->
   <div id="login-panel" class="card">
@@ -38,9 +36,9 @@
       <div class="card"><b>Awaiting Admin Review</b><br><span id="pending-count" style="font-size:24px; font-weight:bold;">0</span></div>
     </div>
 
-    <!-- SALES ANALYTICS CHART -->
+    <!-- ANALYTICS -->
     <div class="card">
-      <h3>📈 Dynamic Sales Timeline</h3>
+      <h3>📈 Sales Timeline</h3>
       <div class="chart-container"><canvas id="salesChart"></canvas></div>
     </div>
 
@@ -57,20 +55,22 @@
         <select id="sp_subcat" onchange="updateSubSubcats()"><option value="">Select Subcategory</option></select>
       </div>
       <select id="sp_subsubcat"><option value="">Select Sub-subcategory</option></select>
-      
       <div class="grid">
         <select id="sp_sizing"><option value="none">No Sizing Needed</option><option value="clothing">Clothing (XS-XL)</option><option value="shoes">Shoes (EU 36-46)</option></select>
         <div style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="sp_req" style="width:auto;"><label>Requires Sewing Measurements</label></div>
       </div>
-
       <input type="file" id="sp_image" accept="image/*" onchange="previewImage(event)">
       <img id="preview">
-      <textarea id="sp_desc" placeholder="Product details, material specs, or custom request directions..."></textarea>
+      <textarea id="sp_desc" placeholder="Product details..."></textarea>
       <button id="sub-btn" onclick="submitProduct()">Submit for Approval</button>
     </div>
 
     <div class="grid">
-      <div class="card"><h3>📦 My Inventory Catalog</h3><div id="my-prods"></div></div>
+      <div class="card">
+        <h3>📦 Inventory Catalog</h3>
+        <input id="inventory-search" placeholder="🔍 Search catalog items..." oninput="filterInventory()" style="margin-bottom:10px;">
+        <div id="my-prods"></div>
+      </div>
       <div class="card"><h3>🛒 Linked Customer Orders</h3><div id="my-orders"></div></div>
     </div>
   </div>
@@ -82,7 +82,7 @@
 
     const config = { apiKey: "AIzaSyC4BCz9GeNTgQYa8ydIJreTREVdPklganA", authDomain: "sbhenecart.firebaseapp.com", projectId: "sbhenecart" };
     const app = initializeApp(config); const db = getFirestore(app); const auth = getAuth(app);
-    let sUid = null, uploadedUrl = "", dbSubcats = [], dbSubsubcats = [], salesChart = null;
+    let sUid = null, uploadedUrl = "", dbSubcats = [], dbSubsubcats = [], salesChart = null, myProductsList = [];
 
     window.loginSeller = async () => {
       try {
@@ -93,10 +93,24 @@
     };
     window.logoutSeller = () => signOut(auth);
 
-    onAuthStateChanged(auth, (u) => {
-      document.getElementById("login-panel").style.display = u ? "none" : "block";
-      document.getElementById("seller-wrapper").style.display = u ? "block" : "none";
-      if (u) { sUid = u.uid; loadDashboard(); }
+    onAuthStateChanged(auth, async (u) => {
+      if (u) {
+        try {
+          const docSnap = await getDoc(doc(db, "sellers", u.uid));
+          if (docSnap.exists()) {
+            sUid = u.uid;
+            document.getElementById("login-panel").style.display = "none";
+            document.getElementById("seller-wrapper").style.display = "block";
+            loadDashboard();
+          } else {
+            await signOut(auth);
+            alert("⚠️ Access Denied: This account is not registered as a seller.");
+          }
+        } catch (err) { await signOut(auth); }
+      } else {
+        document.getElementById("login-panel").style.display = "block";
+        document.getElementById("seller-wrapper").style.display = "none";
+      }
     });
 
     window.previewImage = (e) => {
@@ -115,7 +129,6 @@
       const file = document.getElementById("sp_image").files[0];
 
       if (!name || !price || !cat || !file) return alert("Please fill all required fields and upload an image preview.");
-
       const btn = document.getElementById("sub-btn");
       btn.innerText = "Publishing..."; btn.disabled = true;
 
@@ -143,6 +156,7 @@
         document.getElementById("sp_price").value = "";
         document.getElementById("sp_desc").value = "";
         document.getElementById("sp_image").value = "";
+        document.getElementById("sp_stock").value = "10";
         document.getElementById("preview").style.display = "none";
       } catch (err) { alert(err.message); }
       finally { btn.innerText = "Submit for Approval"; btn.disabled = false; }
@@ -163,34 +177,37 @@
     function renderSalesChart(dailySales) {
       const ctx = document.getElementById("salesChart").getContext("2d");
       if (salesChart) salesChart.destroy();
-      
       const dates = Object.keys(dailySales).slice(-7);
       const dataValues = dates.map(d => dailySales[d]);
-
       salesChart = new Chart(ctx, {
         type: 'line',
         data: {
           labels: dates,
-          datasets: [{
-            label: 'Sales (ZAR)',
-            data: dataValues,
-            borderColor: '#0f8',
-            backgroundColor: 'rgba(0, 255, 136, 0.05)',
-            borderWidth: 2,
-            tension: 0.3,
-            fill: true
-          }]
+          datasets: [{ label: 'Sales (ZAR)', data: dataValues, borderColor: '#0f8', backgroundColor: 'rgba(0, 255, 136, 0.05)', borderWidth: 2, tension: 0.3, fill: true }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
+          responsive: true, maintainAspectRatio: false,
           plugins: { legend: { display: false } },
-          scales: {
-            x: { grid: { display: false }, ticks: { color: '#0f8' } },
-            y: { grid: { color: '#222' }, ticks: { color: '#0f8' } }
-          }
+          scales: { x: { grid: { display: false }, ticks: { color: '#0f8' } }, y: { grid: { color: '#222' }, ticks: { color: '#0f8' } } }
         }
       });
+    }
+
+    window.filterInventory = () => {
+      const q = document.getElementById("inventory-search").value.toLowerCase().trim();
+      const filtered = myProductsList.filter(p => p.name.toLowerCase().includes(q));
+      renderMyProducts(filtered);
+    };
+
+    function renderMyProducts(list) {
+      document.getElementById("my-prods").innerHTML = list.map(p => `
+        <div class="card" style="border-left: 3px solid ${p.stock <= 0 ? '#ff1744' : 'var(--primary)'}">
+          <b>${p.name}</b> (${p.approved ? "✅ Live" : "⏳ Review"})<br>
+          Price (ZAR): <input type="number" id="pr-${p.id}" value="${p.price}" style="width:100px; display:inline;">
+          Stock: <input type="number" id="st-${p.id}" value="${p.stock}" style="width:80px; display:inline;"><br><br>
+          <button onclick="saveInventory('${p.id}')">Save Changes</button>
+        </div>
+      `).join('');
     }
 
     function loadDashboard() {
@@ -202,45 +219,32 @@
       onSnapshot(collection(db, "subsubcategories"), snap => dbSubsubcats = snap.docs.map(d => d.data()));
 
       onSnapshot(query(collection(db, "products"), where("sellerId", "==", sUid)), (snap) => {
-        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        document.getElementById("pending-count").innerText = list.filter(p => !p.approved).length;
-        document.getElementById("my-prods").innerHTML = list.map(p => `
-          <div class="card">
-            <b>${p.name}</b> (${p.approved ? "✅ Approved" : "⏳ Review"})<br>
-            Price (ZAR): <input type="number" id="pr-${p.id}" value="${p.price}" style="width:100px; display:inline;">
-            Stock: <input type="number" id="st-${p.id}" value="${p.stock}" style="width:80px; display:inline;"><br><br>
-            <button onclick="saveInventory('${p.id}')">Save Changes</button>
-          </div>
-        `).join('');
+        myProductsList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        document.getElementById("pending-count").innerText = myProductsList.filter(p => !p.approved).length;
+        window.filterInventory();
       });
 
       onSnapshot(collection(db, "orders"), (snap) => {
         const orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         const filtered = orders.filter(o => o.items && o.items.some(i => i.sellerId === sUid));
-        
         let revenue = 0;
         const dailySales = {};
-
         filtered.forEach(o => {
           if (o.status === "Delivered") {
             const date = o.timestamp ? new Date(o.timestamp).toLocaleDateString() : "Delivered";
             let orderTotal = 0;
             o.items.filter(i => i.sellerId === sUid).forEach(i => {
-              const itemRev = i.price * i.quantity;
-              revenue += itemRev;
-              orderTotal += itemRev;
+              const itemRev = i.price * i.quantity; revenue += itemRev; orderTotal += itemRev;
             });
             dailySales[date] = (dailySales[date] || 0) + orderTotal;
           }
         });
-
         document.getElementById("rev").innerText = "R" + revenue;
         renderSalesChart(dailySales);
-
         document.getElementById("my-orders").innerHTML = filtered.map(o => `
           <div class="card">
             <b>Order #${o.id.substring(0,6)}</b> (${o.status})<br>
-            Buyer: ${o.customer?.name || "Client"} | Phone: ${o.customer?.phone || ""}<br>
+            Buyer: ${o.customer?.name || "Client"}<br>
             ${o.items.filter(i => i.sellerId === sUid).map(i => `• ${i.name} (x${i.quantity})`).join('<br>')}
           </div>
         `).join('');
@@ -248,10 +252,7 @@
     }
 
     window.saveInventory = async (id) => {
-      await updateDoc(doc(db, "products", id), {
-        price: Number(document.getElementById("pr-" + id).value),
-        stock: Number(document.getElementById("st-" + id).value)
-      });
+      await updateDoc(doc(db, "products", id), { price: Number(document.getElementById("pr-" + id).value), stock: Number(document.getElementById("st-" + id).value) });
       alert("Inventory Saved!");
     };
   </script>
