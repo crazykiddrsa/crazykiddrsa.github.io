@@ -6,7 +6,7 @@
 <title>SbheneCart Admin Pro</title>
 
 <!-- Google Maps JavaScript API with places library -->
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCBR2xh-Ks61EEMq7cjKDTVhmuAKGlQcAQ&libraries=places&callback=initAdminMap" async defer></script>
+
 <!-- Chart.js for real-time sales analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -32,7 +32,7 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 @media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
 
-#admin-map { width: 100%; height: 350px; border: 1px solid var(--primary); border-radius: 8px; margin-bottom: 20px; background: #000; }
+
 .pulsing-badge { display: inline-block; animation: pulse-glow 1.8s infinite; }
 @keyframes pulse-glow {
   0% { box-shadow: 0 0 0 0 rgba(255, 17, 68, 0.7); }
@@ -117,11 +117,12 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
 </section>
 
 <section id="sellers-mgr" class="page">
-  <div class="card" style="border-color: #ffd700;">
-    <h3>Authorized Seller Listings</h3>
-    <input id="sel_uid" placeholder="Seller UID (from Firebase Auth list)">
-    <input id="sel_name" placeholder="Seller Studio Name">
-    <button onclick="addSeller()">Register Seller Profile</button>
+  <div class="card" style="border-color: #0f8;">
+    <h3>🔑 Create & Authorize Seller Account</h3>
+    <input id="sel_email" placeholder="Seller Email *">
+    <input id="sel_password" type="password" placeholder="Create Seller Password *">
+    <input id="sel_name" placeholder="Seller Studio Name *">
+    <button id="create-sel-btn" onclick="generateSellerAccount()">Generate & Whitelist Seller</button>
     <div id="sellers-list" style="margin-top:15px;"></div>
   </div>
 </section>
@@ -295,8 +296,7 @@ button:disabled { background: #333; color: #666; cursor: not-allowed; border: 1p
   <!-- ORDERS & FULFILLMENT -->
   <section id="orders" class="page">
     <div class="card">
-      <h3>Live Order Fulfillment Map</h3>
-      <div id="admin-map"></div>
+      
       
       <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
         <button id="tab-active-btn" onclick="toggleOrderTab('active')" style="background:var(--primary); color:#000;">Active Queue</button>
@@ -405,8 +405,10 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  createUserWithEmailAndPassword // <-- ADDED HERE
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyC4BCz9GeNTgQYa8ydIJreTREVdPklganA",
@@ -421,6 +423,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+
 
 // Request Native Push Notification Access
 if (typeof Notification !== "undefined" && Notification.permission !== "granted") {
@@ -471,6 +474,7 @@ onSnapshot(doc(db, "settings", "security"), (docSnap) => {
   }
 });
 
+// create sellers
 // approve sellers
 window.approveProduct = async (id, state) => {
   await updateDoc(doc(db, "products", id), { approved: state });
@@ -547,11 +551,7 @@ onAuthStateChanged(auth, (user) => {
       
       injectStreamlinedDecorUI();
       injectExtendedAdminManagers();
-      
       refresh();
-      if (typeof google === 'object' && typeof google.maps === 'object') {
-        initAdminMap();
-      }
     } else {
       signOut(auth).then(() => {
         alert("⚠️ Access Denied! This account is not an authorized Admin.");
@@ -563,6 +563,7 @@ onAuthStateChanged(auth, (user) => {
     document.getElementById("admin-wrapper").style.display = "none";
   }
 });
+
 
 // Bind Inputs
 const pn = document.getElementById('pn');
@@ -623,8 +624,6 @@ let edit = -1;
 
 let currentOrderTab = 'active';
 let knownOrderIds = new Set();
-let adminMap;
-let mapMarkers = [];
 
 let audioAlertsEnabled = true;
 let isTitleFlashing = false;
@@ -802,7 +801,7 @@ onSnapshot(collection(db, "orders"), (snap) => {
   orders.sort((a,b)=>(b.timestamp || 0) - (a.timestamp || 0));
   if (auth.currentUser) {
     refresh();
-    updateAdminMapPins();
+    
   }
 });
 
@@ -822,12 +821,8 @@ window.showPage = (id) => {
   if (activeNavBtn) activeNavBtn.classList.add('active');
 
   refresh();
-
-  if (id === 'orders' && adminMap) {
-    google.maps.event.trigger(adminMap, "resize");
-    updateAdminMapPins();
-  }
 };
+  
 
 // Admin Map Initialization
 window.initAdminMap = () => {
@@ -1207,7 +1202,8 @@ function refresh() {
   olist.innerHTML = filteredOrders.map(o => {
     const payStatus = o.payment?.status || "Pending Verification";
     const payColor = payStatus === "Paid" ? "#00ff66" : (payStatus === "Pending Online Payment" ? "#ffaa00" : "#ff1744");
-    const reorderBtn = o.items ? `<button onclick="window.sendReorderToStorefront(${JSON.stringify(o.items).replace(/"/g, '&quot;')})" style="background:#222; color:var(--primary); border:1px solid var(--primary); margin-top:10px; width:100%;">🔁 Reorder Order Items</button>` : "";
+    const reorderBtn = o.items ? `<button data-items="${btoa(JSON.stringify(o.items))}" onclick="window.sendReorderToStorefront(this)" style="background:#222; color:var(--primary); border:1px solid var(--primary); margin-top:10px; width:100%;">🔁 Reorder Order Items</button>` : "";
+
     
     let actionBtn = "";
     if (currentOrderTab === 'history') actionBtn = `<button onclick="archiveOrder('${o.id}')" style="background:var(--primary); color:#000; width:100%; margin-top:10px;">📦 Archive Order</button>`;
@@ -1322,9 +1318,15 @@ function refresh() {
   renderLowStockWarnings();
 }
 
-window.sendReorderToStorefront = (items) => {
-  localStorage.setItem("cart", JSON.stringify(items.map(i => ({ ...i, id: i.id || "" }))));
-  showToast("📋 Loaded order items to active browser cart cookie!");
+window.sendReorderToStorefront = (btn) => {
+  try {
+    const items = JSON.parse(atob(btn.getAttribute('data-items')));
+    localStorage.setItem("cart", JSON.stringify(items.map(i => ({ ...i, id: i.id || "" }))));
+    showToast("📋 Loaded order items to active browser cart cookie!");
+  } catch (err) {
+    console.error("Failed to decode order items: ", err);
+    showToast("⚠️ Failed to parse reorder items.");
+  }
 };
 
 // Sales & Stock Level Chart renders (Canvas)
@@ -1834,6 +1836,7 @@ window.generateAIDescription = async () => {
         document.getElementById("admin-wrapper").style.display = "none";
       }
     });
+    
     </script>
     </body>
     </html>
