@@ -4,23 +4,70 @@
   <meta charset="UTF-8"><title>SbheneCart Seller Console Pro</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    :root { --bg:#000; --text:#0f8; --primary:#0f8; --card:#111; }
-    body { background:var(--bg); color:var(--text); font-family:Arial, sans-serif; padding:15px; margin:0; animation: fadeIn 0.5s; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    .card { border:1px solid var(--primary); padding:15px; margin:10px 0; background:var(--card); border-radius:8px; box-shadow: 0 0 10px #0f82; transition: 0.3s; }
-    .card:hover { transform: translateY(-2px); box-shadow: 0 0 15px rgba(0, 255, 136, 0.4); }
-    input, select, textarea { width:100%; margin:5px 0; padding:10px; background:#1e1e1e; color:var(--text); border:1px solid var(--primary); border-radius:4px; box-sizing:border-box; }
-    button { background:var(--primary); color:#000; font-weight:bold; border:0; padding:10px 15px; cursor:pointer; border-radius:4px; transition: 0.3s; }
-    button:hover { opacity:0.8; box-shadow: 0 0 10px var(--primary); }
-    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:15px; }
-    #preview { max-width:120px; display:none; border-radius:4px; margin:8px 0; border: 1px solid var(--primary); }
-    .chart-container { position: relative; height: 180px; width: 100%; }
+  :root { --bg:#000; --text:#0f8; --primary:#0f8; --card:#111; }
+body { background:var(--bg); color:var(--text); font-family:Arial, sans-serif; padding:15px; margin:0; animation: fadeSlide 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* Cinematic Page Load-In */
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(15px) scale(0.98); filter: blur(4px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+/* Cyber-Neon Pulse Hover */
+@keyframes neonPulse {
+  0%, 100% { border-color: var(--primary); box-shadow: 0 0 10px rgba(0, 255, 136, 0.1); }
+  50% { border-color: #00ffff; box-shadow: 0 0 20px rgba(0, 240, 255, 0.5); }
+}
+/* Subtle Heading Flicker */
+@keyframes textFlicker {
+  0%, 100% { opacity: 1; text-shadow: 0 0 10px var(--primary); }
+  50% { opacity: 0.92; text-shadow: 0 0 3px var(--primary); }
+}
+
+h2 { animation: textFlicker 4s infinite alternate; }
+.card { border: 1px solid var(--primary); padding:15px; margin:10px 0; background:var(--card); border-radius:8px; box-shadow: 0 0 10px #0f82; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+.card:hover { transform: translateY(-4px); animation: neonPulse 2.5s infinite ease-in-out; }
+
+input, select, textarea { width:100%; margin:5px 0; padding:10px; background:#1e1e1e; color:var(--text); border:1px solid var(--primary); border-radius:4px; box-sizing:border-box; transition: 0.2s; }
+input:focus, select:focus, textarea:focus { outline:none; box-shadow: 0 0 8px var(--primary); }
+button { background:var(--primary); color:#000; font-weight:bold; border:0; padding:10px 15px; cursor:pointer; border-radius:4px; transition: 0.3s; }
+button:hover { opacity:0.8; box-shadow: 0 0 12px var(--primary); }
+.grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:15px; }
+#preview { max-width:120px; display:none; border-radius:4px; margin:8px 0; border: 1px solid var(--primary); }
+.chart-container { position: relative; height: 180px; width: 100%; }
+
+/* Refined Sizing & Checkbox Layout */
+.sizing-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 12px;
+  border: 1px dashed var(--primary);
+  border-radius: 6px;
+  background: rgba(0, 255, 136, 0.02);
+  margin: 10px 0;
+  flex-wrap: wrap;
+}
+.sizing-wrapper select { margin: 0; flex: 1; min-width: 160px; }
+.checkbox-glow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  font-weight: bold;
+}
+.checkbox-glow input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
   </style>
 </head>
 <body>
-  <h2>🌌 SbheneCart Seller</h2>
+  <h2 id="welcome-msg">🌌 SbheneCart Seller Console Pro</h2>
 
-  <!-- LOGIN PANEL -->
   <div id="login-panel" class="card">
     <h3>Access Dashboard</h3>
     <input type="email" id="email" placeholder="Seller Email">
@@ -28,49 +75,37 @@
     <button onclick="loginSeller()">Verify & Log In</button>
   </div>
 
-  <!-- WORKSPACE -->
   <div id="seller-wrapper" style="display:none;">
     <button onclick="logoutSeller()" style="float:right; background:#f33; color:#fff;">Lock Console</button>
     <div class="grid">
-      <div class="card"><b>Net Earnings (Delivered)</b><br><span id="rev" style="font-size:24px; font-weight:bold;">R0</span></div>
-      <div class="card"><b>Awaiting Admin Review</b><br><span id="pending-count" style="font-size:24px; font-weight:bold;">0</span></div>
+      <div class="card"><b>Net Earnings (Delivered)</b><br><span id="rev">R0</span></div>
+      <div class="card"><b>Awaiting Admin Review</b><br><span id="pending-count">0</span></div>
     </div>
 
-    <!-- ANALYTICS -->
-    <div class="card">
-      <h3>📈 Sales Timeline</h3>
-      <div class="chart-container"><canvas id="salesChart"></canvas></div>
-    </div>
+    <div class="card"><h3>📈 Sales Timeline</h3><div style="height:180px;"><canvas id="salesChart"></canvas></div></div>
 
-    <!-- FORM -->
     <div class="card">
       <h3>📤 Publish New Listing (Awaiting Approval)</h3>
       <input id="sp_name" placeholder="Creation Name *">
-      <div class="grid">
-        <input id="sp_price" type="number" placeholder="Price (ZAR) *">
-        <input id="sp_stock" type="number" placeholder="Initial Inventory Quantity" value="10">
-      </div>
-      <div class="grid">
-        <select id="sp_cat" onchange="updateSubcats()"><option value="">Select Category *</option></select>
-        <select id="sp_subcat" onchange="updateSubSubcats()"><option value="">Select Subcategory</option></select>
-      </div>
-      <select id="sp_subsubcat"><option value="">Select Sub-subcategory</option></select>
-      <div class="grid">
-        <select id="sp_sizing"><option value="none">No Sizing Needed</option><option value="clothing">Clothing (XS-XL)</option><option value="shoes">Shoes (EU 36-46)</option></select>
-        <div style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="sp_req" style="width:auto;"><label>Requires Sewing Measurements</label></div>
-      </div>
-      <input type="file" id="sp_image" accept="image/*" onchange="previewImage(event)">
-      <img id="preview">
-      <textarea id="sp_desc" placeholder="Product details..."></textarea>
+      <div class="grid"><input id="sp_price" type="number" placeholder="Price (ZAR) *"><input id="sp_stock" type="number" value="10"></div>
+      <div class="sizing-wrapper">
+  <select id="sp_sizing">
+    <option value="none">📐 Sizing: Standard (No Options Needed)</option>
+    <option value="clothing">👚 Sizing: Clothing (XS, S, M, L, XL)</option>
+    <option value="shoes">👟 Sizing: Shoes (EU 36 - 46)</option>
+  </select>
+  <label class="checkbox-glow">
+    <input type="checkbox" id="sp_req">
+    <span>🧵 Requires Custom Sewing Specs</span>
+  </label>
+</div>
+
+      <input type="file" id="sp_image" accept="image/*"><textarea id="sp_desc" placeholder="Details..."></textarea>
       <button id="sub-btn" onclick="submitProduct()">Submit for Approval</button>
-    </div>
+    </div> <!-- CLOSED OUTER CARD CORRECTLY -->
 
     <div class="grid">
-      <div class="card">
-        <h3>📦 Inventory Catalog</h3>
-        <input id="inventory-search" placeholder="🔍 Search catalog items..." oninput="filterInventory()" style="margin-bottom:10px;">
-        <div id="my-prods"></div>
-      </div>
+      <div class="card"><h3>📦 Inventory Catalog</h3><input id="inventory-search" placeholder="🔍 Search catalog..." oninput="filterInventory()"><div id="my-prods"></div></div>
       <div class="card"><h3>🛒 Linked Customer Orders</h3><div id="my-orders"></div></div>
     </div>
   </div>
@@ -93,21 +128,24 @@
     };
     window.logoutSeller = () => signOut(auth);
 
-    onAuthStateChanged(auth, async (u) => {
+        onAuthStateChanged(auth, async (u) => {
+      const welcome = document.getElementById("welcome-msg");
       if (u) {
         try {
           const docSnap = await getDoc(doc(db, "sellers", u.uid));
           if (docSnap.exists()) {
             sUid = u.uid;
+            welcome.innerText = `👋 Welcome back, ${docSnap.data().name || "Seller"}!`;
             document.getElementById("login-panel").style.display = "none";
             document.getElementById("seller-wrapper").style.display = "block";
             loadDashboard();
           } else {
             await signOut(auth);
-            alert("⚠️ Access Denied: This account is not registered as a seller.");
+            alert("⚠️ Access Denied: Not registered as seller.");
           }
         } catch (err) { await signOut(auth); }
       } else {
+        welcome.innerText = "🌌 SbheneCart Seller Console Pro";
         document.getElementById("login-panel").style.display = "block";
         document.getElementById("seller-wrapper").style.display = "none";
       }
@@ -128,16 +166,13 @@
       const cat = document.getElementById("sp_cat").value;
       const file = document.getElementById("sp_image").files[0];
 
-      if (!name || !price || !cat || !file) return alert("Please fill all required fields and upload an image preview.");
-      const btn = document.getElementById("sub-btn");
-      btn.innerText = "Publishing..."; btn.disabled = true;
+      if (!name || !price || !cat || !file) return alert("Please fill all required fields.");
+      const btn = document.getElementById("sub-btn"); btn.innerText = "Publishing..."; btn.disabled = true;
 
       try {
-        const form = new FormData();
-        form.append("file", file); form.append("upload_preset", "SbheneCart");
+        const form = new FormData(); form.append("file", file); form.append("upload_preset", "SbheneCart");
         const resp = await fetch("https://api.cloudinary.com/v1_1/qocn8gjn/image/upload", { method: "POST", body: form });
-        const data = await resp.json();
-        uploadedUrl = data.secure_url;
+        const data = await resp.json(); uploadedUrl = data.secure_url;
 
         await addDoc(collection(db, "products"), {
           name, price: Number(price), category: cat,
@@ -158,96 +193,51 @@
         document.getElementById("sp_image").value = "";
         document.getElementById("sp_stock").value = "10";
         document.getElementById("preview").style.display = "none";
-      } catch (err) { alert(err.message); }
-      finally { btn.innerText = "Submit for Approval"; btn.disabled = false; }
+      } catch (err) { alert(err.message); } finally { btn.innerText = "Submit for Approval"; btn.disabled = false; }
     };
 
     window.updateSubcats = () => {
       const cat = document.getElementById("sp_cat").value;
-      document.getElementById("sp_subcat").innerHTML = '<option value="">Select Subcategory</option>' + 
-        dbSubcats.filter(s => s.category === cat).map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+      document.getElementById("sp_subcat").innerHTML = '<option value="">Select Subcategory</option>' + dbSubcats.filter(s => s.category === cat).map(s => `<option value="${s.name}">${s.name}</option>`).join('');
     };
 
     window.updateSubSubcats = () => {
       const sub = document.getElementById("sp_subcat").value;
-      document.getElementById("sp_subsubcat").innerHTML = '<option value="">Select Sub-subcategory</option>' + 
-        dbSubsubcats.filter(s => s.subcategory === sub).map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+      document.getElementById("sp_subsubcat").innerHTML = '<option value="">Select Sub-subcategory</option>' + dbSubsubcats.filter(s => s.subcategory === sub).map(s => `<option value="${s.name}">${s.name}</option>`).join('');
     };
 
     function renderSalesChart(dailySales) {
-      const ctx = document.getElementById("salesChart").getContext("2d");
-      if (salesChart) salesChart.destroy();
-      const dates = Object.keys(dailySales).slice(-7);
-      const dataValues = dates.map(d => dailySales[d]);
-      salesChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: dates,
-          datasets: [{ label: 'Sales (ZAR)', data: dataValues, borderColor: '#0f8', backgroundColor: 'rgba(0, 255, 136, 0.05)', borderWidth: 2, tension: 0.3, fill: true }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: { x: { grid: { display: false }, ticks: { color: '#0f8' } }, y: { grid: { color: '#222' }, ticks: { color: '#0f8' } } }
-        }
-      });
+      const ctx = document.getElementById("salesChart").getContext("2d"); if (salesChart) salesChart.destroy();
+      const dates = Object.keys(dailySales).slice(-7), dataValues = dates.map(d => dailySales[d]);
+      salesChart = new Chart(ctx, { type: 'line', data: { labels: dates, datasets: [{ label: 'Sales (ZAR)', data: dataValues, borderColor: '#0f8', backgroundColor: 'rgba(0, 255, 136, 0.05)', borderWidth: 2, tension: 0.3, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#0f8' } }, y: { ticks: { color: '#0f8' } } } } });
     }
 
     window.filterInventory = () => {
       const q = document.getElementById("inventory-search").value.toLowerCase().trim();
-      const filtered = myProductsList.filter(p => p.name.toLowerCase().includes(q));
-      renderMyProducts(filtered);
+      renderMyProducts(myProductsList.filter(p => p.name.toLowerCase().includes(q)));
     };
 
     function renderMyProducts(list) {
-      document.getElementById("my-prods").innerHTML = list.map(p => `
-        <div class="card" style="border-left: 3px solid ${p.stock <= 0 ? '#ff1744' : 'var(--primary)'}">
-          <b>${p.name}</b> (${p.approved ? "✅ Live" : "⏳ Review"})<br>
-          Price (ZAR): <input type="number" id="pr-${p.id}" value="${p.price}" style="width:100px; display:inline;">
-          Stock: <input type="number" id="st-${p.id}" value="${p.stock}" style="width:80px; display:inline;"><br><br>
-          <button onclick="saveInventory('${p.id}')">Save Changes</button>
-        </div>
-      `).join('');
+      document.getElementById("my-prods").innerHTML = list.map(p => `<div class="card" style="border-left:3px solid ${p.stock<=0?'#f33':'#0f8'}"><b>${p.name}</b> (${p.approved?'Live':'Review'})<br>Price: <input id="pr-${p.id}" value="${p.price}" style="width:80px;display:inline;"> Stock: <input id="st-${p.id}" value="${p.stock}" style="width:60px;display:inline;"><br><button onclick="saveInventory('${p.id}')">Save</button></div>`).join('');
     }
 
     function loadDashboard() {
-      onSnapshot(collection(db, "categories"), (snap) => {
-        document.getElementById("sp_cat").innerHTML = '<option value="">Select Category *</option>' + 
-          snap.docs.map(d => `<option value="${d.data().name}">${d.data().name}</option>`).join('');
-      });
+      onSnapshot(collection(db, "categories"), snap => document.getElementById("sp_cat").innerHTML = '<option value="">Category *</option>' + snap.docs.map(d => `<option value="${d.data().name}">${d.data().name}</option>`).join(''));
       onSnapshot(collection(db, "subcategories"), snap => dbSubcats = snap.docs.map(d => d.data()));
       onSnapshot(collection(db, "subsubcategories"), snap => dbSubsubcats = snap.docs.map(d => d.data()));
-
-      onSnapshot(query(collection(db, "products"), where("sellerId", "==", sUid)), (snap) => {
-        myProductsList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        document.getElementById("pending-count").innerText = myProductsList.filter(p => !p.approved).length;
-        window.filterInventory();
-      });
-
-      onSnapshot(collection(db, "orders"), (snap) => {
-        const orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        const filtered = orders.filter(o => o.items && o.items.some(i => i.sellerId === sUid));
-        let revenue = 0;
-        const dailySales = {};
+      onSnapshot(query(collection(db, "products"), where("sellerId", "==", sUid)), snap => { myProductsList = snap.docs.map(d => ({ id: d.id, ...d.data() })); document.getElementById("pending-count").innerText = myProductsList.filter(p => !p.approved).length; window.filterInventory(); });
+      onSnapshot(collection(db, "orders"), snap => {
+        const orders = snap.docs.map(d => ({ id: d.id, ...d.data() })), filtered = orders.filter(o => o.items && o.items.some(i => i.sellerId === sUid));
+        let rev = 0; const sales = {};
         filtered.forEach(o => {
           if (o.status === "Delivered") {
             const date = o.timestamp ? new Date(o.timestamp).toLocaleDateString() : "Delivered";
-            let orderTotal = 0;
-            o.items.filter(i => i.sellerId === sUid).forEach(i => {
-              const itemRev = i.price * i.quantity; revenue += itemRev; orderTotal += itemRev;
-            });
-            dailySales[date] = (dailySales[date] || 0) + orderTotal;
+            let total = 0; o.items.filter(i => i.sellerId === sUid).forEach(i => { const itemRev = i.price * i.quantity; rev += itemRev; total += itemRev; });
+            sales[date] = (sales[date] || 0) + total;
           }
         });
-        document.getElementById("rev").innerText = "R" + revenue;
-        renderSalesChart(dailySales);
-        document.getElementById("my-orders").innerHTML = filtered.map(o => `
-          <div class="card">
-            <b>Order #${o.id.substring(0,6)}</b> (${o.status})<br>
-            Buyer: ${o.customer?.name || "Client"}<br>
-            ${o.items.filter(i => i.sellerId === sUid).map(i => `• ${i.name} (x${i.quantity})`).join('<br>')}
-          </div>
-        `).join('');
+        document.getElementById("rev").innerText = "R" + rev; renderSalesChart(sales);
+        document.getElementById("my-orders").innerHTML = filtered.map(o => `<div class="card"><b>Order #${o.id.substring(0,6)}</b> (${o.status})<br>${o.items.filter(i => i.sellerId === sUid).map(i => `• ${i.name} (x${i.quantity})`).join('<br>')}</div>`).join('');
       });
     }
 
